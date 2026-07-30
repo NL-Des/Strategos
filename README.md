@@ -46,10 +46,17 @@ Liste des zones constituant chaque page (il n'y a pas d'obligation à toutes les
 - Sidebar
 - Footer
 
+- Facilement personnalisable :
+  - image ou couleur en arrière plan de page : pour une page ou toutes les pages. (Avec le page builder)
+  - vidéos en arrière plan de page : pour une page ou toutes les pages. (Avec le page builder)
+  - Textes : couleurs, polices d'écritures, styles,...
+  - Couleur, style des encadrés des discussion et de leurs messages
+
 Liste des modules intégrables dans chaque zone :
-- Tableaux
 - Placement d'images simple
 - Placement d'images amenant sur une page du site ou à l'extérieur
+- Tableaux
+- Tableaux pouvant accueillir des images et du texte, pour construire un catalogue (une image accompagné de textes, parfois en plusieurs cases à côté ou autour).
 - Chatbot (messagerie interne simple, sans intégration IA)
 - Sujets de discussion / messages (pouvant contenir des images)
 - Boutons (nombre à indiquer, noms à renseigner, placement à indiquer (haut, bas, gauche, droite))
@@ -69,8 +76,7 @@ Chaque module est un type enregistré côté backend (schéma + validation) avec
 - **Accès à la prévisualisation** : réservé aux comptes administrateurs, quels que soient les droits de groupe définis sur la page.
 
 ## Frontend / personnalisation
-- Style simple, facilement personnalisable par l'administrateur (images de fond, vidéos, couleurs, polices).
-- L'utilisateur peut construire son propre style si l'administrateur l'y autorise, avec accès à un tableau de personnalisation pour ses sujets et messages.
+- L'utilisateur devra avoir accès à un outil de construction de pages et de personnalisation. Pour si l'administrateur l'autorise, faire son propre style.
 
 ## Excel et Google Sheets
 - Support des deux : **Excel** (upload/export de fichiers) et **Google Sheets** (connexion live via API, OAuth côté administrateur).
