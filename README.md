@@ -18,7 +18,11 @@ Une plateforme web interne, facile à déployer (une seule commande), facile à 
 - **Backup** : au-delà du volume Docker local, pas de stratégie de sauvegarde externe définie pour l'instant (point à retravailler plus tard).
 
 ## Authentification
-Comptes locaux (email / mot de passe, hash bcrypt ou argon2), authentification par **session**. Pas de SSO externe pour le moment.
+Authentification par **session**, mots de passe **hachés** (bcrypt ou argon2 — à sens unique, jamais réversible). Pas de SSO externe pour le moment.
+
+Deux modes possibles, **choisis une fois pour toutes par l'administrateur à l'initialisation du site** (pas de bascule entre les deux après coup) :
+1. **Comptes créés par l'administrateur** : page admin dédiée où l'admin saisit lui-même pseudo et mot de passe pour chaque profil.
+2. **Inscription classique par email** : formulaire d'inscription libre, avec validation par lien de confirmation envoyé par email avant activation du compte.
 
 ## Notifications
 Notifications in-app uniquement (centre de notifications dans l'interface) : soumission en attente, validation, rejet, nouveau message. Pas d'email pour l'instant.
@@ -51,6 +55,9 @@ Liste des modules intégrables dans chaque zone :
 - Boutons (nombre à indiquer, noms à renseigner, placement à indiquer (haut, bas, gauche, droite))
 - Formulaire de modification de l'excel ou du google sheet
 - **Cartes cliquables** : image sur laquelle l'administrateur dessine des zones transparentes ou semi-transparentes ; un clic sur une zone mène vers une page interne ou une page externe. Composant le plus complexe de la liste (éditeur de zones dédié).
+  - Zones en **polygones libres** (dessinées à la souris), pas de simples rectangles.
+  - Zones **disjointes** : l'éditeur empêche/avertit en cas de chevauchement entre deux zones.
+  - Une carte = **une seule image** avec ses zones ; pas de système de sous-images/calques imbriqués.
 
 Chaque module est un type enregistré côté backend (schéma + validation) avec un composant de rendu côté frontend. Une page = une séquence d'instances de modules, configuration stockée en base (JSON).
 
@@ -77,4 +84,3 @@ Chaque module est un type enregistré côté backend (schéma + validation) avec
 
 ## Points encore ouverts
 - Détail du mécanisme de résolution des liaisons inter-fichiers Excel/Sheets (le point le plus délicat techniquement).
-- Détail de l'éditeur de zones cliquables pour les cartes.
