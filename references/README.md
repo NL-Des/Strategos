@@ -1,10 +1,10 @@
 # Strategos
 
 ## Objectif
-Une plateforme web interne, facile à déployer (une seule commande), facile à utiliser, avec une sauvegarde locale des données, et modulable.
+Un site web basé sur un google sheet ou un excel. Les kits de créations de pages et autres éléments, permettraient d'utiliser les ressources.
 
 ## Profils
-- **Administrateur** : construit les pages, gère les groupes et les droits, valide les modifications des utilisateurs.
+- **Administrateur** : construit les pages, gère les groupes et les droits, valide les modifications des utilisateurs sur les excels et google sheet.
 - **Utilisateur** : consulte et interagit avec les pages selon les droits de ses groupes.
 
 ## Stack technique
@@ -16,16 +16,15 @@ Une plateforme web interne, facile à déployer (une seule commande), facile à 
 - **BDD** : PostgreSQL, données sauvegardées dans un volume Docker local.
 - **Déploiement** : Docker Compose (une image front, une image back, une image BDD), lancement en une seule commande.
 - **Backup** : au-delà du volume Docker local, pas de stratégie de sauvegarde externe définie pour l'instant (point à retravailler plus tard).
+- **Moteur Excel/Sheets (`excel-sync`)** : reste en TypeScript/Node dans la v1, par choix et non par oubli. À l'échelle visée (voir section Excel et Google Sheets), le parsing/staging n'est pas le goulot d'étranglement ; les points réellement durs (résolution des liaisons inter-fichiers, fusion des soumissions concurrentes, lecture live de l'API Sheets) sont des problèmes de modélisation et d'orchestration, pas de vitesse brute. Introduire Rust ou Go ajouterait une image Docker, une frontière IPC et un second toolchain à maintenir sans résoudre ces points — à l'encontre de l'objectif "facile à déployer / facile à maintenir".
 
 ## Authentification
-Authentification par **session**, mots de passe **hachés** (bcrypt ou argon2 — à sens unique, jamais réversible). Pas de SSO externe pour le moment.
+Authentification par **session**, mots de passe **hachés** (bcrypt ou argon2 — à sens unique, jamais réversible).
 
-Deux modes possibles, **choisis une fois pour toutes par l'administrateur à l'initialisation du site** (pas de bascule entre les deux après coup) :
-1. **Comptes créés par l'administrateur** : page admin dédiée où l'admin saisit lui-même pseudo et mot de passe pour chaque profil.
-2. **Inscription classique par email** : formulaire d'inscription libre, avec validation par lien de confirmation envoyé par email avant activation du compte.
+**Comptes créés par l'administrateur** : page admin dédiée où l'admin saisit lui-même pseudo et mot de passe pour chaque profil.
 
 ## Notifications
-Notifications in-app uniquement (centre de notifications dans l'interface) : soumission en attente, validation, rejet, nouveau message. Pas d'email pour l'instant.
+Pas de notifications de prévues pour le moment.
 
 ## Suppression de contenu
 Suppression douce (soft-delete) pour sujets, messages, groupes et utilisateurs : le contenu est marqué supprimé et masqué de l'interface, mais reste en base — préserve l'historique des modifications Excel/Sheets validées et les références passées, et permet une restauration.
@@ -46,43 +45,30 @@ Liste des zones constituant chaque page (il n'y a pas d'obligation à toutes les
 - Sidebar
 - Footer
 
-- Facilement personnalisable :
+- Options de personnalisation des zones :
   - image ou couleur en arrière plan de page : pour une page ou toutes les pages. (Avec le page builder)
-  - vidéos en arrière plan de page : pour une page ou toutes les pages. (Avec le page builder)
   - Textes : couleurs, polices d'écritures, styles,...
   - Couleur, style des encadrés des discussion et de leurs messages
 
 Liste des modules intégrables dans chaque zone :
 - Placement d'images simple
 - Placement d'images amenant sur une page du site ou à l'extérieur
-- Tableaux
-- Tableaux pouvant accueillir des images et du texte, pour construire un catalogue (une image accompagné de textes, parfois en plusieurs cases à côté ou autour).
+- Tableaux (Avec un appel de données de l'Excel ou du Sheet, ou un tableau simple à remplir)
+- Tableaux pouvant accueillir des images et du texte, pour construire un catalogue (une image accompagné de textes, parfois en plusieurs cases à côté ou autour)(Avec un appel de données de l'Excel ou du Sheet, ou un tableau simple à remplir).
 - Chatbot (messagerie interne simple, sans intégration IA)
 - Sujets de discussion / messages (pouvant contenir des images)
-- Boutons (nombre à indiquer, noms à renseigner, placement à indiquer (haut, bas, gauche, droite))
-- Formulaire de modification de l'excel ou du google sheet
+- Page (Avec un appel de données de l'Excel ou du Sheet, ou une page simple à remplir)
+- Boutons (nombre à indiquer, noms à renseigner, placement à indiquer (haut, bas, gauche, droite), destination à désigner)
+- Formulaire de modification de l'excel ou du google sheet (l'administrateur relie à un champs d'écriture du formulaire, une case du document excel ou du google sheet)
 - **Cartes cliquables** : image sur laquelle l'administrateur dessine des zones transparentes ou semi-transparentes ; un clic sur une zone mène vers une page interne ou une page externe. Composant le plus complexe de la liste (éditeur de zones dédié).
   - Zones en **polygones libres** (dessinées à la souris), pas de simples rectangles.
   - Zones **disjointes** : l'éditeur empêche/avertit en cas de chevauchement entre deux zones.
   - Une carte = **une seule image** avec ses zones ; pas de système de sous-images/calques imbriqués.
 
-Chaque module est un type enregistré côté backend (schéma + validation) avec un composant de rendu côté frontend. Une page = une séquence d'instances de modules, configuration stockée en base (JSON).
-
-## Prévisualisation en direct
-- Chaque page a une configuration **brouillon** (draft) distincte de la configuration **publiée**. L'administrateur édite toujours le brouillon.
-- Un onglet de prévisualisation (`/preview/:pageId`) affiche le rendu du brouillon en temps réel via **WebSocket** : chaque modification faite dans l'éditeur est poussée instantanément à l'onglet preview, sans rechargement.
-- Cela permet de juger l'ergonomie et le rendu visuel pendant la construction, avant publication.
-- Le bouton "Publier" copie la configuration brouillon vers la configuration publiée, visible par les utilisateurs.
-- **Accès à la prévisualisation** : réservé aux comptes administrateurs, quels que soient les droits de groupe définis sur la page.
-
-## Frontend / personnalisation
-- L'utilisateur devra avoir accès à un outil de construction de pages et de personnalisation. Pour si l'administrateur l'autorise, faire son propre style.
-
 ## Excel et Google Sheets
-- Support des deux : **Excel** (upload/export de fichiers) et **Google Sheets** (connexion live via API, OAuth côté administrateur).
-- **Formulaires de modification** : l'administrateur définit des formulaires (champs texte, menus de sélection...) mappés à des cellules. Une soumission utilisateur reste en attente jusqu'à validation par l'administrateur, qui applique alors la modification réelle au fichier/sheet. Les formulaires devront pouvoir avoir des formules et actions cachées écrites par l'administrateur, qui seront visibles ou cachées de l'utilisateur.
-- **Soumissions concurrentes** : si plusieurs utilisateurs soumettent des modifications sur la même cellule avant validation, toutes restent visibles en attente — l'administrateur voit le conflit et choisit laquelle valider (ou les fusionne manuellement).
-- **Archive / historique** : chaque modification validée crée un snapshot, permettant un retour en arrière.
+- Support des deux : **Excel** (connexion via une API ou équivalent disponible) et **Google Sheets** (connexion live via API, OAuth côté administrateur).
+- **Formulaires de modification** : l'administrateur définit des formulaires (champs texte, menus de sélection...) mappés à des cellules. Une soumission utilisateur reste en attente jusqu'à validation par l'administrateur, qui applique alors la modification réelle au fichier/sheet. Il pourra accepter, refuser ou modifier la soumission.
+- **Soumissions concurrentes** : si plusieurs utilisateurs soumettent des modifications sur la même cellule, toutes restent visibles en attente — l'administrateur voit le conflit et choisit, laquelle valider (ou les fusionne manuellement).
 - **Google Sheets = source de vérité vivante** : l'état réel du Sheet est relu à chaque besoin (pas de copie figée en base) ; Strategos ne fait que proposer des modifications par-dessus. Les fichiers **Excel** uploadés, eux, sont importés à un instant T et nécessitent un réimport manuel déclenché par l'administrateur si le fichier source est modifié en dehors du système.
 - **Échelle attendue** : dizaines à quelques centaines d'utilisateurs ; fichiers Excel/Sheets pouvant atteindre plusieurs milliers de lignes, plusieurs pages, avec des liaisons/appels internes entre différents fichiers Excel/Sheets.
   - Conséquence : les données Excel importées devront être mises en staging en base plutôt que reparsées à chaque lecture, et les liaisons inter-fichiers devront être résolues par référence (ID de fichier + cellule/plage) plutôt que par chemin de fichier.
