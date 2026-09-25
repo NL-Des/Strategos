@@ -21,6 +21,8 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 | 13 | [API](conception/13-api.md) | Conventions, routes utilisateur et admin, WebSocket du chat, schémas clés |
 | 14 | [Modèle de données](conception/14-modele-donnees.md) | Tables, colonnes, index, contraintes, ordre des migrations |
 
+La réalisation est découpée en étapes dans le [plan de réalisation](plan-realisation.md).
+
 ## 1. Vue d'ensemble
 
 Quatre conteneurs Docker Compose (proxy Caddy, frontend, backend, base de données). Le backend est le seul point de contact avec les sources de données (Excel uploadés, Google Sheets, OneDrive/SharePoint) — le frontend ne parle qu'au backend, en REST et en WebSocket pour le chat.
