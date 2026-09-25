@@ -187,7 +187,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/pages/:id/publish/preview` | Ce que la publication va changer : formulaires modifiés, **soumissions qui seraient invalidées**, espaces et chats créés ou retirés | — |
 | POST | `/pages/:id/publish` | Publier le brouillon, avec ses formulaires, espaces et chats, en une transaction ; confirmation requise si des soumissions seraient invalidées | `VALIDATION_FAILED` (bloc invalide), `409 CONFIRMATION_REQUIRED` |
 | DELETE | `/pages/:id` | Suppression douce | — |
-| GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`) | `EDIT_CONFLICT` |
+| GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`) ; formulaires, espaces et chats refusés | `EDIT_CONFLICT`, `422 BLOCK_NOT_ALLOWED_IN_LAYOUT` |
 | GET | `/layout/:kind/preview?asGroup=` | Aperçu du header ou du footer, éventuellement avec les droits d'un groupe | — |
 | POST | `/layout/:kind/publish` | Publier le header ou le footer | — |
 | GET | `/blocks/:blockId/rows?preview=true` | Lignes d'un bloc de brouillon, pour l'aperçu | — |

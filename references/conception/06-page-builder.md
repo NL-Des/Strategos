@@ -10,6 +10,7 @@ L'administrateur coche les zones présentes sur la page, puis y place ses module
 
 - **Zones** : Header, Main, Sidebar, Footer. Il n'y a pas d'obligation à toutes les avoir : l'admin coche celles qu'il veut.
 - **Header et footer partagés** : l'admin construit **un header et un footer communs** à tout le site (typiquement, les boutons de navigation). Page par page, il choisit de les afficher ou non. Main et Sidebar sont propres à chaque page.
+  - Ils n'accueillent que des modules sans données propres : Image, Boutons, Carte cliquable, Contenu libre, Tableau, Catalogue. Les formulaires, espaces de discussion et chats n'y sont **pas autorisés** en v1, car leur accès dépend de la lecture d'une page précise.
 - **Rangées et colonnes** : une zone est une pile de **rangées**, et chaque rangée contient **1, 2 ou 3 colonnes**. Chaque colonne accueille un module. L'admin ordonne les rangées et choisit la répartition des colonnes (ex. 1/2 + 1/2, 2/3 + 1/3).
 - **Responsive** : sur mobile, les colonnes d'une rangée s'empilent et la Sidebar passe sous le Main.
 
@@ -120,16 +121,19 @@ Formulaire de modification, de ligne ou d'ajout de l'excel ou du google sheet (d
 - **Réglages** : titre, texte d'introduction, message affiché après l'envoi, puis les champs et leurs mappings (détaillés dans [Formulaires et soumissions](09-formulaires-soumissions.md)).
 - **Rendu** : le formulaire ; « complet » pour un formulaire d'ajout dont la zone est pleine, « fermé » s'il a été fermé par l'admin ou si sa date limite est passée ; masqué tant qu'il n'est pas configuré.
 - **Accès** : quiconque peut lire la page peut soumettre.
+- **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
 
 ### Espace de discussion
 Un mini-forum : une liste de sujets, et leurs messages (pouvant contenir des images). C'est une **ressource du modèle de droits** (lecture, ouverture de sujets, publication de messages). Règles détaillées dans [Discussions](07-discussions.md#espaces-de-discussion).
 - **Réglages** : nom de l'espace, sujets épinglés, tri des sujets (activité récente ou date de création).
 - **Accès** : si l'utilisateur ne peut pas lire l'espace, le module est **invisible**, même s'il peut lire la page.
+- **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
 
 ### Chat
 Messagerie interne en temps réel, sans intégration IA. L'admin le place sur les pages de son choix. Règles détaillées dans [Discussions](07-discussions.md#chat).
 - **Réglages** : nom du salon, hauteur du module.
 - **Accès** : quiconque peut lire la page peut lire le chat et y écrire.
+- **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
 
 ### Plage des tableaux et formulaires d'ajout
 Un tableau ou un catalogue relié à une source affiche une plage qui peut être :
@@ -143,6 +147,7 @@ Un tableau ou un catalogue relié à une source affiche une plage qui peut être
 ## Points techniques
 - **PagesModule** : CRUD des pages, brouillon et publication, header/footer partagés, thèmes, médiathèque, soft-delete.
 - **Brouillon/publication** : `pages.draft_config` et `pages.published_config` (JSONB), `published_at`. La publication est **transactionnelle** : dans la même transaction, elle publie la page, publie les définitions de ses formulaires (nouvelle version, invalidation des soumissions en attente si la modification est structurelle) et crée les espaces et chats nouvellement ajoutés.
+- **Header et footer** : la validation du brouillon de `layout_parts` refuse les blocs de type `form`, `discussion_space` et `chat` (`422 BLOCK_NOT_ALLOWED_IN_LAYOUT`).
 - **Aperçu par groupe** : l'assemblage de la page accepte un « contexte de droits » (utilisateur réel, ou membre fictif d'un groupe donné) ; c'est la même fonction que pour l'affichage réel, pour que l'aperçu soit fidèle. Le header et le footer partagés sont stockés dans `layout_parts(kind[header|footer], draft_config, published_config, published_at)`. La page porte `show_header` et `show_footer`.
 - **Structure du JSON** d'une zone : `rows[] → { columns: [{ width, block }] }`, où `block = { id, type, config }`. Les `block.id` sont stables, parce que les formulaires, espaces de discussion et chats y sont rattachés (`page_block_id`).
 - **Registre des modules** : `BlockRenderer` avec un registre `{ blockType: Component }` : `image`, `buttons`, `clickable_map`, `table`, `catalog`, `rich_content`, `form`, `discussion_space`, `chat`. Chaque type a son schéma de `config`, validé par `class-validator` côté backend.
@@ -170,6 +175,7 @@ _Aucune pour l'instant._
 - Plusieurs thèmes nommés, un thème par défaut et un thème par page. La mise en forme des sources n'est pas reproduite.
 - Plage des tableaux fixe ou extensible, avec un avertissement si un formulaire d'ajout écrit hors de la plage fixe.
 - Chat : module placé au cas par cas, sans interrupteur global.
+- Formulaires, espaces de discussion et chats interdits dans le header et le footer partagés (v1).
 - Header et footer partagés, affichables ou non page par page.
 - Zones composées de rangées de 1 à 3 colonnes.
 - Brouillon, aperçu et publication. Les formulaires, espaces et chats suivent le cycle de la page ; les réglages opérationnels sont immédiats.

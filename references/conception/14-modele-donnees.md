@@ -177,6 +177,8 @@ Voir [06](06-page-builder.md).
 Les blocs vivent dans le JSON et portent un `id` (uuid) stable. Les modules qui ont leurs propres données (formulaires, espaces, chats) ont une ligne dans leur table, avec `page_id` et `block_id`.
 
 ### `layout_parts` — header et footer partagés
+La config n'accepte que des blocs sans données propres (image, boutons, carte, contenu libre, tableau, catalogue).
+
 | Colonne | Type | N | Défaut | Contrainte / rôle |
 |---|---|---|---|---|
 | `kind` | enum `layout_kind` (`header`, `footer`) | | — | PK |
@@ -479,10 +481,11 @@ Les références d'un formulaire ou d'un bloc vers une source (`sourceId` dans l
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.
 
 ## Questions ouvertes
-1. **Formulaires, espaces et chats dans le header ou le footer partagés ?** Leurs tables sont rattachées à une page (`page_id`). Un chat « global » dans le footer serait séduisant, mais son droit d'accès (« lecture de la page ») n'aurait pas de sens pour un élément présent sur toutes les pages. Proposition : **interdits dans le header et le footer en v1** ; ceux-ci n'accueillent que les modules sans données propres (image, boutons, carte, contenu libre).
+_Aucune pour l'instant._
 
 **Décisions (2026-09-25)**
 - Modèle décrit en Markdown ; traduction Prisma, avec les contraintes non exprimables ajoutées en SQL dans les migrations.
 - UUID v7, suppression douce avec unicités partielles, verrouillage optimiste par `version`.
 - Cibles des permissions et des révisions en deux FK avec `CHECK`, plutôt qu'en polymorphisme.
 - Journal en ajout seul, garanti par un trigger.
+- Formulaires, espaces de discussion et chats interdits dans le header et le footer partagés : `forms`, `discussion_spaces` et `chats` sont toujours rattachés à une page.
