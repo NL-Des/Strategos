@@ -26,9 +26,9 @@ Les deux moyens d'échange entre utilisateurs, intégrés aux pages comme module
 L'administrateur peut **masquer** n'importe quel message, dans les sujets comme dans le chat. Le message masqué disparaît pour les utilisateurs, reste archivé en base, et l'action est tracée dans le [journal](04-administration.md#journal-des-modifications).
 
 ## Points techniques
-- **TopicsModule** : espaces de discussion, sujets et messages, pièces jointes images. Tables `discussion_spaces(id, page_block_id, name, sort_mode, deleted_at)` et `topics(id, space_id, author_id, title, closed_at, pinned_at, deleted_at)`. Les droits sont vérifiés sur `space_id`.
-- **Chat** : passerelle **WebSocket NestJS**, authentifiée par le cookie de session. À la connexion au canal d'un module chat, elle vérifie le droit de lecture sur la page qui le contient. Table `chat_messages(id, page_block_id, author_id, content, created_at, hidden_at, deleted_at)`.
-- Historique des messages (sujets et chat) : table `message_revisions(message_id, message_kind[topic|chat], content, edited_at, action[edit|delete|hide])`. Une ligne est écrite avant chaque modification, suppression ou masquage, dans la même transaction.
+- **TopicsModule** : espaces de discussion, sujets et messages, pièces jointes images. Tables `discussion_spaces`, `topics`, `topic_messages` ([14](14-modele-donnees.md#6-discussions)). Les droits sont vérifiés sur `space_id`.
+- **Chat** : passerelle **WebSocket NestJS**, authentifiée par le cookie de session. À la connexion au canal d'un module chat, elle vérifie le droit de lecture sur la page qui le contient. Tables `chats` et `chat_messages`.
+- Historique des messages (sujets et chat) : table `message_revisions` (action `edit`, `delete`, `hide` ou `unhide`, contenu précédent, acteur). Une ligne est écrite avant chaque modification, suppression ou masquage, dans la même transaction.
 - Masquage : `hidden_at` sur les messages, et une route réservée au rôle admin.
 - **Pièces jointes** : images uniquement (JPEG, PNG, WebP, GIF), 5 Mo au maximum chacune, 4 par message au plus. Elles sont accessibles à qui peut lire l'espace de discussion.
 - Espaces et chats sont créés à la **publication** de la page qui contient leur bloc (voir [Page builder](06-page-builder.md#brouillon-et-publication)) ; leurs réglages (nom, tri, hauteur) suivent le brouillon.

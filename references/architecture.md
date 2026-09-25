@@ -19,6 +19,7 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 | 11 | [Transverse](conception/11-transverse.md) | Stack, suppression, sauvegardes, langue, RGPD |
 | 12 | [Parcours](conception/12-parcours.md) | Scénarios de bout en bout qui éprouvent la conception |
 | 13 | [API](conception/13-api.md) | Conventions, routes utilisateur et admin, WebSocket du chat, schémas clés |
+| 14 | [Modèle de données](conception/14-modele-donnees.md) | Tables, colonnes, index, contraintes, ordre des migrations |
 
 ## 1. Vue d'ensemble
 
@@ -53,32 +54,28 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **FilesModule** : upload, stockage sur le volume Docker, métadonnées en base — voir [11](conception/11-transverse.md).
 - **BackupModule** : sauvegarde quotidienne et téléchargement admin — voir [11](conception/11-transverse.md#sauvegardes).
 
-## 3. Modèle de données (entités clés)
+## 3. Modèle de données
 
-- `users(id, username, password_hash, must_change_credentials, personal_page_id?, disabled_at, deleted_at)`, `groups(id, name, description, deleted_at)`, `user_groups` — `must_change_credentials` force le changement d'identifiants ([02](conception/02-comptes-authentification.md#compte-administrateur))
-- `group_permissions(group_id, resource_type[page|discussion_space], resource_id, can_read, can_create_topic, can_post)` — pas de droit d'écriture ; `resource_id` obligatoire (pas de permission « sur tout ») ; page = `can_read` seul ([03](conception/03-droits-groupes.md#points-techniques))
-- `settings(landing_page_id, default_theme_id, backup_retention_days, …)` — réglages globaux de l'instance ([04](conception/04-administration.md#réglages-de-linstance)) ([03](conception/03-droits-groupes.md#visibilité-et-page-darrivée))
-- `themes(id, name, config JSONB, is_default)` — thèmes nommés ([06](conception/06-page-builder.md#thèmes))
-- `pages(id, name, theme_id?, show_header, show_footer, draft_config JSONB, published_config JSONB, published_at, deleted_at)` — config JSON par zone (Main/Sidebar) : rangées de 1 à 3 colonnes, un bloc typé par colonne ; `theme_id` vide = thème par défaut ([06](conception/06-page-builder.md#points-techniques))
-- `layout_parts(kind[header|footer], draft_config, published_config, published_at)` — header et footer partagés
-- `media(id, filename, path, mime, size, alt, uploaded_at, deleted_at)` — médiathèque, accessible à tout utilisateur connecté
-- `attachments(id, message_kind, message_id?, uploader_id, path, mime, size, created_at)` — pièces jointes des messages (accès = lecture de l'espace)
-- `discussion_spaces(id, page_block_id, name, sort_mode, deleted_at)`, `topics(id, space_id, author_id, title, closed_at, pinned_at, deleted_at)`, `messages(id, topic_id, author_id, hidden_at, deleted_at, ...)`
-- `chat_messages(id, page_block_id, author_id, content, created_at, hidden_at, deleted_at)` — historique du chat conservé
-- `message_revisions(message_id, message_kind[topic|chat], content, edited_at, action[edit|delete|hide])` — archive des modifications, suppressions et masquages ([07](conception/07-discussions.md#points-techniques))
-- `excel_sources(id, type[upload|gsheet|onedrive], connection_info, last_synced_at, last_downloaded_at)` — `last_downloaded_at` sert à l'avertissement de réimport des uploads
-- `excel_staging_cells(source_id, sheet_ref, cell_ref, value, formula?, needs_recalc)` — staging des **Excel uploadés uniquement**, jamais reparsés à chaque affichage ; les sources connectées passent par un cache mémoire ([08](conception/08-sources-donnees.md#points-techniques))
-- `cell_references(source_id, sheet_ref, cell_or_range, referenced_source_id, referenced_ref)` — résolution des liaisons inter-fichiers ([08](conception/08-sources-donnees.md))
-- `forms(id, page_block_id, mode[modification|ligne|ajout], draft_definition JSONB, published_version?, is_open, closes_at?, auto_validate, deleted_at)` — la définition suit le brouillon de la page ; les réglages opérationnels (`is_open`, `closes_at`, `auto_validate`) sont immédiats ([06](conception/06-page-builder.md#brouillon-et-publication))
-- `form_versions(form_id, version, definition JSONB, published_at)` — une ligne par publication. `definition` contient : les champs (type, règles, options saisies ou plage source, `auto[pseudo|date]?`, `movement`) ; les mappings (cellule pour `modification`, colonne pour `ligne` et `ajout`) ; pour `ligne` la source, la plage, la colonne clé et le bloc relié ; pour `ajout` la source, `start_row` et `max_new_rows` ([09](conception/09-formulaires-soumissions.md#formulaires))
-- `submissions(id, form_id, form_version, user_id, values JSONB, row_key?, status[pending|validated|rejected|modified|invalidated], assigned_row?, validated_by?)` — `row_key` pour un formulaire de ligne ; `assigned_row` rempli à la validation d'un ajout ; `validated_by` vide = validation automatique ; `form_version` = version publiée sur laquelle la soumission a été faite
-- `templates(id, type[form|page|topic], payload JSONB)`
-- `user_notes(id, user_id, title, content, created_at, updated_at, deleted_at)` — `content` en format riche restreint, nettoyé côté backend
-- `audit_log(id, actor_id, action, target_type, target_id, before JSONB, after JSONB, created_at)` — journal en ajout seul (comptes, appartenances, permissions, soumissions, sources, pages, formulaires, restaurations, consultations de notes — liste complète dans [04](conception/04-administration.md#journal-des-modifications))
+Le schéma complet (colonnes, clés, index, contraintes, ordre des migrations) est dans [14 — Modèle de données](conception/14-modele-donnees.md). Résumé par domaine :
+
+| Domaine | Tables | Partie |
+|---|---|---|
+| Comptes et sessions | `users`, `sessions`, `login_attempts` | [02](conception/02-comptes-authentification.md) |
+| Groupes et droits | `groups`, `user_groups`, `group_permissions` (cible : page **ou** espace de discussion) | [03](conception/03-droits-groupes.md) |
+| Instance | `settings` (ligne unique : page d'arrivée, thème par défaut, rétention), `themes`, `media`, `backups` | [04](conception/04-administration.md), [06](conception/06-page-builder.md), [11](conception/11-transverse.md) |
+| Pages | `pages` (brouillon et version publiée en JSON), `layout_parts` (header, footer) | [06](conception/06-page-builder.md) |
+| Discussions | `discussion_spaces`, `topics`, `topic_messages`, `chats`, `chat_messages`, `message_revisions`, `attachments` | [07](conception/07-discussions.md) |
+| Sources | `sources`, `staging_cells` (uploads seulement), `cell_references`, `onedrive_credentials`, `reimport_previews` | [08](conception/08-sources-donnees.md) |
+| Formulaires | `forms`, `form_versions`, `submissions` | [09](conception/09-formulaires-soumissions.md) |
+| Modèles | `templates` | [10](conception/10-modeles-duplication.md) |
+| Profil | `user_notes` | [05](conception/05-profil-utilisateur.md) |
+| Journal | `audit_log` (ajout seul, garanti par un trigger) | [04](conception/04-administration.md) |
+
+Conventions : UUID v7, `timestamptz`, suppression douce (`deleted_at`) avec unicités partielles, verrouillage optimiste (`version`), schéma **Prisma** complété en SQL pour les contraintes `CHECK`, les index partiels et le trigger.
 
 Le calcul des droits effectifs (fonction de résolution unique) est décrit dans [03 — Calcul des droits effectifs](conception/03-droits-groupes.md#calcul-des-droits-effectifs).
 
-Soft-delete (`deleted_at`) sur pages, formulaires, sujets, messages, messages de chat, groupes, utilisateurs, notes — voir [11 — Suppression de contenu](conception/11-transverse.md#suppression-de-contenu).
+Soft-delete (`deleted_at`) sur pages, formulaires, espaces, sujets, messages (sujets et chat), chats, groupes, utilisateurs, notes, médias, sources — voir [11 — Suppression de contenu](conception/11-transverse.md#suppression-de-contenu).
 
 ## 4. Moteur Excel/Sheets (`ExcelSyncModule`)
 

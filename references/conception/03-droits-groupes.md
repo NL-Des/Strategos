@@ -44,8 +44,7 @@ Depuis l'espace d'administration :
 ## Points techniques
 - **GroupsModule** : groupes, appartenance user↔groupe, calcul des permissions effectives (union des groupes) et endpoints de lecture des droits pour l'admin (par utilisateur, par groupe, par ressource, matrice globale).
 - **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route, vérifie les droits par ressource (page, espace de discussion). Jamais de vérification uniquement côté frontend.
-- `group_permissions.resource_id` est **obligatoire** (non nullable).
-- `group_permissions(group_id, resource_type[page|discussion_space], resource_id, can_read, can_create_topic, can_post)` — pas de droit d'écriture. Pour `resource_type = page`, seul `can_read` peut être vrai. Cette contrainte est vérifiée par la validation du DTO et par une contrainte `CHECK` en base.
+- Table `group_permissions` ([14](14-modele-donnees.md#group_permissions)) : cible **obligatoire**, soit une page (`page_id`), soit un espace (`space_id`) ; droits `can_read`, `can_create_topic`, `can_post` ; pas de droit d'écriture. Pour `resource_type = page`, seul `can_read` peut être vrai. Cette contrainte est vérifiée par la validation du DTO et par une contrainte `CHECK` en base.
 - Les modifications (message, sujet) sont contrôlées par propriété (`author_id` = utilisateur de la session) ou par le rôle admin, jamais par `PermissionsGuard`.
 - Les modules non autorisés sont filtrés **côté backend** au moment d'assembler la page : leur config n'est jamais envoyée au frontend.
 

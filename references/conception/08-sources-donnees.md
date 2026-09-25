@@ -38,12 +38,12 @@ Strategos lit des valeurs et en écrit, mais **n'exécute aucune formule**.
 
 ## Points techniques
 Moteur Excel/Sheets (**ExcelSyncModule**) :
-- Chaque source reçoit un `source_id` stable, indépendant de tout chemin de fichier ; `excel_sources.type[upload|gsheet|onedrive]`.
-- À l'import/sync, les cellules contenant une formule de liaison externe sont détectées et résolues en référence `(source_id, sheet_ref, cell_or_range)`, stockée dans `cell_references` — jamais par chemin.
+- Chaque source reçoit un `source_id` stable, indépendant de tout chemin de fichier ; `sources.type[upload|gsheet|onedrive]` ([14](14-modele-donnees.md#7-sources-de-données)).
+- À l'import/sync, les cellules contenant une formule de liaison externe sont détectées et résolues en référence (source, feuille, plage), stockée dans `cell_references` — jamais par chemin.
 - À la lecture d'une page, le backend **suit** ces références via la table pour lire les valeurs, sans reparser ni calculer les formules.
 - **Cache mémoire** (30-60s) pour les sources connectées, invalidé par `source_id`, en particulier après chaque écriture. Il n'y a aucune copie en base pour ces sources.
-- **Staging en base** (`excel_staging_cells`), réservé aux Excel uploadés. Il conserve la valeur, la formule et un drapeau `needs_recalc`. Après une écriture, `needs_recalc` est posé sur les cellules dont la formule référence, directement ou transitivement, la cellule écrite, y compris via `cell_references`.
-- Réimport : `excel_sources.last_downloaded_at`. Les validations postérieures sont retrouvées dans `submissions` ; l'option « réappliquer » les réécrit dans l'ordre de validation.
+- **Staging en base** (`staging_cells`, lignes et colonnes stockées en entiers), réservé aux Excel uploadés. Il conserve la valeur, la formule et un drapeau `needs_recalc`. Après une écriture, `needs_recalc` est posé sur les cellules dont la formule référence, directement ou transitivement, la cellule écrite, y compris via `cell_references`.
+- Réimport : `sources.last_downloaded_at`, et `reimport_previews` pour l'aperçu en deux temps. Les validations postérieures sont retrouvées dans `submissions` ; l'option « réappliquer » les réécrit dans l'ordre de validation.
 - À la validation d'une soumission, le backend écrit la valeur brute sur la cellule cible (API Sheets, API Graph ou réécriture de la copie Excel), sans se préoccuper des formules amont — cohérent avec l'écrasement de formule spécifié dans [Formulaires et soumissions](09-formulaires-soumissions.md).
 - OneDrive : enregistrement d'une application Azure (identifiants fournis au déploiement) ; le refresh token de l'admin est stocké **chiffré** en base, rafraîchi automatiquement, et son expiration est signalée dans l'espace admin.
 - La clé du compte de service Google est fournie au déploiement sous forme de fichier secret monté dans le conteneur backend.
