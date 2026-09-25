@@ -10,6 +10,7 @@ Les choix et règles qui s'appliquent à toutes les parties : stack technique, n
   - Modules Nest isolés par domaine (auth, groupes/permissions, pages, sujets/messages, excel-sync).
   - Guards Nest pour appliquer les permissions de groupe sur chaque route/action.
   - class-validator pour valider les configs de modules de page et les formulaires Excel dynamiques.
+  - WebSockets (passerelle NestJS) pour le chat temps réel, authentifiés par la session.
 - **Frontend** : React + TypeScript, rendu de pages piloté par une config JSON (liste ordonnée de blocs typés), **responsive** (mobile et tablette pris en charge, pas seulement desktop).
 - **BDD** : PostgreSQL, données sauvegardées dans un volume Docker local.
 - **Déploiement** : Docker Compose (une image front, une image back, une image BDD), lancement en une seule commande.

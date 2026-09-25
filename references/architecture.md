@@ -20,16 +20,17 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 
 ## 1. Vue d'ensemble
 
-Trois conteneurs Docker Compose. Le backend est le seul point de contact avec les fichiers Excel et l'API Google Sheets — le frontend ne parle qu'au backend.
+Trois conteneurs Docker Compose. Le backend est le seul point de contact avec les sources de données (Excel uploadés, Google Sheets, OneDrive/SharePoint) — le frontend ne parle qu'au backend, en REST et en WebSocket pour le chat.
 
 ```mermaid
 flowchart LR
     U[Utilisateur / Admin] -->|HTTPS| FE[frontend<br/>React + TS]
     FE -->|REST + cookie session| BE[backend<br/>NestJS]
+    FE <-->|WebSocket chat| BE
     BE --> DB[(PostgreSQL<br/>volume db_data)]
-    BE --> FS[[Volume uploads<br/>images, Excel]]
-    BE -->|OAuth admin| GS[(Google Sheets API)]
-    BE -->|lecture/écriture fichier| XL[(Fichiers Excel)]
+    BE --> FS[[Volume uploads<br/>images, Excel uploadés]]
+    BE -->|compte de service| GS[(Google Sheets API)]
+    BE -->|Microsoft Graph| OD[(OneDrive / SharePoint)]
 ```
 
 ## 2. Découpage en modules NestJS
@@ -43,7 +44,7 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **AuditModule** : journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, ExcelSyncModule et TemplatesModule — voir [04](conception/04-administration.md).
 - **ProfileModule** : page administrative du profil et notes personnelles — voir [05](conception/05-profil-utilisateur.md).
 - **PagesModule** : CRUD des pages, config JSON des zones/blocs, soft-delete — voir [06](conception/06-page-builder.md).
-- **TopicsModule** : sujets et messages, pièces jointes images — voir [07](conception/07-discussions.md).
+- **TopicsModule** : sujets et messages, pièces jointes images, modération, et passerelle WebSocket du chat — voir [07](conception/07-discussions.md).
 - **ExcelSyncModule** : cœur technique de la synchronisation Excel/Sheets — voir [08](conception/08-sources-donnees.md) et [09](conception/09-formulaires-soumissions.md).
 - **TemplatesModule** : bibliothèque de modèles et instanciation — voir [10](conception/10-modeles-duplication.md).
 - **FilesModule** : upload, stockage sur le volume Docker, métadonnées en base — voir [11](conception/11-transverse.md).
@@ -51,14 +52,15 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 ## 3. Modèle de données (entités clés)
 
 - `users(id, username, password_hash, must_change_credentials, disabled_at, deleted_at)`, `groups(id, name, description, deleted_at)`, `user_groups` — `must_change_credentials` force le changement d'identifiants ([02](conception/02-comptes-authentification.md#compte-administrateur))
-- `group_permissions(group_id, resource_type, resource_id, can_read, can_write, can_create)` — `resource_id` obligatoire (pas de permission « sur tout ») ; contraintes par type de ressource : page = `can_read` seul, message = `can_read` + `can_create` ([03](conception/03-droits-groupes.md#points-techniques))
+- `group_permissions(group_id, resource_type, resource_id, can_read, can_create)` — pas de droit d'écriture ; `resource_id` obligatoire (pas de permission « sur tout ») ; page = `can_read` seul ([03](conception/03-droits-groupes.md#points-techniques))
 - `settings(landing_page_id, …)` — réglages globaux de l'instance, dont la page d'arrivée unique ([03](conception/03-droits-groupes.md#visibilité-et-page-darrivée))
 - `themes(id, name, config JSONB, is_default)` — thèmes nommés ([06](conception/06-page-builder.md#options-de-personnalisation-des-zones))
 - `pages(id, name, theme_id?, zones_config JSONB, deleted_at)` — la config JSON est la liste ordonnée de blocs typés par zone (Header/Main/Sidebar/Footer) ; les blocs tableau et catalogue portent `range_mode[fixed|extensible]` ; `theme_id` vide = thème par défaut
-- `topics(id, ...)`, `messages(id, topic_id, author_id, ...)`
-- `message_revisions(message_id, content, edited_at, action[edit|delete])` — archive des modifications et suppressions par l'auteur ([07](conception/07-discussions.md#points-techniques))
-- `excel_sources(id, type[excel|gsheet], connection_info, last_synced_at)`
-- `excel_staging_cells(source_id, sheet_ref, cell_ref, value, formula?)` — staging des données importées/lues, jamais reparsées à chaque affichage
+- `topics(id, author_id, closed_at, pinned_at, ...)`, `messages(id, topic_id, author_id, hidden_at, ...)`
+- `chat_messages(id, page_block_id, author_id, content, created_at, hidden_at, deleted_at)` — historique du chat conservé
+- `message_revisions(message_id, message_kind[topic|chat], content, edited_at, action[edit|delete|hide])` — archive des modifications, suppressions et masquages ([07](conception/07-discussions.md#points-techniques))
+- `excel_sources(id, type[upload|gsheet|onedrive], connection_info, last_synced_at, last_downloaded_at)` — `last_downloaded_at` sert à l'avertissement de réimport des uploads
+- `excel_staging_cells(source_id, sheet_ref, cell_ref, value, formula?, needs_recalc)` — staging des **Excel uploadés uniquement**, jamais reparsés à chaque affichage ; les sources connectées passent par un cache mémoire ([08](conception/08-sources-donnees.md#points-techniques))
 - `cell_references(source_id, sheet_ref, cell_or_range, referenced_source_id, referenced_ref)` — résolution des liaisons inter-fichiers ([08](conception/08-sources-donnees.md))
 - `forms(id, page_block_id, fields JSONB, mode[modification|ajout])`
 - `form_add_config(form_id, source_id, sheet_ref, start_row, max_new_rows)` — portée définie par l'admin pour un formulaire en mode `ajout` (n'existe que pour ce mode)
@@ -108,7 +110,7 @@ sequenceDiagram
 
 ## 7. Déploiement
 
-Un seul `docker-compose.yml` : services `frontend`, `backend`, `db`, volumes nommés `db_data` et `uploads`. Variables d'environnement pour les credentials OAuth Google Sheets de l'administrateur unique. Une seule commande (`docker compose up`) pour tout lancer.
+Un seul `docker-compose.yml` : services `frontend`, `backend`, `db`, volumes nommés `db_data` et `uploads`. La clé du compte de service Google est montée comme fichier secret dans le conteneur backend ; les identifiants Microsoft Graph passent par des variables d'environnement (mode d'accès encore ouvert, voir [08](conception/08-sources-donnees.md#questions-ouvertes)). Une seule commande (`docker compose up`) pour tout lancer.
 
 ## 8. Sécurité transverse
 

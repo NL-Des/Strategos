@@ -7,16 +7,19 @@ Le modèle d'autorisation de Strategos : des groupes porteurs de permissions, de
 
 ### Modèle par groupes
 - L'administrateur crée des **groupes**.
-- Chaque groupe reçoit des droits sur des ressources : sujets, messages, pages. Les droits accordables dépendent de la ressource :
+- Chaque groupe reçoit des droits sur des ressources : sujets, messages, pages. Il n'existe que deux droits, **lecture** et **création**, et ceux qui sont accordables dépendent de la ressource :
 
-  | Ressource | Lecture | Écriture | Création |
-  |---|---|---|---|
-  | Page | ✔ | — (admin seul) | — (admin seul) |
-  | Sujet | ✔ | ✔ | ✔ |
-  | Message | ✔ | — | ✔ (poster) |
+  | Ressource | Lecture | Création |
+  |---|---|---|
+  | Page | ✔ | — (admin seul) |
+  | Sujet | ✔ | ✔ (ouvrir un sujet) |
+  | Message | ✔ | ✔ (poster) |
 
+  - **Pas de droit d'écriture** : modifier un contenu ne dépend jamais d'un groupe, mais de la **propriété** (l'auteur) ou du **rôle administrateur**.
   - **Pages** : les pages restent entièrement construites et modifiées par l'administrateur via le page builder, jamais par les utilisateurs. Donner un droit d'écriture aux utilisateurs sera réévalué après les premiers tests.
-  - **Messages** : l'auteur d'un message peut toujours **modifier ou supprimer ses propres messages**, sans droit particulier. Il ne peut agir sur les messages des autres en aucun cas. Chaque version précédente et chaque suppression sont archivées en base (voir [Discussions](07-discussions.md#sujets-de-discussion-et-messages)).
+  - **Sujets** : l'auteur du sujet ou l'admin peut le renommer et le clore ; seul l'admin peut l'épingler (voir [Discussions](07-discussions.md#sujets-de-discussion-et-messages)).
+  - **Messages** : l'auteur d'un message peut toujours **modifier ou supprimer ses propres messages**, sans droit particulier. Il ne peut agir sur les messages des autres en aucun cas. Chaque version précédente et chaque suppression sont archivées en base. Seul l'admin peut masquer le message d'un autre (modération, voir [Discussions](07-discussions.md#modération)).
+  - **Chat** : ce n'est pas une ressource du modèle ; il est accessible à quiconque peut lire la page qui le contient (voir [Discussions](07-discussions.md#chat)).
 - Un utilisateur peut appartenir à plusieurs groupes ; ses droits effectifs sont l'union des permissions de ses groupes.
 - Ce modèle permet à la fois des **espaces communs** (groupe partagé par plusieurs utilisateurs) et des **espaces privés** (groupe restreint à un seul utilisateur, ou groupe personnel). En v1, un espace privé reste une page dupliquée et paramétrée manuellement par l'administrateur (plage de cellules fixée à la main pour chaque utilisateur) — pas de mécanisme de page modèle générant automatiquement une plage par utilisateur.
 - L'administrateur crée les profils utilisateurs et les assigne aux groupes (voir [Administration](04-administration.md)).
@@ -27,7 +30,7 @@ Le modèle d'autorisation de Strategos : des groupes porteurs de permissions, de
 Depuis l'espace d'administration :
 - Création, renommage, description, suppression (soft-delete).
 - Ajout / retrait de membres, aussi bien depuis la fiche du groupe que depuis la fiche d'un utilisateur.
-- Définition des permissions lecture / écriture / création par ressource (voir [Modèle par groupes](#modèle-par-groupes)).
+- Définition des permissions lecture / création par ressource (voir [Modèle par groupes](#modèle-par-groupes)).
 
 ### Visibilité et page d'arrivée
 - **Permissions toujours ciblées** : chaque permission porte sur une ressource précise ; aucune permission ne vaut pour « toutes les pages » ou « tous les sujets ». Pour que tout le monde voie les parties communes, l'admin attribue aux utilisateurs un groupe ordinaire (par convention « Partie commune ») qui a les droits sur ces pages.
@@ -38,14 +41,14 @@ Depuis l'espace d'administration :
 
 ## Points techniques
 - **GroupsModule** : groupes, appartenance user↔groupe, calcul des permissions effectives (union des groupes) et endpoints de lecture des droits pour l'admin (par utilisateur, par groupe, par ressource, matrice globale).
-- **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route, vérifie lecture/écriture/création par ressource (page, sujet, message). Jamais de vérification uniquement côté frontend.
+- **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route, vérifie lecture/création par ressource (page, sujet, message). Jamais de vérification uniquement côté frontend.
 - `group_permissions.resource_id` est **obligatoire** (non nullable).
-- Contraintes sur `group_permissions` : pour `resource_type = page`, seul `can_read` peut être vrai ; pour `resource_type = message`, seuls `can_read` et `can_create` peuvent l'être. Ces contraintes sont vérifiées par la validation du DTO et par une contrainte `CHECK` en base.
-- La modification ou suppression d'un message est contrôlée par propriété (`author_id` = utilisateur de la session), pas par `PermissionsGuard`.
+- `group_permissions` ne porte que `can_read` et `can_create` (pas de `can_write`). Pour `resource_type = page`, seul `can_read` peut être vrai. Cette contrainte est vérifiée par la validation du DTO et par une contrainte `CHECK` en base.
+- Les modifications (message, sujet) sont contrôlées par propriété (`author_id` = utilisateur de la session) ou par le rôle admin, jamais par `PermissionsGuard`.
 - Les modules non autorisés sont filtrés **côté backend** au moment d'assembler la page : leur config n'est jamais envoyée au frontend.
 
 ### Calcul des droits effectifs
-Une **seule fonction de résolution** dans GroupsModule calcule les droits effectifs d'un utilisateur sur une ressource, en retournant pour chaque droit (lecture/écriture/création) la liste des groupes qui l'accordent. Elle est utilisée **à la fois** par `PermissionsGuard` et par les vues d'administration : ce que l'admin voit est exactement ce qui est appliqué. La matrice globale est calculée côté backend, avec pagination et filtres (échelle : quelques centaines d'utilisateurs).
+Une **seule fonction de résolution** dans GroupsModule calcule les droits effectifs d'un utilisateur sur une ressource, en retournant pour chaque droit (lecture/création) la liste des groupes qui l'accordent. Elle est utilisée **à la fois** par `PermissionsGuard` et par les vues d'administration : ce que l'admin voit est exactement ce qui est appliqué. La matrice globale est calculée côté backend, avec pagination et filtres (échelle : quelques centaines d'utilisateurs).
 
 ## Dépendances
 - [04 — Administration](04-administration.md) : visualisation des droits, journal.
@@ -54,7 +57,7 @@ Une **seule fonction de résolution** dans GroupsModule calcule les droits effec
 - [10 — Modèles et duplication](10-modeles-duplication.md) : duplication de pages pour les espaces privés.
 
 ## Questions ouvertes
-- Sens du droit d'écriture sur un **sujet** (renommer ? clore ? modérer ?) : à préciser avec [Discussions](07-discussions.md).
+_Aucune pour l'instant._
 
 **Décisions (2026-09-25)**
 - Pages : lecture seule pour les groupes ; écriture réservée à l'admin en v1.
@@ -62,3 +65,5 @@ Une **seule fonction de résolution** dans GroupsModule calcule les droits effec
 - Module non autorisé : invisible.
 - Page sans permission : visible par l'admin seul. Une page d'arrivée globale unique.
 - Pas de permission « sur tout » : les parties communes passent par un groupe ordinaire. Un utilisateur sans groupe n'a accès à rien.
+- Le droit d'écriture est supprimé du modèle : il ne reste que la lecture et la création. Toute modification relève de l'auteur ou de l'admin.
+- Chat : hors modèle de groupes, accessible via le droit de lecture sur la page.

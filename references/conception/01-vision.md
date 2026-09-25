@@ -25,7 +25,7 @@ Strategos fait toujours écran entre l'utilisateur et les fichiers Excel/Sheet :
 Cet encadrement systématique des interactions a deux objectifs : **fluidifier le trafic** (pas d'accès concurrent non maîtrisé sur le fichier source, un seul point de passage pour l'écriture) et **limiter les erreurs** (l'utilisateur ne peut jamais casser une structure ou une formule du document, puisqu'il n'interagit qu'avec des champs et des affichages que l'admin a explicitement définis).
 
 ### Profils
-- **Administrateur** : construit les pages, gère les groupes et les droits, valide les modifications des utilisateurs sur les excels et google sheet. **Un seul compte administrateur par instance** (pas de multi-admin en v1) — simplifie l'OAuth Google Sheets (une seule connexion par instance) et évite les conflits de validation concurrente. Le fait qu'un seul administrateur valide toutes les soumissions est un **choix assumé de simplicité pour la v1**, à réévaluer après les premiers tests.
+- **Administrateur** : construit les pages, gère les groupes et les droits, valide les modifications des utilisateurs sur les excels et google sheet. **Un seul compte administrateur par instance** (pas de multi-admin en v1) — une seule personne administre les connexions aux sources de données et évite les conflits de validation concurrente. Le fait qu'un seul administrateur valide toutes les soumissions est un **choix assumé de simplicité pour la v1**, à réévaluer après les premiers tests.
 - **Utilisateur** : consulte et interagit avec les pages selon les droits de ses groupes. Dispose d'un profil privé (voir [Profil utilisateur](05-profil-utilisateur.md)).
 
 ### Environnement construit par l'administrateur

@@ -14,8 +14,8 @@ L'administrateur dispose d'un **espace d'administration dédié** pour gérer le
 Lecture seule, calculée selon la règle d'union des groupes :
 - **Par utilisateur** : ses groupes et ses droits effectifs sur chaque page, sujet et messages, avec pour chaque droit **le ou les groupes qui l'accordent** — permet de comprendre d'où vient un accès.
 - **Par groupe** : ses membres et les permissions qu'il déclare, ressource par ressource.
-- **Par ressource** (page, sujet) : qui peut lire, écrire ou créer, et via quel groupe. Accessible aussi depuis le page builder.
-- **Matrice globale** : tableau utilisateurs × ressources (cellules L / É / C), filtrable par groupe, type de ressource ou utilisateur, pour une vue d'ensemble.
+- **Par ressource** (page, sujet) : qui peut lire ou créer, et via quel groupe. Accessible aussi depuis le page builder.
+- **Matrice globale** : tableau utilisateurs × ressources (cellules L / C), filtrable par groupe, type de ressource ou utilisateur, pour une vue d'ensemble.
 
 ### Tableau de bord des soumissions
 Sans notifications (voir [Transverse](11-transverse.md#notifications)), l'espace admin rend les soumissions en attente impossibles à manquer :
@@ -30,7 +30,8 @@ Les éléments supprimés en douceur (pages, formulaires, sujets, messages, grou
 Sont tracées (action, cible, état avant/après, date) :
 - les actions sur les comptes, les appartenances aux groupes et les permissions ;
 - la **validation, le refus et la modification des soumissions**, avec la valeur réellement écrite, la cellule et la source ;
-- le réimport ou la resynchronisation d'une source ;
+- le téléchargement d'un Excel uploadé, et son réimport avec le choix fait (annuler, écraser, réappliquer) ;
+- le masquage d'un message par l'admin (modération) ;
 - les modifications de pages et de formulaires ;
 - la réinitialisation du compte admin par commande serveur ;
 - les restaurations depuis la corbeille ;
