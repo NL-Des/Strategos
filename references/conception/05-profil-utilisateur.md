@@ -29,7 +29,7 @@ Chaque utilisateur dispose d'un **profil privé**, accessible par lui seul et pa
 - [09 — Formulaires et soumissions](09-formulaires-soumissions.md) : page "mes soumissions".
 
 ## Questions ouvertes
-_À compléter lors de la revue de cohérence._
+_Aucune pour l'instant._
 
 **Décisions (2026-09-25)**
 - Le mot de passe est modifiable depuis la page administrative du profil.

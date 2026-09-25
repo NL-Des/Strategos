@@ -20,11 +20,12 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 
 ## 1. Vue d'ensemble
 
-Trois conteneurs Docker Compose. Le backend est le seul point de contact avec les sources de données (Excel uploadés, Google Sheets, OneDrive/SharePoint) — le frontend ne parle qu'au backend, en REST et en WebSocket pour le chat.
+Quatre conteneurs Docker Compose (proxy Caddy, frontend, backend, base de données). Le backend est le seul point de contact avec les sources de données (Excel uploadés, Google Sheets, OneDrive/SharePoint) — le frontend ne parle qu'au backend, en REST et en WebSocket pour le chat.
 
 ```mermaid
 flowchart LR
-    U[Utilisateur / Admin] -->|HTTPS| FE[frontend<br/>React + TS]
+    U[Utilisateur / Admin] -->|HTTPS| PX[proxy<br/>Caddy]
+    PX --> FE[frontend<br/>React + TS]
     FE -->|REST + cookie session| BE[backend<br/>NestJS]
     FE <-->|WebSocket chat| BE
     BE --> DB[(PostgreSQL<br/>volume db_data)]
@@ -48,6 +49,7 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **ExcelSyncModule** : cœur technique de la synchronisation Excel/Sheets — voir [08](conception/08-sources-donnees.md) et [09](conception/09-formulaires-soumissions.md).
 - **TemplatesModule** : bibliothèque de modèles et instanciation — voir [10](conception/10-modeles-duplication.md).
 - **FilesModule** : upload, stockage sur le volume Docker, métadonnées en base — voir [11](conception/11-transverse.md).
+- **BackupModule** : sauvegarde quotidienne et téléchargement admin — voir [11](conception/11-transverse.md#sauvegardes).
 
 ## 3. Modèle de données (entités clés)
 
@@ -63,7 +65,7 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - `excel_staging_cells(source_id, sheet_ref, cell_ref, value, formula?, needs_recalc)` — staging des **Excel uploadés uniquement**, jamais reparsés à chaque affichage ; les sources connectées passent par un cache mémoire ([08](conception/08-sources-donnees.md#points-techniques))
 - `cell_references(source_id, sheet_ref, cell_or_range, referenced_source_id, referenced_ref)` — résolution des liaisons inter-fichiers ([08](conception/08-sources-donnees.md))
 - `forms(id, page_block_id, fields JSONB, mode[modification|ajout])`
-- `form_add_config(form_id, source_id, sheet_ref, start_row, max_new_rows)` — portée définie par l'admin pour un formulaire en mode `ajout` (n'existe que pour ce mode)
+- `form_add_config(form_id, source_id, sheet_ref, start_row, max_new_rows)` — zone d'ajout `[start_row, start_row + max_new_rows - 1]` d'un formulaire en mode `ajout` (n'existe que pour ce mode) ; les colonnes autorisées sont celles de `form_field_mappings` ; la ligne attribuée est la première ligne vide de la zone ([09](conception/09-formulaires-soumissions.md#validation-dune-soumission-ajout))
 - `form_field_mappings(form_id, field_key, source_id, cell_ref)` — pour un formulaire `ajout`, `cell_ref` contient une référence de colonne (ex. `"C"`) plutôt qu'une cellule complète : la ligne est résolue dynamiquement à la validation
 - `submissions(id, form_id, user_id, values JSONB, status[pending|validated|rejected|modified], assigned_row?)` — `assigned_row` n'est rempli qu'à la validation d'une soumission de type `ajout`
 - `templates(id, type[form|page|topic], payload JSONB)`
@@ -110,7 +112,7 @@ sequenceDiagram
 
 ## 7. Déploiement
 
-Un seul `docker-compose.yml` : services `frontend`, `backend`, `db`, volumes nommés `db_data` et `uploads`. La clé du compte de service Google est montée comme fichier secret dans le conteneur backend ; les identifiants Microsoft Graph passent par des variables d'environnement (mode d'accès encore ouvert, voir [08](conception/08-sources-donnees.md#questions-ouvertes)). Une seule commande (`docker compose up`) pour tout lancer.
+Un seul `docker-compose.yml` : services `proxy` (Caddy, HTTPS automatique), `frontend`, `backend`, `db`, volumes nommés `db_data`, `uploads` et `backups`. Sauvegarde quotidienne et téléchargement depuis l'espace admin ([11](conception/11-transverse.md#sauvegardes)). La clé du compte de service Google est montée comme fichier secret dans le conteneur backend ; les identifiants de l'application Azure passent par des variables d'environnement, et le jeton délégué de l'admin est stocké chiffré en base ([08](conception/08-sources-donnees.md#points-techniques)). Une seule commande (`docker compose up`) pour tout lancer.
 
 ## 8. Sécurité transverse
 
