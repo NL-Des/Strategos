@@ -25,7 +25,7 @@ Authentification par **session**, mots de passe **hachés** (bcrypt ou argon2 �
 
 ### Cycle de vie des comptes
 Géré depuis l'espace d'administration (voir [Administration](04-administration.md)) :
-- Création (pseudo + mot de passe saisis par l'admin, voir [Authentification](#authentification)).
+- Création (pseudo + mot de passe **temporaire** saisis par l'admin, voir [Authentification](#authentification)) : l'utilisateur doit le changer à sa première connexion, de sorte que l'admin ne connaît jamais durablement le mot de passe de personne.
 - Modification du pseudo, **réinitialisation du mot de passe** par l'admin (nouveau mot de passe temporaire saisi par lui — pas d'envoi d'email, voir [Notifications](11-transverse.md#notifications) et [Mot de passe utilisateur](#mot-de-passe-utilisateur)).
 - **Désactivation / réactivation** : un compte désactivé ne peut plus se connecter et ses sessions en cours sont immédiatement fermées ; ses groupes et son historique sont conservés.
 - Suppression en soft-delete (voir [Suppression de contenu](11-transverse.md#suppression-de-contenu)).
@@ -36,7 +36,7 @@ Géré depuis l'espace d'administration (voir [Administration](04-administration
 - **UsersModule** : CRUD des comptes, réinitialisation du mot de passe par l'admin, désactivation/réactivation (révocation des sessions via la table `sessions` d'AuthModule).
 - Sessions : cookie `httpOnly`, `secure` en production, rotation à la connexion.
 - Désactivation ou suppression d'un compte → révocation immédiate de toutes ses sessions.
-- Réinitialisation par l'admin → `must_change_credentials = true` sur le compte, et révocation de ses sessions.
+- Création d'un compte et réinitialisation par l'admin → `must_change_credentials = true` sur le compte, et révocation de ses sessions.
 - Limitation des tentatives : compteur d'échecs par compte et par IP, avec blocage temporaire (throttler NestJS ou équivalent).
 - CSRF : cookie `SameSite=Strict`, vérification de l'en-tête `Origin` et jeton CSRF sur les requêtes qui modifient des données.
 - Compte admin initial créé par une migration ou un seed au premier démarrage, avec le drapeau `users.must_change_credentials = true`. Tant que ce drapeau est actif, un guard global ne laisse passer que la route de changement d'identifiants et la déconnexion.
@@ -51,7 +51,7 @@ Géré depuis l'espace d'administration (voir [Administration](04-administration
 _Aucune pour l'instant._
 
 **Décisions (2026-09-25)**
-- L'utilisateur change son mot de passe lui-même ; la réinitialisation par l'admin produit un mot de passe temporaire.
+- L'utilisateur change son mot de passe lui-même ; la création du compte et la réinitialisation par l'admin produisent un mot de passe temporaire.
 - Limitation des tentatives de connexion et protection CSRF.
 - Compte `admin` / `admin` au déploiement, avec changement forcé à la première connexion.
 - Récupération par commande serveur uniquement : pas de question secrète.

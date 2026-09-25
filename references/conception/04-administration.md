@@ -9,6 +9,17 @@ L'espace réservé à l'administrateur pour gérer les comptes, les groupes, com
 L'administrateur dispose d'un **espace d'administration dédié** pour gérer les comptes, les groupes et contrôler qui a accès à quoi.
 - Comptes : voir [Comptes et authentification](02-comptes-authentification.md#cycle-de-vie-des-comptes).
 - Groupes et permissions : voir [Droits et groupes](03-droits-groupes.md#gestion-des-groupes).
+- La fiche d'un utilisateur permet aussi de désigner sa **page personnelle** (voir [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)).
+
+### Sources
+Un écran liste les sources de données et permet de les gérer (voir [Sources de données](08-sources-donnees.md)) :
+- **ajouter** un Google Sheet par son lien : l'écran affiche l'**adresse du compte de service** avec laquelle partager le Sheet, puis teste l'accès ;
+- **connecter ou reconnecter** le compte OneDrive, puis ajouter un fichier ;
+- **uploader** un Excel, le **télécharger** et le **réimporter** (avec l'avertissement prévu) ;
+- pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages ou formulaires qui l'utilisent. Retirer une source encore utilisée déclenche un avertissement.
+
+### Réglages de l'instance
+Un écran regroupe les réglages globaux : **page d'arrivée**, **thème par défaut**, **durée de conservation des sauvegardes**, et téléchargement d'une sauvegarde.
 
 ### Visualisation des droits
 Lecture seule, calculée selon la règle d'union des groupes :
@@ -31,7 +42,7 @@ Les éléments supprimés en douceur (pages, formulaires, sujets, messages des s
 ### Journal des modifications
 Sont tracées (action, cible, état avant/après, date) :
 - les actions sur les comptes, les appartenances aux groupes et les permissions ;
-- la **validation, le refus et la modification des soumissions**, avec la valeur réellement écrite, la cellule et la source ;
+- la **validation, le refus et la modification des soumissions**, y compris les validations automatiques, avec la valeur réellement écrite (avant/après pour un mouvement), la cellule et la source ;
 - le téléchargement d'un Excel uploadé, et son réimport avec le choix fait (annuler, écraser, réappliquer) ;
 - le masquage d'un message par l'admin (modération) ;
 - les modifications et **publications** de pages, du header et du footer partagés, et les modifications de formulaires ;
@@ -59,3 +70,4 @@ _Aucune pour l'instant._
 - Journal étendu aux soumissions, aux sources, aux pages, aux formulaires et aux restaurations.
 - Corbeille avec restauration.
 - Tableau de bord des soumissions en attente, avec mise en évidence des conflits.
+- Écrans « Sources » et « Réglages de l'instance » ; page personnelle sur la fiche utilisateur.

@@ -33,6 +33,15 @@ La mise en forme des fichiers sources (gras, couleurs de cellules…) **n'est pa
 ### Médiathèque
 L'admin dispose d'une **médiathèque** où il uploade ses images. Elle alimente les modules Image, Catalogue, Contenu libre et Carte cliquable. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages concernées.
 
+### Menu de compte
+Seul élément qui n'est pas construit par l'admin : une **icône de compte**, fixe dans un coin de l'écran sur toutes les pages. Elle ouvre **Profil**, **Notes**, **Mes soumissions** et **Déconnexion** (voir [Profil utilisateur](05-profil-utilisateur.md)). Son style suit le thème de la page.
+
+### Destinations des liens
+Un bouton, une image ou une zone de carte peut viser :
+- une **page interne** ;
+- une **URL externe** ;
+- « **Ma page personnelle** » : chaque utilisateur est mené à la page personnelle que l'admin lui a désignée (voir [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)). Cela permet un bouton « Mon espace » unique dans le header partagé. Le lien est masqué pour un utilisateur qui n'a pas de page personnelle.
+
 ### Liens vers des pages non autorisées
 Un lien (bouton, image-lien, zone de carte) vers une page que l'utilisateur ne peut pas lire est **masqué** :
 - un bouton disparaît ;
@@ -83,6 +92,7 @@ Image sur laquelle l'administrateur dessine des zones ; un clic sur une zone mè
   - pour chaque **colonne** : visible ou masquée, libellé affiché, **format** (texte, nombre, date, monnaie, image, lien) ;
   - le nombre de lignes par page ;
   - le tri et la recherche, activables ou non.
+- **Formulaire de ligne** (facultatif) : l'admin peut relier le tableau à un formulaire de ligne de la même source ; chaque ligne affiche alors un bouton « Proposer une modification » (voir [Formulaires et soumissions](09-formulaires-soumissions.md#formulaires)).
 - **Rendu** : un tableau paginé, **triable** par colonne et **filtrable** par une recherche. Une valeur marquée « à recalculer » (Excel uploadé, voir [Sources de données](08-sources-donnees.md#formules--strategos-ne-calcule-jamais)) porte un indicateur. Sur mobile, le tableau défile horizontalement.
 - **Accès** : tous les lecteurs de la page voient la même donnée (pas de filtrage par groupe ou par utilisateur à ce stade).
 
@@ -92,7 +102,8 @@ Image sur laquelle l'administrateur dessine des zones ; un clic sur une zone mè
   - une **mise en page de carte** prédéfinie : image en haut, à gauche, à droite, ou en fond ;
   - la correspondance entre les emplacements et les colonnes : **image**, **titre**, **sous-titre**, **détails** (une ou plusieurs colonnes, avec leur libellé et leur format) ;
   - le nombre de cartes par rangée (1 à 4) ;
-  - la pagination et la recherche.
+  - la pagination et la recherche ;
+  - un formulaire de ligne relié, facultatif (bouton « Proposer une modification » sur chaque carte).
 - **Images** : la colonne image contient soit le **nom d'un fichier de la médiathèque** (« epee.png »), soit un **lien web** (https://…). Si l'image est introuvable, une image par défaut est affichée.
 - **Rendu** : une grille de cartes, une carte par ligne du document. Sur mobile, les cartes passent à une par rangée.
 
@@ -102,9 +113,9 @@ Image sur laquelle l'administrateur dessine des zones ; un clic sur une zone mè
 - Ce module remplace l'ancien module « Page » et le module « Vue de données ».
 
 ### Formulaire
-Formulaire de modification ou d'ajout de l'excel ou du google sheet (modification : l'administrateur relie un champ à une case existante du document ; ajout : l'administrateur définit une ligne de départ, des colonnes autorisées et un nombre max de nouvelles lignes).
+Formulaire de modification, de ligne ou d'ajout de l'excel ou du google sheet (détails dans [Formulaires et soumissions](09-formulaires-soumissions.md#formulaires)). Un formulaire de ligne n'est pas placé seul sur la page : il s'ouvre depuis le Tableau ou le Catalogue auquel il est relié.
 - **Réglages** : titre, texte d'introduction, message affiché après l'envoi, puis les champs et leurs mappings (détaillés dans [Formulaires et soumissions](09-formulaires-soumissions.md)).
-- **Rendu** : le formulaire ; « complet » pour un formulaire d'ajout dont la zone est pleine ; masqué tant qu'il n'est pas configuré.
+- **Rendu** : le formulaire ; « complet » pour un formulaire d'ajout dont la zone est pleine, « fermé » s'il a été fermé par l'admin ou si sa date limite est passée ; masqué tant qu'il n'est pas configuré.
 - **Accès** : quiconque peut lire la page peut soumettre.
 
 ### Espace de discussion
@@ -164,3 +175,6 @@ _Aucune pour l'instant._
 - Catalogue : mises en page de carte prédéfinies.
 - Boutons : barre avec orientation et alignement.
 - Carte : surbrillance, libellé et opacité réglable par zone.
+- Menu de compte fixe (seule exception à la construction par l'admin).
+- Destination « Ma page personnelle ».
+- Tableaux et catalogues peuvent lancer un formulaire de ligne pré-rempli.

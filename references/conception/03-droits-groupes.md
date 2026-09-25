@@ -24,7 +24,7 @@ Le modèle d'autorisation de Strategos : des groupes porteurs de permissions, de
 - Ce modèle permet à la fois des **espaces communs** (groupe partagé par plusieurs utilisateurs) et des **espaces privés** (groupe restreint à un seul utilisateur, ou groupe personnel). En v1, un espace privé reste une page dupliquée et paramétrée manuellement par l'administrateur (plage de cellules fixée à la main pour chaque utilisateur) — pas de mécanisme de page modèle générant automatiquement une plage par utilisateur.
 - L'administrateur crée les profils utilisateurs et les assigne aux groupes (voir [Administration](04-administration.md)).
 - **Conflits entre groupes** : union simple des permissions — dès qu'un des groupes d'un utilisateur autorise un droit sur une ressource, l'utilisateur l'a (pas de notion de refus explicite qui prime).
-- **Formulaires (modification et ajout)** : ils ne constituent pas une ressource à part dans le modèle de droits — un formulaire est accessible à quiconque a le droit de lecture sur la page qui le contient ; c'est cet accès à la page qui conditionne la possibilité de soumettre. Cette règle s'applique identiquement aux formulaires de modification et aux formulaires d'ajout.
+- **Formulaires (modification, ligne et ajout)** : ils ne constituent pas une ressource à part dans le modèle de droits — un formulaire est accessible à quiconque a le droit de lecture sur la page qui le contient ; c'est cet accès à la page qui conditionne la possibilité de soumettre. Cette règle s'applique identiquement aux trois types de formulaires.
 
 ### Gestion des groupes
 Depuis l'espace d'administration :
@@ -38,6 +38,7 @@ Depuis l'espace d'administration :
 - **Page sans permission** : une page qu'aucun groupe ne peut lire n'est visible que par l'administrateur.
 - **Module non autorisé** : si un utilisateur peut lire une page mais pas un espace de discussion qu'elle contient, le module de cet espace est **invisible** pour lui. Il n'y a ni emplacement vide ni message « accès refusé ».
 - **Liens** : un bouton, une image-lien ou une zone de carte qui mène vers une page illisible est masqué (voir [Page builder](06-page-builder.md#liens-vers-des-pages-non-autorisées)).
+- **Page personnelle** : l'admin peut désigner, sur la fiche d'un utilisateur, sa **page personnelle** (ex. son espace privé). Un lien peut viser « Ma page personnelle » : il mène chacun à la sienne (voir [Page builder](06-page-builder.md#liens-vers-des-pages-non-autorisées)). L'admin doit tout de même donner à l'utilisateur le droit de lecture sur cette page.
 - **Page d'arrivée** : l'administrateur choisit une **page d'arrivée globale unique**, affichée à tous les utilisateurs après la connexion (voir [Vision](01-vision.md#environnement-construit-par-ladministrateur)).
 
 ## Points techniques

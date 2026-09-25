@@ -31,11 +31,13 @@ Cet encadrement systématique des interactions a deux objectifs : **fluidifier l
 ### Environnement construit par l'administrateur
 L'administrateur construit **tout l'environnement** dans lequel évoluent les utilisateurs, du début à la fin. Il n'y a ni menu ni navigation automatiques : après la connexion, l'utilisateur arrive sur une page d'arrivée globale choisie par l'admin (voir [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)). Il navigue ensuite uniquement par les boutons, images-liens et cartes cliquables que l'admin a placés, typiquement dans le header partagé (voir [Page builder](06-page-builder.md)).
 
+**Seule exception** : un petit **menu de compte**, fixe et toujours présent, donne accès au profil, aux notes, à « mes soumissions » et à la déconnexion (voir [Page builder](06-page-builder.md#menu-de-compte)). Il ne dépend jamais de l'admin, pour qu'un utilisateur puisse toujours se déconnecter.
+
 ## Dépendances
 - [02 — Comptes et authentification](02-comptes-authentification.md) · [03 — Droits et groupes](03-droits-groupes.md) · [04 — Administration](04-administration.md) · [05 — Profil utilisateur](05-profil-utilisateur.md)
 - [06 — Page builder](06-page-builder.md) · [07 — Discussions](07-discussions.md)
 - [08 — Sources de données](08-sources-donnees.md) · [09 — Formulaires et soumissions](09-formulaires-soumissions.md) · [10 — Modèles et duplication](10-modeles-duplication.md)
-- [11 — Transverse](11-transverse.md)
+- [11 — Transverse](11-transverse.md) · [12 — Parcours](12-parcours.md)
 
 ## Questions ouvertes
 _Aucune pour l'instant._

@@ -4,7 +4,7 @@
 L'espace privé de chaque utilisateur : sa situation administrative (en lecture seule) et ses notes personnelles.
 
 ## Règles fonctionnelles
-Chaque utilisateur dispose d'un **profil privé**, accessible par lui seul et par l'administrateur — jamais par les autres utilisateurs. Le profil est hors du modèle de droits par groupes : aucun groupe ne peut donner accès au profil d'un autre. Ses deux pages sont fixes, **hors page builder** (pas de zones ni de modules personnalisables).
+Chaque utilisateur dispose d'un **profil privé**, accessible par lui seul et par l'administrateur — jamais par les autres utilisateurs. Le profil est hors du modèle de droits par groupes : aucun groupe ne peut donner accès au profil d'un autre. Ses deux pages sont fixes, **hors page builder** (pas de zones ni de modules personnalisables). On y accède par le **menu de compte**, toujours présent (voir [Page builder](06-page-builder.md#menu-de-compte)).
 
 - **Page administrative** (lecture seule, sauf le changement de mot de passe) :
   - Pseudo, date de création du compte, statut du compte.

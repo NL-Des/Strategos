@@ -17,6 +17,7 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 | 09 | [Formulaires et soumissions](conception/09-formulaires-soumissions.md) | Modification, ajout, validation |
 | 10 | [Modèles et duplication](conception/10-modeles-duplication.md) | Bibliothèque de modèles |
 | 11 | [Transverse](conception/11-transverse.md) | Stack, suppression, sauvegardes, langue, RGPD |
+| 12 | [Parcours](conception/12-parcours.md) | Scénarios de bout en bout qui éprouvent la conception |
 
 ## 1. Vue d'ensemble
 
@@ -53,9 +54,9 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 
 ## 3. Modèle de données (entités clés)
 
-- `users(id, username, password_hash, must_change_credentials, disabled_at, deleted_at)`, `groups(id, name, description, deleted_at)`, `user_groups` — `must_change_credentials` force le changement d'identifiants ([02](conception/02-comptes-authentification.md#compte-administrateur))
+- `users(id, username, password_hash, must_change_credentials, personal_page_id?, disabled_at, deleted_at)`, `groups(id, name, description, deleted_at)`, `user_groups` — `must_change_credentials` force le changement d'identifiants ([02](conception/02-comptes-authentification.md#compte-administrateur))
 - `group_permissions(group_id, resource_type[page|discussion_space], resource_id, can_read, can_create_topic, can_post)` — pas de droit d'écriture ; `resource_id` obligatoire (pas de permission « sur tout ») ; page = `can_read` seul ([03](conception/03-droits-groupes.md#points-techniques))
-- `settings(landing_page_id, …)` — réglages globaux de l'instance, dont la page d'arrivée unique ([03](conception/03-droits-groupes.md#visibilité-et-page-darrivée))
+- `settings(landing_page_id, default_theme_id, backup_retention_days, …)` — réglages globaux de l'instance ([04](conception/04-administration.md#réglages-de-linstance)) ([03](conception/03-droits-groupes.md#visibilité-et-page-darrivée))
 - `themes(id, name, config JSONB, is_default)` — thèmes nommés ([06](conception/06-page-builder.md#thèmes))
 - `pages(id, name, theme_id?, show_header, show_footer, draft_config JSONB, published_config JSONB, published_at, deleted_at)` — config JSON par zone (Main/Sidebar) : rangées de 1 à 3 colonnes, un bloc typé par colonne ; `theme_id` vide = thème par défaut ([06](conception/06-page-builder.md#points-techniques))
 - `layout_parts(kind[header|footer], draft_config, published_config, published_at)` — header et footer partagés
@@ -66,10 +67,11 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - `excel_sources(id, type[upload|gsheet|onedrive], connection_info, last_synced_at, last_downloaded_at)` — `last_downloaded_at` sert à l'avertissement de réimport des uploads
 - `excel_staging_cells(source_id, sheet_ref, cell_ref, value, formula?, needs_recalc)` — staging des **Excel uploadés uniquement**, jamais reparsés à chaque affichage ; les sources connectées passent par un cache mémoire ([08](conception/08-sources-donnees.md#points-techniques))
 - `cell_references(source_id, sheet_ref, cell_or_range, referenced_source_id, referenced_ref)` — résolution des liaisons inter-fichiers ([08](conception/08-sources-donnees.md))
-- `forms(id, page_block_id, fields JSONB, mode[modification|ajout], deleted_at)`
+- `forms(id, page_block_id, fields JSONB, mode[modification|ligne|ajout], is_open, closes_at?, auto_validate, deleted_at)` — `fields` porte pour chaque champ : type, règles, options (liste saisie ou plage source), `auto[pseudo|date]?`, `is_movement` ([09](conception/09-formulaires-soumissions.md#formulaires))
+- `form_row_config(form_id, source_id, sheet_ref, range, key_column, linked_block_id)` — formulaire de ligne : plage, colonne clé et tableau/catalogue relié
 - `form_add_config(form_id, source_id, sheet_ref, start_row, max_new_rows)` — zone d'ajout `[start_row, start_row + max_new_rows - 1]` d'un formulaire en mode `ajout` (n'existe que pour ce mode) ; les colonnes autorisées sont celles de `form_field_mappings` ; la ligne attribuée est la première ligne vide de la zone ([09](conception/09-formulaires-soumissions.md#validation-dune-soumission-ajout))
 - `form_field_mappings(form_id, field_key, source_id, cell_ref)` — pour un formulaire `ajout`, `cell_ref` contient une référence de colonne (ex. `"C"`) plutôt qu'une cellule complète : la ligne est résolue dynamiquement à la validation
-- `submissions(id, form_id, user_id, values JSONB, status[pending|validated|rejected|modified|invalidated], assigned_row?)` — `assigned_row` n'est rempli qu'à la validation d'une soumission de type `ajout`
+- `submissions(id, form_id, user_id, values JSONB, row_key?, status[pending|validated|rejected|modified|invalidated], assigned_row?, validated_by?)` — `row_key` pour un formulaire de ligne ; `assigned_row` rempli à la validation d'un ajout ; `validated_by` vide = validation automatique
 - `templates(id, type[form|page|topic], payload JSONB)`
 - `user_notes(id, user_id, title, content, created_at, updated_at, deleted_at)` — `content` en format riche restreint, nettoyé côté backend
 - `audit_log(id, actor_id, action, target_type, target_id, before JSONB, after JSONB, created_at)` — journal en ajout seul (comptes, appartenances, permissions, soumissions, sources, pages, formulaires, restaurations, consultations de notes — liste complète dans [04](conception/04-administration.md#journal-des-modifications))
