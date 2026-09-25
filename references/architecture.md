@@ -11,8 +11,8 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 | 03 | [Droits et groupes](conception/03-droits-groupes.md) | Modèle par groupes, calcul des droits effectifs |
 | 04 | [Administration](conception/04-administration.md) | Espace admin, visualisation des droits, journal |
 | 05 | [Profil utilisateur](conception/05-profil-utilisateur.md) | Page administrative, notes personnelles |
-| 06 | [Page builder](conception/06-page-builder.md) | Zones, personnalisation, modules |
-| 07 | [Discussions](conception/07-discussions.md) | Sujets, messages, chat temps réel |
+| 06 | [Page builder](conception/06-page-builder.md) | Structure des pages, publication, thèmes, médiathèque, fiches des modules |
+| 07 | [Discussions](conception/07-discussions.md) | Espaces de discussion, chat temps réel, modération |
 | 08 | [Sources de données](conception/08-sources-donnees.md) | Excel uploadé, Google Sheets, OneDrive, cache, formules |
 | 09 | [Formulaires et soumissions](conception/09-formulaires-soumissions.md) | Modification, ajout, validation |
 | 10 | [Modèles et duplication](conception/10-modeles-duplication.md) | Bibliothèque de modèles |
@@ -44,8 +44,8 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route — voir [03](conception/03-droits-groupes.md).
 - **AuditModule** : journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, TopicsModule, ExcelSyncModule et TemplatesModule — voir [04](conception/04-administration.md).
 - **ProfileModule** : page administrative du profil et notes personnelles — voir [05](conception/05-profil-utilisateur.md).
-- **PagesModule** : CRUD des pages, config JSON des zones/blocs, soft-delete — voir [06](conception/06-page-builder.md).
-- **TopicsModule** : sujets et messages, pièces jointes images, modération, et passerelle WebSocket du chat — voir [07](conception/07-discussions.md).
+- **PagesModule** : CRUD des pages, brouillon/publication, header/footer partagés, thèmes, médiathèque, soft-delete — voir [06](conception/06-page-builder.md).
+- **TopicsModule** : espaces de discussion, sujets et messages, pièces jointes images, modération, et passerelle WebSocket du chat — voir [07](conception/07-discussions.md).
 - **ExcelSyncModule** : cœur technique de la synchronisation Excel/Sheets — voir [08](conception/08-sources-donnees.md) et [09](conception/09-formulaires-soumissions.md).
 - **TemplatesModule** : bibliothèque de modèles et instanciation — voir [10](conception/10-modeles-duplication.md).
 - **FilesModule** : upload, stockage sur le volume Docker, métadonnées en base — voir [11](conception/11-transverse.md).
@@ -54,11 +54,13 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 ## 3. Modèle de données (entités clés)
 
 - `users(id, username, password_hash, must_change_credentials, disabled_at, deleted_at)`, `groups(id, name, description, deleted_at)`, `user_groups` — `must_change_credentials` force le changement d'identifiants ([02](conception/02-comptes-authentification.md#compte-administrateur))
-- `group_permissions(group_id, resource_type, resource_id, can_read, can_create)` — pas de droit d'écriture ; `resource_id` obligatoire (pas de permission « sur tout ») ; page = `can_read` seul ([03](conception/03-droits-groupes.md#points-techniques))
+- `group_permissions(group_id, resource_type[page|discussion_space], resource_id, can_read, can_create_topic, can_post)` — pas de droit d'écriture ; `resource_id` obligatoire (pas de permission « sur tout ») ; page = `can_read` seul ([03](conception/03-droits-groupes.md#points-techniques))
 - `settings(landing_page_id, …)` — réglages globaux de l'instance, dont la page d'arrivée unique ([03](conception/03-droits-groupes.md#visibilité-et-page-darrivée))
-- `themes(id, name, config JSONB, is_default)` — thèmes nommés ([06](conception/06-page-builder.md#options-de-personnalisation-des-zones))
-- `pages(id, name, theme_id?, zones_config JSONB, deleted_at)` — la config JSON est la liste ordonnée de blocs typés par zone (Header/Main/Sidebar/Footer) ; les blocs tableau et catalogue portent `range_mode[fixed|extensible]` ; `theme_id` vide = thème par défaut
-- `topics(id, author_id, closed_at, pinned_at, deleted_at, ...)`, `messages(id, topic_id, author_id, hidden_at, deleted_at, ...)`
+- `themes(id, name, config JSONB, is_default)` — thèmes nommés ([06](conception/06-page-builder.md#thèmes))
+- `pages(id, name, theme_id?, show_header, show_footer, draft_config JSONB, published_config JSONB, published_at, deleted_at)` — config JSON par zone (Main/Sidebar) : rangées de 1 à 3 colonnes, un bloc typé par colonne ; `theme_id` vide = thème par défaut ([06](conception/06-page-builder.md#points-techniques))
+- `layout_parts(kind[header|footer], draft_config, published_config, published_at)` — header et footer partagés
+- `media(id, filename, path, mime, size, alt, uploaded_at, deleted_at)` — médiathèque
+- `discussion_spaces(id, page_block_id, name, sort_mode, deleted_at)`, `topics(id, space_id, author_id, title, closed_at, pinned_at, deleted_at)`, `messages(id, topic_id, author_id, hidden_at, deleted_at, ...)`
 - `chat_messages(id, page_block_id, author_id, content, created_at, hidden_at, deleted_at)` — historique du chat conservé
 - `message_revisions(message_id, message_kind[topic|chat], content, edited_at, action[edit|delete|hide])` — archive des modifications, suppressions et masquages ([07](conception/07-discussions.md#points-techniques))
 - `excel_sources(id, type[upload|gsheet|onedrive], connection_info, last_synced_at, last_downloaded_at)` — `last_downloaded_at` sert à l'avertissement de réimport des uploads
