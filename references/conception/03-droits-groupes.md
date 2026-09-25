@@ -30,6 +30,8 @@ Depuis l'espace d'administration :
 - Définition des permissions lecture / écriture / création par ressource (voir [Modèle par groupes](#modèle-par-groupes)).
 
 ### Visibilité et page d'arrivée
+- **Permissions toujours ciblées** : chaque permission porte sur une ressource précise ; aucune permission ne vaut pour « toutes les pages » ou « tous les sujets ». Pour que tout le monde voie les parties communes, l'admin attribue aux utilisateurs un groupe ordinaire (par convention « Partie commune ») qui a les droits sur ces pages.
+- **Utilisateur sans groupe** : il n'a accès à rien. S'il ne peut pas lire la page d'arrivée, il voit un écran neutre « Aucun espace ne vous est encore attribué ».
 - **Page sans permission** : une page qu'aucun groupe ne peut lire n'est visible que par l'administrateur.
 - **Module non autorisé** : si un utilisateur peut lire une page mais pas un sujet qu'elle contient, le module de ce sujet est **invisible** pour lui. Il n'y a ni emplacement vide ni message « accès refusé ».
 - **Page d'arrivée** : l'administrateur choisit une **page d'arrivée globale unique**, affichée à tous les utilisateurs après la connexion (voir [Vision](01-vision.md#environnement-construit-par-ladministrateur)).
@@ -37,6 +39,7 @@ Depuis l'espace d'administration :
 ## Points techniques
 - **GroupsModule** : groupes, appartenance user↔groupe, calcul des permissions effectives (union des groupes) et endpoints de lecture des droits pour l'admin (par utilisateur, par groupe, par ressource, matrice globale).
 - **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route, vérifie lecture/écriture/création par ressource (page, sujet, message). Jamais de vérification uniquement côté frontend.
+- `group_permissions.resource_id` est **obligatoire** (non nullable).
 - Contraintes sur `group_permissions` : pour `resource_type = page`, seul `can_read` peut être vrai ; pour `resource_type = message`, seuls `can_read` et `can_create` peuvent l'être. Ces contraintes sont vérifiées par la validation du DTO et par une contrainte `CHECK` en base.
 - La modification ou suppression d'un message est contrôlée par propriété (`author_id` = utilisateur de la session), pas par `PermissionsGuard`.
 - Les modules non autorisés sont filtrés **côté backend** au moment d'assembler la page : leur config n'est jamais envoyée au frontend.
@@ -51,7 +54,6 @@ Une **seule fonction de résolution** dans GroupsModule calcule les droits effec
 - [10 — Modèles et duplication](10-modeles-duplication.md) : duplication de pages pour les espaces privés.
 
 ## Questions ouvertes
-- `group_permissions.resource_id` est nullable : cela veut-il dire un droit sur *toutes* les ressources de ce type ? À préciser.
 - Sens du droit d'écriture sur un **sujet** (renommer ? clore ? modérer ?) : à préciser avec [Discussions](07-discussions.md).
 
 **Décisions (2026-09-25)**
@@ -59,3 +61,4 @@ Une **seule fonction de résolution** dans GroupsModule calcule les droits effec
 - Messages : lecture et création seulement ; l'auteur modifie ou supprime ses propres messages, avec archivage.
 - Module non autorisé : invisible.
 - Page sans permission : visible par l'admin seul. Une page d'arrivée globale unique.
+- Pas de permission « sur tout » : les parties communes passent par un groupe ordinaire. Un utilisateur sans groupe n'a accès à rien.

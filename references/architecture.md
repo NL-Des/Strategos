@@ -40,7 +40,7 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **UsersModule** : CRUD des comptes, réinitialisation du mot de passe, désactivation/réactivation — voir [02](conception/02-comptes-authentification.md).
 - **GroupsModule** : groupes, appartenance user↔groupe, calcul des permissions effectives et endpoints de lecture des droits — voir [03](conception/03-droits-groupes.md).
 - **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route — voir [03](conception/03-droits-groupes.md).
-- **AuditModule** : journal des modifications ; appelé par UsersModule, GroupsModule et PermissionsModule — voir [04](conception/04-administration.md).
+- **AuditModule** : journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, ExcelSyncModule et TemplatesModule — voir [04](conception/04-administration.md).
 - **ProfileModule** : page administrative du profil et notes personnelles — voir [05](conception/05-profil-utilisateur.md).
 - **PagesModule** : CRUD des pages, config JSON des zones/blocs, soft-delete — voir [06](conception/06-page-builder.md).
 - **TopicsModule** : sujets et messages, pièces jointes images — voir [07](conception/07-discussions.md).
@@ -51,9 +51,10 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 ## 3. Modèle de données (entités clés)
 
 - `users(id, username, password_hash, must_change_credentials, disabled_at, deleted_at)`, `groups(id, name, description, deleted_at)`, `user_groups` — `must_change_credentials` force le changement d'identifiants ([02](conception/02-comptes-authentification.md#compte-administrateur))
-- `group_permissions(group_id, resource_type, resource_id?, can_read, can_write, can_create)` — contraintes par type de ressource : page = `can_read` seul, message = `can_read` + `can_create` ([03](conception/03-droits-groupes.md#points-techniques))
+- `group_permissions(group_id, resource_type, resource_id, can_read, can_write, can_create)` — `resource_id` obligatoire (pas de permission « sur tout ») ; contraintes par type de ressource : page = `can_read` seul, message = `can_read` + `can_create` ([03](conception/03-droits-groupes.md#points-techniques))
 - `settings(landing_page_id, …)` — réglages globaux de l'instance, dont la page d'arrivée unique ([03](conception/03-droits-groupes.md#visibilité-et-page-darrivée))
-- `pages(id, name, zones_config JSONB, deleted_at)` — la config JSON est la liste ordonnée de blocs typés par zone (Header/Main/Sidebar/Footer)
+- `themes(id, name, config JSONB, is_default)` — thèmes nommés ([06](conception/06-page-builder.md#options-de-personnalisation-des-zones))
+- `pages(id, name, theme_id?, zones_config JSONB, deleted_at)` — la config JSON est la liste ordonnée de blocs typés par zone (Header/Main/Sidebar/Footer) ; les blocs tableau et catalogue portent `range_mode[fixed|extensible]` ; `theme_id` vide = thème par défaut
 - `topics(id, ...)`, `messages(id, topic_id, author_id, ...)`
 - `message_revisions(message_id, content, edited_at, action[edit|delete])` — archive des modifications et suppressions par l'auteur ([07](conception/07-discussions.md#points-techniques))
 - `excel_sources(id, type[excel|gsheet], connection_info, last_synced_at)`
@@ -65,7 +66,7 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - `submissions(id, form_id, user_id, values JSONB, status[pending|validated|rejected|modified], assigned_row?)` — `assigned_row` n'est rempli qu'à la validation d'une soumission de type `ajout`
 - `templates(id, type[form|page|topic], payload JSONB)`
 - `user_notes(id, user_id, title, content, created_at, updated_at, deleted_at)` — `content` en format riche restreint, nettoyé côté backend
-- `audit_log(id, actor_id, action, target_type, target_id, before JSONB, after JSONB, created_at)` — journal en ajout seul des changements de comptes, appartenances et permissions
+- `audit_log(id, actor_id, action, target_type, target_id, before JSONB, after JSONB, created_at)` — journal en ajout seul (comptes, appartenances, permissions, soumissions, sources, pages, formulaires, restaurations, consultations de notes — liste complète dans [04](conception/04-administration.md#journal-des-modifications))
 
 Le calcul des droits effectifs (fonction de résolution unique) est décrit dans [03 — Calcul des droits effectifs](conception/03-droits-groupes.md#calcul-des-droits-effectifs).
 

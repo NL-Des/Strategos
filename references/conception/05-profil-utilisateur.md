@@ -6,11 +6,11 @@ L'espace privé de chaque utilisateur : sa situation administrative (en lecture 
 ## Règles fonctionnelles
 Chaque utilisateur dispose d'un **profil privé**, accessible par lui seul et par l'administrateur — jamais par les autres utilisateurs. Le profil est hors du modèle de droits par groupes : aucun groupe ne peut donner accès au profil d'un autre. Ses deux pages sont fixes, **hors page builder** (pas de zones ni de modules personnalisables).
 
-- **Page administrative** (lecture seule stricte) :
+- **Page administrative** (lecture seule, sauf le changement de mot de passe) :
   - Pseudo, date de création du compte, statut du compte.
   - Groupes d'appartenance et droits effectifs, avec le ou les groupes qui accordent chaque droit (même calcul que la vue "par utilisateur" de l'admin, voir [Administration](04-administration.md#visualisation-des-droits)).
   - Lien vers la page "mes soumissions" (voir [Formulaires et soumissions](09-formulaires-soumissions.md)).
-  - Rien n'y est modifiable, pas même le mot de passe : il n'est changé que par réinitialisation de l'administrateur.
+  - Seul le mot de passe y est modifiable, en saisissant l'ancien (voir [Comptes et authentification](02-comptes-authentification.md#mot-de-passe-utilisateur)). Tout le reste est en lecture seule.
 - **Page de notes** :
   - Liste de notes personnelles, chacune avec un titre et un texte mis en forme simplement (gras, italique, listes, liens).
   - L'utilisateur crée, modifie et supprime ses notes (soft-delete, voir [Suppression de contenu](11-transverse.md#suppression-de-contenu)).
@@ -23,10 +23,13 @@ Chaque utilisateur dispose d'un **profil privé**, accessible par lui seul et pa
 - Contenu des notes nettoyé côté backend (liste blanche de balises) contre le XSS.
 
 ## Dépendances
-- [02 — Comptes et authentification](02-comptes-authentification.md) : mot de passe réinitialisé par l'admin uniquement.
+- [02 — Comptes et authentification](02-comptes-authentification.md) : changement de mot de passe par l'utilisateur, réinitialisation par l'admin.
 - [03 — Droits et groupes](03-droits-groupes.md) : fonction de résolution des droits.
 - [04 — Administration](04-administration.md) : journal des consultations de notes.
 - [09 — Formulaires et soumissions](09-formulaires-soumissions.md) : page "mes soumissions".
 
 ## Questions ouvertes
 _À compléter lors de la revue de cohérence._
+
+**Décisions (2026-09-25)**
+- Le mot de passe est modifiable depuis la page administrative du profil.

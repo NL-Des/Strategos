@@ -12,8 +12,8 @@ Un site web basé sur un google sheet ou un excel. Les kits de créations de pag
 
 > **Arbitrages** : ces deux publics tirent la conception dans des directions différentes. La règle retenue est de viser le **dénominateur commun**, sans fermer les portes dont l'un des deux a besoin :
 > - **Sources** : Google Sheets (plutôt communautés) et Excel / Microsoft 365 (plutôt entreprises) sont tous deux supportés (voir [Sources de données](08-sources-donnees.md)).
-> - **Apparence** : la personnalisation est riche (identité visuelle d'une communauté), mais le thème par défaut est sobre (charte d'entreprise).
-> - **Chat temps réel** : il est central pour une communauté et secondaire en entreprise (souvent déjà couvert par Teams ou Slack). C'est donc un module optionnel.
+> - **Apparence** : plusieurs thèmes permettent une identité visuelle riche (communauté) ou sobre (charte d'entreprise), voir [Page builder](06-page-builder.md#options-de-personnalisation-des-zones).
+> - **Chat temps réel** : il est central pour une communauté et secondaire en entreprise (souvent déjà couvert par Teams ou Slack). C'est donc un module que l'admin place au cas par cas, sur les pages où il le juge utile.
 > - **Hébergement** : le déploiement en une commande et la simplicité de maintenance sont vitaux pour les publics sans service informatique.
 > - **Sécurité et données personnelles** : les entreprises sont plus exigeantes (compte admin, RGPD). Ces points ne sont pas tous traités en v1 mais restent ouverts (voir [Transverse](11-transverse.md#données-personnelles-rgpd)).
 

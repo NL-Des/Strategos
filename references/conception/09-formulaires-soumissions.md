@@ -38,7 +38,8 @@ La ligne cible n'est calculée qu'à ce moment-là, jamais à la soumission.
 ## Dépendances
 - [03 — Droits et groupes](03-droits-groupes.md) : accès via la page.
 - [05 — Profil utilisateur](05-profil-utilisateur.md) : lien vers "mes soumissions".
-- [06 — Page builder](06-page-builder.md) : le formulaire est un module de page.
+- [06 — Page builder](06-page-builder.md) : le formulaire est un module de page ; les lignes ajoutées doivent rester visibles dans les tableaux (voir [Plage des tableaux et formulaires d'ajout](06-page-builder.md#plage-des-tableaux-et-formulaires-dajout)).
+- [04 — Administration](04-administration.md#tableau-de-bord-des-soumissions) : file des soumissions en attente et journal des validations.
 - [08 — Sources de données](08-sources-donnees.md) : mécanisme d'écriture.
 - [10 — Modèles et duplication](10-modeles-duplication.md) : modèles de formulaires.
 
