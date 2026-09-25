@@ -17,7 +17,10 @@ L'administrateur coche les zones présentes sur la page, puis y place ses module
 - L'admin modifie toujours un **brouillon** et peut le voir en **aperçu**. Les utilisateurs continuent de voir la version publiée.
 - Un bouton **Publier** remplace la version en ligne par le brouillon. La publication est tracée dans le [journal](04-administration.md#journal-des-modifications).
 - Même règle pour le header et le footer partagés.
+- **Les modules suivent la page** : la configuration des formulaires (champs, mappings, zone, clé), des espaces de discussion et des chats fait partie du brouillon. Elle ne prend effet qu'à la publication de la page. Un espace ou un chat ajouté au brouillon n'existe pour les utilisateurs qu'une fois la page publiée.
+- **Réglages opérationnels immédiats** : ouvrir ou fermer un formulaire, changer sa date limite, activer ou désactiver la validation automatique, épingler un sujet ou masquer un message prennent effet **tout de suite**, sans publication. Ce sont des actions de gestion courante, pas de construction.
 - Une page jamais publiée n'est visible par personne d'autre que l'admin.
+- **Aperçu avec les droits d'un groupe** : l'aperçu propose un **menu déroulant des groupes**. En choisissant un groupe, l'admin voit le brouillon exactement comme le verrait un membre de **ce seul groupe** : modules et liens non autorisés masqués, espaces illisibles invisibles, lien « Ma page personnelle » absent. L'option par défaut, « Administrateur », montre tout. L'aperçu fonctionne aussi pour le header et le footer.
 
 ### Thèmes
 La personnalisation passe par des **thèmes**. L'administrateur crée plusieurs thèmes nommés, chacun regroupant :
@@ -31,7 +34,7 @@ L'admin désigne un **thème par défaut** et peut attribuer un **thème à chaq
 La mise en forme des fichiers sources (gras, couleurs de cellules…) **n'est pas reproduite** : Strategos ne lit que des valeurs, et l'apparence vient du thème et des formats choisis par l'admin.
 
 ### Médiathèque
-L'admin dispose d'une **médiathèque** où il uploade ses images. Elle alimente les modules Image, Catalogue, Contenu libre et Carte cliquable. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages concernées.
+L'admin dispose d'une **médiathèque** où il uploade ses images. Elle alimente les modules Image, Catalogue, Contenu libre et Carte cliquable. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages concernées. Les images de la médiathèque sont accessibles à **tout utilisateur connecté** ; elles ne doivent donc pas servir à stocker des documents confidentiels.
 
 ### Menu de compte
 Seul élément qui n'est pas construit par l'admin : une **icône de compte**, fixe dans un coin de l'écran sur toutes les pages. Elle ouvre **Profil**, **Notes**, **Mes soumissions** et **Déconnexion** (voir [Profil utilisateur](05-profil-utilisateur.md)). Son style suit le thème de la page.
@@ -139,7 +142,8 @@ Un tableau ou un catalogue relié à une source affiche une plage qui peut être
 
 ## Points techniques
 - **PagesModule** : CRUD des pages, brouillon et publication, header/footer partagés, thèmes, médiathèque, soft-delete.
-- **Brouillon/publication** : `pages.draft_config` et `pages.published_config` (JSONB), `published_at`. Le header et le footer partagés sont stockés dans `layout_parts(kind[header|footer], draft_config, published_config, published_at)`. La page porte `show_header` et `show_footer`.
+- **Brouillon/publication** : `pages.draft_config` et `pages.published_config` (JSONB), `published_at`. La publication est **transactionnelle** : dans la même transaction, elle publie la page, publie les définitions de ses formulaires (nouvelle version, invalidation des soumissions en attente si la modification est structurelle) et crée les espaces et chats nouvellement ajoutés.
+- **Aperçu par groupe** : l'assemblage de la page accepte un « contexte de droits » (utilisateur réel, ou membre fictif d'un groupe donné) ; c'est la même fonction que pour l'affichage réel, pour que l'aperçu soit fidèle. Le header et le footer partagés sont stockés dans `layout_parts(kind[header|footer], draft_config, published_config, published_at)`. La page porte `show_header` et `show_footer`.
 - **Structure du JSON** d'une zone : `rows[] → { columns: [{ width, block }] }`, où `block = { id, type, config }`. Les `block.id` sont stables, parce que les formulaires, espaces de discussion et chats y sont rattachés (`page_block_id`).
 - **Registre des modules** : `BlockRenderer` avec un registre `{ blockType: Component }` : `image`, `buttons`, `clickable_map`, `table`, `catalog`, `rich_content`, `form`, `discussion_space`, `chat`. Chaque type a son schéma de `config`, validé par `class-validator` côté backend.
 - **Assemblage côté backend** : à la lecture d'une page publiée, le backend retire les modules non autorisés (espaces illisibles, formulaires non configurés, modules de données sans plage) et les liens vers des pages illisibles, puis résout les valeurs (cellules du contenu libre, plages). Le frontend ne reçoit jamais ce qu'il ne doit pas afficher.
@@ -168,7 +172,8 @@ _Aucune pour l'instant._
 - Chat : module placé au cas par cas, sans interrupteur global.
 - Header et footer partagés, affichables ou non page par page.
 - Zones composées de rangées de 1 à 3 colonnes.
-- Brouillon, aperçu et publication.
+- Brouillon, aperçu et publication. Les formulaires, espaces et chats suivent le cycle de la page ; les réglages opérationnels sont immédiats.
+- Aperçu avec les droits d'un groupe (menu déroulant).
 - Liens vers des pages non autorisées masqués.
 - Médiathèque ; images du catalogue par nom de fichier ou par lien web.
 - Tableaux : pagination, tri, recherche et colonnes configurables.

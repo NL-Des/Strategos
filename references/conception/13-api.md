@@ -108,7 +108,7 @@ La page d'arrivée et la page personnelle sont connues via `Me` (`landingPageId`
 | POST | `/topics/:id/messages` | poster | Poster `{ content, attachmentIds? }` | `403`, `422 TOPIC_CLOSED` |
 | PUT | `/messages/:id` | auteur | Modifier (l'ancienne version est archivée) | `403 NOT_AUTHOR`, `422 TOPIC_CLOSED` |
 | DELETE | `/messages/:id` | auteur | Supprimer (archivé) | `403 NOT_AUTHOR` |
-| POST | `/attachments` | connecté | Upload d'une image jointe (`multipart`), à rattacher ensuite à un message | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE` |
+| POST | `/attachments` | connecté | Upload d'une image jointe (`multipart`), à rattacher ensuite à un message : JPEG, PNG, WebP ou GIF, 5 Mo au maximum, 4 par message au plus | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE`, `422 TOO_MANY_ATTACHMENTS` |
 
 ### Chat — [07](07-discussions.md#chat)
 | Méthode | Chemin | Accès | Rôle | Erreurs |
@@ -122,7 +122,8 @@ L'envoi d'un message passe par le WebSocket (voir [§4](#4-websocket-du-chat)).
 ### Médias
 | Méthode | Chemin | Accès | Rôle | Erreurs |
 |---|---|---|---|---|
-| GET | `/media/:id` | connecté | Fichier de la médiathèque ou pièce jointe (voir [Questions ouvertes](#questions-ouvertes)) | `404` |
+| GET | `/media/:id` | connecté | Image de la médiathèque : accessible à tout utilisateur connecté | `404` |
+| GET | `/attachments/:id` | lecture espace | Pièce jointe d'un message | `404` |
 
 ## 3. Routes d'administration (`/api/v1/admin`)
 Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des données écrit dans le journal, dans la même transaction (voir [Administration](04-administration.md#journal-des-modifications)).
@@ -182,10 +183,12 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET / POST | `/pages` | Lister (pour les sélecteurs de liens) ; créer une page (brouillon vide) | — |
 | GET | `/pages/:id` | Page avec son brouillon, sa version publiée et ses réglages (thème, header/footer affichés) | `404` |
 | PUT | `/pages/:id/draft` | Enregistrer le brouillon `{ version, config, themeId, showHeader, showFooter }`. Les avertissements (plage non couverte…) sont renvoyés | `VALIDATION_FAILED`, `EDIT_CONFLICT` |
-| GET | `/pages/:id/preview` | Brouillon **assemblé** comme le verrait un utilisateur (valeurs résolues) | — |
-| POST | `/pages/:id/publish` | Publier le brouillon | `VALIDATION_FAILED` (bloc invalide) |
+| GET | `/pages/:id/preview?asGroup=` | Brouillon **assemblé** (valeurs résolues). Sans `asGroup` : vue administrateur complète. Avec `asGroup=<groupId>` : vue d'un membre de ce seul groupe (modules et liens filtrés) | `404` (groupe inconnu) |
+| GET | `/pages/:id/publish/preview` | Ce que la publication va changer : formulaires modifiés, **soumissions qui seraient invalidées**, espaces et chats créés ou retirés | — |
+| POST | `/pages/:id/publish` | Publier le brouillon, avec ses formulaires, espaces et chats, en une transaction ; confirmation requise si des soumissions seraient invalidées | `VALIDATION_FAILED` (bloc invalide), `409 CONFIRMATION_REQUIRED` |
 | DELETE | `/pages/:id` | Suppression douce | — |
 | GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`) | `EDIT_CONFLICT` |
+| GET | `/layout/:kind/preview?asGroup=` | Aperçu du header ou du footer, éventuellement avec les droits d'un groupe | — |
 | POST | `/layout/:kind/publish` | Publier le header ou le footer | — |
 | GET | `/blocks/:blockId/rows?preview=true` | Lignes d'un bloc de brouillon, pour l'aperçu | — |
 | CRUD | `/themes`, `/themes/:id` | Thèmes ; supprimer le thème par défaut est refusé | `422 DEFAULT_THEME` |
@@ -195,10 +198,12 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 ### Formulaires et soumissions — [09](09-formulaires-soumissions.md)
 | Méthode | Chemin | Rôle | Erreurs |
 |---|---|---|---|
-| POST | `/forms` | Créer un formulaire rattaché à un bloc `{ pageBlockId, mode, … }` | `VALIDATION_FAILED` |
-| GET / PUT / DELETE | `/forms/:id` | Lire, modifier (mappings, champs, zone, clé), supprimer. La réponse indique les soumissions **invalidées** par une modification structurelle, et les `warnings` (cellule-formule, plage non couverte) | `EDIT_CONFLICT` |
-| POST | `/forms/:id/open` · `/close` | Ouvrir, fermer | — |
-| PATCH | `/forms/:id/settings` | `{ closesAt?, autoValidate? }` ; activer la validation automatique renvoie les avertissements à confirmer | `409 CONFIRMATION_REQUIRED` |
+| POST | `/forms` | Créer un formulaire rattaché à un bloc du brouillon `{ pageBlockId, mode, … }` | `VALIDATION_FAILED` |
+| GET | `/forms/:id` | Définition en brouillon, définition publiée et réglages opérationnels | `404` |
+| PUT | `/forms/:id/draft` | Modifier la définition **en brouillon** (champs, mappings, zone, clé). Rien ne change pour les utilisateurs avant la publication de la page. La réponse indique les `warnings` et les soumissions **qui seraient invalidées** à la publication | `VALIDATION_FAILED`, `EDIT_CONFLICT` |
+| DELETE | `/forms/:id` | Supprimer (en retirant le bloc du brouillon ; effectif à la publication) | — |
+| POST | `/forms/:id/open` · `/close` | Ouvrir, fermer (**immédiat**) | — |
+| PATCH | `/forms/:id/settings` | `{ closesAt?, autoValidate? }` (**immédiat**) ; activer la validation automatique renvoie les avertissements à confirmer | `409 CONFIRMATION_REQUIRED` |
 | GET | `/submissions` | File paginée, filtres : statut, formulaire, page, utilisateur, période ; conflits signalés (voir [schéma](#élément-de-la-file-des-soumissions)) | — |
 | GET | `/submissions/count` | Compteur des soumissions en attente (affiché en permanence) | — |
 | POST | `/submissions/:id/validate` | Valider ; avertissement cellule-formule à confirmer | `409 CONFIRMATION_REQUIRED`, `409 SUBMISSION_NOT_PENDING`, `422 ADD_ZONE_FULL`, `422 ROW_KEY_NOT_FOUND`, `422 ROW_KEY_DUPLICATE`, `422 MOVEMENT_NOT_NUMERIC`, `503 SOURCE_UNAVAILABLE` |
@@ -329,15 +334,13 @@ Pour `deleted` et `hidden`, seul `message.id` est envoyé.
 Toutes les parties ; en particulier [02](02-comptes-authentification.md), [03](03-droits-groupes.md), [06](06-page-builder.md), [07](07-discussions.md), [08](08-sources-donnees.md) et [09](09-formulaires-soumissions.md).
 
 ## Questions ouvertes
-Incohérences ou manques révélés par l'écriture de l'API :
-
-1. **Formulaires, espaces et brouillon.** Les pages ont un brouillon et une version publiée, mais les formulaires, espaces de discussion et chats sont des objets à part (tables propres, rattachées à un `page_block_id`). Modifier le mapping d'un formulaire prend donc effet **immédiatement**, même si la page est encore en brouillon, et peut invalider des soumissions en attente. Faut-il que la configuration des formulaires suive elle aussi le cycle brouillon → publication ? Même question pour les espaces de discussion et les chats : en l'état, leur ligne en base est créée dès l'enregistrement du brouillon qui contient leur bloc, mais ils ne deviennent accessibles qu'à la publication de la page.
-2. **Accès aux images.** `GET /media/:id` : vérifier, pour chaque image, que l'utilisateur peut lire au moins une page qui l'utilise est coûteux. Proposition : toute image de la médiathèque est accessible à **tout utilisateur connecté**, et les pièces jointes des messages sont accessibles à qui peut lire l'espace. Est-ce acceptable, sachant qu'une image « confidentielle » placée dans la médiathèque pourrait être vue par un utilisateur qui devinerait son identifiant (très improbable avec des UUID) ?
-3. **Pièces jointes des messages.** Les images jointes aux messages n'avaient pas de règles : je propose 5 Mo au maximum, formats JPEG, PNG, WebP et GIF, 4 images par message au plus.
-4. **Aperçu « comme un utilisateur ».** L'aperçu admin montre le brouillon avec tous les droits. Faut-il pouvoir prévisualiser la page **comme la verrait un groupe donné** (modules et liens filtrés), pour vérifier les droits avant de publier ?
+_Aucune pour l'instant._
 
 **Décisions (2026-09-25)**
 - Markdown de conception ; OpenAPI généré depuis le code.
 - Deux espaces de routes, `/api/v1` et `/api/v1/admin`, plus un WebSocket pour le chat.
 - `404` pour toute ressource illisible (pas de `403` qui révèlerait son existence).
 - Codes d'erreur stables, traduits par le frontend ; confirmation des avertissements par `confirm: true`.
+- Formulaires, espaces et chats suivent le cycle brouillon → publication de leur page ; les réglages opérationnels sont immédiats ; aperçu de ce que la publication invalidera.
+- Médiathèque accessible à tout utilisateur connecté ; pièces jointes accessibles aux lecteurs de l'espace (5 Mo, 4 par message, JPEG/PNG/WebP/GIF).
+- Aperçu avec les droits d'un groupe (`asGroup`).
