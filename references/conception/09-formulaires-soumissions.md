@@ -21,7 +21,7 @@ L'unique voie d'écriture des utilisateurs vers les documents : des formulaires 
 
 ### Soumissions
 - **Soumissions concurrentes** : si plusieurs utilisateurs soumettent des modifications sur la même cellule, toutes restent visibles en attente — l'administrateur voit le conflit et choisit, laquelle valider (ou les fusionne manuellement).
-- **Suivi des soumissions** : l'utilisateur dispose d'une page "mes soumissions" listant ses propositions et leur statut (en attente, validée, refusée, modifiée par l'admin). Pas de notification active (email, push...) — l'information est consultable, pas poussée.
+- **Suivi des soumissions** : l'utilisateur dispose d'une page "mes soumissions" listant ses propositions et leur statut (en attente, validée, refusée, modifiée par l'admin, invalidée par un changement du formulaire). Pas de notification active (email, push...) — l'information est consultable, pas poussée.
 - **Formulaire modifié ou supprimé** : si l'administrateur change le mapping champ→cellule d'un formulaire ou le supprime alors que des soumissions sont encore en attente dessus, ces soumissions sont automatiquement invalidées ; l'utilisateur devra resoumettre via la nouvelle version du formulaire. Précisément :
   - **invalident** les soumissions en attente : changer la cellule ou la colonne d'un champ, ajouter ou retirer un champ, changer la ligne de départ ou le nombre maximum de lignes, supprimer le formulaire ;
   - **n'invalident pas** : corriger un libellé, un texte d'aide ou l'ordre d'affichage des champs.

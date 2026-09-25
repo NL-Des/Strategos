@@ -24,7 +24,9 @@ Sans notifications (voir [Transverse](11-transverse.md#notifications)), l'espace
 - les **conflits** mis en évidence, c'est-à-dire plusieurs soumissions en attente sur une même cellule (voir [Formulaires et soumissions](09-formulaires-soumissions.md#soumissions)).
 
 ### Corbeille
-Les éléments supprimés en douceur (pages, formulaires, sujets, messages, groupes, utilisateurs) sont listés dans une corbeille, filtrable par type, d'où l'administrateur peut les **restaurer** (voir [Suppression de contenu](11-transverse.md#suppression-de-contenu)).
+Les éléments supprimés en douceur (pages, formulaires, sujets, messages des sujets et du chat, groupes, utilisateurs) sont listés dans une corbeille, filtrable par type, d'où l'administrateur peut les **restaurer** (voir [Suppression de contenu](11-transverse.md#suppression-de-contenu)).
+
+> Les notes personnelles n'apparaissent pas dans la corbeille : l'admin ne peut ni les modifier ni les supprimer, donc pas davantage les restaurer (voir [Profil utilisateur](05-profil-utilisateur.md)).
 
 ### Journal des modifications
 Sont tracées (action, cible, état avant/après, date) :
@@ -40,7 +42,7 @@ Sont tracées (action, cible, état avant/après, date) :
 Le journal est consultable et filtrable par l'administrateur, et non modifiable. Pas de purge automatique définie pour l'instant (point à retravailler plus tard, comme le backup).
 
 ## Points techniques
-- **AuditModule** : écriture et consultation du journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, ExcelSyncModule et TemplatesModule. PermissionsModule ne fait que vérifier les droits et n'écrit rien.
+- **AuditModule** : écriture et consultation du journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, TopicsModule, ExcelSyncModule et TemplatesModule. PermissionsModule ne fait que vérifier les droits et n'écrit rien.
 - Les vues de droits s'appuient sur la fonction de résolution unique (voir [Calcul des droits effectifs](03-droits-groupes.md#calcul-des-droits-effectifs)).
 - Routes d'administration (comptes, groupes, droits, journal) protégées par un guard de rôle admin.
 - Chaque entrée du journal d'audit est écrite dans la **même transaction** que la modification qu'elle trace ; aucune route de modification ou de suppression du journal n'est exposée.

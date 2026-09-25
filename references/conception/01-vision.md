@@ -20,7 +20,7 @@ Un site web basé sur un google sheet ou un excel. Les kits de créations de pag
 ### Principe fondateur : aucun accès direct aux documents
 Strategos fait toujours écran entre l'utilisateur et les fichiers Excel/Sheet : à aucun moment un utilisateur n'ouvre, ne lit ou n'écrit directement dans le document source. Toute interaction passe par une interface que l'administrateur définit au préalable :
 - **En écriture** : l'administrateur construit un formulaire et relie chacun de ses champs à une cellule précise du document. L'utilisateur ne remplit que ce formulaire ; sa soumission reste une *proposition* en attente de validation admin (voir [Formulaires et soumissions](09-formulaires-soumissions.md)).
-- **En lecture** : l'administrateur construit une page et y place des modules (tableau, catalogue, page simple...) qui vont chercher leurs données dans le document. L'utilisateur ne voit que ce que l'admin a choisi d'exposer, jamais le fichier brut (voir [Page builder](06-page-builder.md)).
+- **En lecture** : l'administrateur construit une page et y place des modules (tableau, catalogue, vue de données...) qui vont chercher leurs données dans le document. L'utilisateur ne voit que ce que l'admin a choisi d'exposer, jamais le fichier brut (voir [Page builder](06-page-builder.md)).
 
 Cet encadrement systématique des interactions a deux objectifs : **fluidifier le trafic** (pas d'accès concurrent non maîtrisé sur le fichier source, un seul point de passage pour l'écriture) et **limiter les erreurs** (l'utilisateur ne peut jamais casser une structure ou une formule du document, puisqu'il n'interagit qu'avec des champs et des affichages que l'admin a explicitement définis).
 

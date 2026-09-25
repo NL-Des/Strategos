@@ -1,7 +1,7 @@
 # 11 — Transverse
 
 ## Objet
-Les choix et règles qui s'appliquent à toutes les parties : stack technique, notifications, suppression de contenu, stockage des fichiers et sauvegarde.
+Les choix et règles qui s'appliquent à toutes les parties : stack technique, notifications, suppression de contenu, sauvegardes, langue, données personnelles et stockage des fichiers.
 
 ## Règles fonctionnelles
 
@@ -21,7 +21,7 @@ Les choix et règles qui s'appliquent à toutes les parties : stack technique, n
 Pas de notifications de prévues pour le moment.
 
 ### Suppression de contenu
-Suppression douce (soft-delete) pour sujets, messages, groupes, utilisateurs, notes personnelles, **formulaires et pages** : le contenu est marqué supprimé et masqué de l'interface, mais reste en base — préserve l'historique des modifications Excel/Sheets validées (on garde la trace du formulaire/page d'origine) et les références passées, et permet une restauration.
+Suppression douce (soft-delete) pour sujets, messages (sujets et chat), groupes, utilisateurs, notes personnelles, **formulaires et pages** : le contenu est marqué supprimé et masqué de l'interface, mais reste en base — préserve l'historique des modifications Excel/Sheets validées (on garde la trace du formulaire/page d'origine) et les références passées, et permet une restauration.
 
 ### Sauvegardes
 - **Sauvegarde automatique quotidienne** de la base et des fichiers uploadés (images, Excel), dans un dossier dédié, avec une durée de conservation réglable (7 jours par défaut).

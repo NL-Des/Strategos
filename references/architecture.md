@@ -13,10 +13,10 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 | 05 | [Profil utilisateur](conception/05-profil-utilisateur.md) | Page administrative, notes personnelles |
 | 06 | [Page builder](conception/06-page-builder.md) | Zones, personnalisation, modules |
 | 07 | [Discussions](conception/07-discussions.md) | Sujets, messages, chat temps réel |
-| 08 | [Sources de données](conception/08-sources-donnees.md) | Excel, Google Sheets, cache, liaisons |
+| 08 | [Sources de données](conception/08-sources-donnees.md) | Excel uploadé, Google Sheets, OneDrive, cache, formules |
 | 09 | [Formulaires et soumissions](conception/09-formulaires-soumissions.md) | Modification, ajout, validation |
 | 10 | [Modèles et duplication](conception/10-modeles-duplication.md) | Bibliothèque de modèles |
-| 11 | [Transverse](conception/11-transverse.md) | Stack, notifications, suppression, stockage |
+| 11 | [Transverse](conception/11-transverse.md) | Stack, suppression, sauvegardes, langue, RGPD |
 
 ## 1. Vue d'ensemble
 
@@ -42,7 +42,7 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **UsersModule** : CRUD des comptes, réinitialisation du mot de passe, désactivation/réactivation — voir [02](conception/02-comptes-authentification.md).
 - **GroupsModule** : groupes, appartenance user↔groupe, calcul des permissions effectives et endpoints de lecture des droits — voir [03](conception/03-droits-groupes.md).
 - **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route — voir [03](conception/03-droits-groupes.md).
-- **AuditModule** : journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, ExcelSyncModule et TemplatesModule — voir [04](conception/04-administration.md).
+- **AuditModule** : journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, TopicsModule, ExcelSyncModule et TemplatesModule — voir [04](conception/04-administration.md).
 - **ProfileModule** : page administrative du profil et notes personnelles — voir [05](conception/05-profil-utilisateur.md).
 - **PagesModule** : CRUD des pages, config JSON des zones/blocs, soft-delete — voir [06](conception/06-page-builder.md).
 - **TopicsModule** : sujets et messages, pièces jointes images, modération, et passerelle WebSocket du chat — voir [07](conception/07-discussions.md).
@@ -58,23 +58,23 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - `settings(landing_page_id, …)` — réglages globaux de l'instance, dont la page d'arrivée unique ([03](conception/03-droits-groupes.md#visibilité-et-page-darrivée))
 - `themes(id, name, config JSONB, is_default)` — thèmes nommés ([06](conception/06-page-builder.md#options-de-personnalisation-des-zones))
 - `pages(id, name, theme_id?, zones_config JSONB, deleted_at)` — la config JSON est la liste ordonnée de blocs typés par zone (Header/Main/Sidebar/Footer) ; les blocs tableau et catalogue portent `range_mode[fixed|extensible]` ; `theme_id` vide = thème par défaut
-- `topics(id, author_id, closed_at, pinned_at, ...)`, `messages(id, topic_id, author_id, hidden_at, ...)`
+- `topics(id, author_id, closed_at, pinned_at, deleted_at, ...)`, `messages(id, topic_id, author_id, hidden_at, deleted_at, ...)`
 - `chat_messages(id, page_block_id, author_id, content, created_at, hidden_at, deleted_at)` — historique du chat conservé
 - `message_revisions(message_id, message_kind[topic|chat], content, edited_at, action[edit|delete|hide])` — archive des modifications, suppressions et masquages ([07](conception/07-discussions.md#points-techniques))
 - `excel_sources(id, type[upload|gsheet|onedrive], connection_info, last_synced_at, last_downloaded_at)` — `last_downloaded_at` sert à l'avertissement de réimport des uploads
 - `excel_staging_cells(source_id, sheet_ref, cell_ref, value, formula?, needs_recalc)` — staging des **Excel uploadés uniquement**, jamais reparsés à chaque affichage ; les sources connectées passent par un cache mémoire ([08](conception/08-sources-donnees.md#points-techniques))
 - `cell_references(source_id, sheet_ref, cell_or_range, referenced_source_id, referenced_ref)` — résolution des liaisons inter-fichiers ([08](conception/08-sources-donnees.md))
-- `forms(id, page_block_id, fields JSONB, mode[modification|ajout])`
+- `forms(id, page_block_id, fields JSONB, mode[modification|ajout], deleted_at)`
 - `form_add_config(form_id, source_id, sheet_ref, start_row, max_new_rows)` — zone d'ajout `[start_row, start_row + max_new_rows - 1]` d'un formulaire en mode `ajout` (n'existe que pour ce mode) ; les colonnes autorisées sont celles de `form_field_mappings` ; la ligne attribuée est la première ligne vide de la zone ([09](conception/09-formulaires-soumissions.md#validation-dune-soumission-ajout))
 - `form_field_mappings(form_id, field_key, source_id, cell_ref)` — pour un formulaire `ajout`, `cell_ref` contient une référence de colonne (ex. `"C"`) plutôt qu'une cellule complète : la ligne est résolue dynamiquement à la validation
-- `submissions(id, form_id, user_id, values JSONB, status[pending|validated|rejected|modified], assigned_row?)` — `assigned_row` n'est rempli qu'à la validation d'une soumission de type `ajout`
+- `submissions(id, form_id, user_id, values JSONB, status[pending|validated|rejected|modified|invalidated], assigned_row?)` — `assigned_row` n'est rempli qu'à la validation d'une soumission de type `ajout`
 - `templates(id, type[form|page|topic], payload JSONB)`
 - `user_notes(id, user_id, title, content, created_at, updated_at, deleted_at)` — `content` en format riche restreint, nettoyé côté backend
 - `audit_log(id, actor_id, action, target_type, target_id, before JSONB, after JSONB, created_at)` — journal en ajout seul (comptes, appartenances, permissions, soumissions, sources, pages, formulaires, restaurations, consultations de notes — liste complète dans [04](conception/04-administration.md#journal-des-modifications))
 
 Le calcul des droits effectifs (fonction de résolution unique) est décrit dans [03 — Calcul des droits effectifs](conception/03-droits-groupes.md#calcul-des-droits-effectifs).
 
-Soft-delete (`deleted_at`) sur pages, formulaires, sujets, messages, groupes, utilisateurs — voir [11 — Suppression de contenu](conception/11-transverse.md#suppression-de-contenu).
+Soft-delete (`deleted_at`) sur pages, formulaires, sujets, messages, messages de chat, groupes, utilisateurs, notes — voir [11 — Suppression de contenu](conception/11-transverse.md#suppression-de-contenu).
 
 ## 4. Moteur Excel/Sheets (`ExcelSyncModule`)
 
@@ -116,7 +116,7 @@ Un seul `docker-compose.yml` : services `proxy` (Caddy, HTTPS automatique), `fro
 
 ## 8. Sécurité transverse
 
-- `PermissionsGuard` appliqué à chaque route (lecture/écriture/création) — jamais de vérification uniquement côté frontend.
+- `PermissionsGuard` appliqué à chaque route (lecture/création) — jamais de vérification uniquement côté frontend.
 - Règles propres à chaque domaine :
   - sessions et révocation : [02](conception/02-comptes-authentification.md#points-techniques) ;
   - guard admin et intégrité du journal : [04](conception/04-administration.md#points-techniques) ;
