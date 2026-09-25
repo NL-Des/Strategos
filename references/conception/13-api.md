@@ -1,0 +1,343 @@
+# 13 — API
+
+## Objet
+Le contrat entre le frontend et le backend : conventions communes, routes utilisateur, routes d'administration, canal temps réel du chat, et schémas des échanges délicats. Chaque route renvoie à la règle de conception qu'elle met en œuvre. La spécification OpenAPI sera **générée depuis le code** NestJS (`@nestjs/swagger`) au moment du développement ; ce document en est la référence de conception.
+
+## 1. Conventions communes
+
+### Généralités
+- Échanges en **JSON** (sauf les uploads en `multipart/form-data` et les téléchargements de fichiers). Identifiants en **UUID**. Dates au format ISO 8601, en UTC.
+- Deux espaces de routes :
+  - `/api/v1/…` : routes utilisateur (l'admin y a aussi accès, avec tous les droits) ;
+  - `/api/v1/admin/…` : routes d'administration, protégées **globalement** par le guard de rôle admin.
+- Chat en temps réel : WebSocket sur `/api/v1/ws` (voir [§4](#4-websocket-du-chat)).
+
+### Authentification et CSRF
+- Session par **cookie** `httpOnly`, `secure`, `SameSite=Strict` (voir [Comptes et authentification](02-comptes-authentification.md#points-techniques)).
+- **CSRF** : toute requête `POST`, `PUT`, `PATCH` ou `DELETE` doit porter l'en-tête `X-CSRF-Token`, obtenu par `GET /api/v1/auth/csrf`. L'en-tête `Origin` est également vérifié.
+- **Changement d'identifiants forcé** : tant que `must_change_credentials` est actif, seules `GET /auth/me`, `POST /auth/change-credentials` et `POST /auth/logout` répondent. Toutes les autres routes renvoient `403 CREDENTIALS_CHANGE_REQUIRED`.
+
+### Codes de retour et erreurs
+Toute erreur a le même format :
+
+```json
+{ "code": "FORM_CLOSED", "message": "Ce formulaire est fermé.", "details": { } }
+```
+
+`code` est **stable** et sert de clé de traduction au frontend (voir [Transverse](11-transverse.md#langue)). `message` est un texte de secours en français.
+
+| Statut | Usage |
+|---|---|
+| `400` | Données invalides (`VALIDATION_FAILED`, avec `details.fields` par champ) |
+| `401` | Non connecté ou session expirée (`UNAUTHENTICATED`) |
+| `403` | La ressource est **lisible**, mais l'action n'est pas permise (ex. poster sans le droit « poster », modifier le message d'un autre) ; ou changement d'identifiants requis |
+| `404` | La ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
+| `409` | Conflit d'état : modification concurrente, soumission déjà traitée, confirmation d'avertissement requise, élément encore utilisé |
+| `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé…) |
+| `429` | Trop de tentatives (`AUTH_TOO_MANY_ATTEMPTS`, avec `details.retryAfter`) |
+| `502` / `503` | Source de données injoignable (`SOURCE_UNAVAILABLE`) ou connexion expirée (`SOURCE_AUTH_EXPIRED`) |
+
+### Avertissements à confirmer
+Certaines actions admin sont permises mais méritent une confirmation : cellule-formule ciblée, plage de tableau qui ne couvre pas une zone d'ajout, média ou source encore utilisé, réimport qui perdrait des validations. Le schéma est toujours le même :
+1. premier appel sans confirmation → `409 CONFIRMATION_REQUIRED`, avec `details.warnings: [{ code, message, … }]` ;
+2. l'admin confirme → même appel avec `"confirm": true`.
+
+Les enregistrements qui ne bloquent pas (ex. sauvegarder un formulaire qui vise une cellule-formule) réussissent directement et renvoient `warnings` dans la réponse.
+
+### Listes, pagination, tri, recherche
+- Paramètres `?page=1&pageSize=50&sort=colonne:asc&q=texte`, avec `pageSize` plafonné à 200.
+- Réponse : `{ "items": [...], "total": 1234, "page": 1, "pageSize": 50 }`.
+- Historique de chat : pagination par curseur (`?before=<messageId>` ou `?after=<messageId>`, `limit`).
+
+### Suppression et restauration
+- `DELETE` = **suppression douce** (voir [Transverse](11-transverse.md#suppression-de-contenu)).
+- La restauration se fait uniquement par l'admin, depuis la corbeille (`POST /admin/trash/:type/:id/restore`).
+
+### Modifications concurrentes (admin)
+Les objets édités par l'admin (pages, formulaires, thèmes, groupes…) portent un champ `version`. Une mise à jour envoie la `version` lue. Si l'objet a changé entre-temps (dans un autre onglet, par exemple), la réponse est `409 EDIT_CONFLICT`.
+
+## 2. Routes utilisateur (`/api/v1`)
+Colonne **Accès** : `public` (sans session), `connecté`, `lecture page`, `lecture espace`, `ouvrir sujet`, `poster` (droits de [Droits et groupes](03-droits-groupes.md#modèle-par-groupes)), `auteur` (propriété), `auteur ou admin`.
+
+### Authentification — [02](02-comptes-authentification.md)
+| Méthode | Chemin | Accès | Rôle | Erreurs principales |
+|---|---|---|---|---|
+| GET | `/auth/csrf` | public | Obtenir le jeton CSRF | — |
+| POST | `/auth/login` | public | Connexion `{ username, password }` → `Me` | `AUTH_INVALID_CREDENTIALS`, `AUTH_ACCOUNT_DISABLED`, `429 AUTH_TOO_MANY_ATTEMPTS` |
+| POST | `/auth/logout` | connecté | Déconnexion | — |
+| GET | `/auth/me` | connecté | Utilisateur courant (`Me`) | — |
+| POST | `/auth/change-credentials` | connecté | Changement forcé : `{ currentPassword, newPassword, newUsername? }`. `newUsername` n'est accepté que pour l'admin | `AUTH_INVALID_CREDENTIALS`, `VALIDATION_FAILED`, `USERNAME_TAKEN` |
+
+`Me` = `{ id, username, isAdmin, mustChangeCredentials, landingPageId, personalPageId }`.
+
+### Profil — [05](05-profil-utilisateur.md)
+| Méthode | Chemin | Accès | Rôle | Erreurs |
+|---|---|---|---|---|
+| GET | `/me/profile` | connecté | Pseudo, date de création, statut, groupes, droits effectifs avec les groupes qui les accordent | — |
+| PUT | `/me/password` | connecté | `{ currentPassword, newPassword }` ; limité comme la connexion | `AUTH_INVALID_CREDENTIALS`, `429` |
+| GET | `/me/notes` | connecté | Liste de ses notes | — |
+| POST | `/me/notes` | connecté | Créer `{ title, content }` (HTML nettoyé) | `VALIDATION_FAILED` |
+| PUT | `/me/notes/:id` | auteur | Modifier | `404` |
+| DELETE | `/me/notes/:id` | auteur | Supprimer (douce) | `404` |
+| GET | `/me/submissions` | connecté | Ses soumissions, paginées, avec statut et formulaire d'origine | — |
+
+### Navigation et pages — [06](06-page-builder.md)
+| Méthode | Chemin | Accès | Rôle | Erreurs |
+|---|---|---|---|---|
+| GET | `/layout` | connecté | Header et footer partagés **publiés**, assemblés et filtrés pour l'utilisateur | — |
+| GET | `/pages/:id` | lecture page | **Page assemblée** : version publiée, modules et liens non autorisés retirés, valeurs résolues (voir [schéma](#page-assemblée)) | `404`, `SOURCE_UNAVAILABLE` (partiel, voir schéma) |
+| GET | `/blocks/:blockId/rows` | lecture page | Lignes d'un Tableau ou d'un Catalogue : `?page&pageSize&sort&q` ; pagination, tri et recherche côté serveur | `404`, `503 SOURCE_UNAVAILABLE` |
+
+La page d'arrivée et la page personnelle sont connues via `Me` (`landingPageId`, `personalPageId`) : il n'y a pas de route dédiée. Si l'utilisateur ne peut pas lire la page d'arrivée, `GET /pages/:id` renvoie `404` et le frontend affiche l'écran « Aucun espace ne vous est encore attribué ».
+
+### Formulaires et soumissions — [09](09-formulaires-soumissions.md)
+| Méthode | Chemin | Accès | Rôle | Erreurs |
+|---|---|---|---|---|
+| GET | `/forms/:id` | lecture page | Définition du formulaire côté utilisateur (voir [schéma](#formulaire-côté-utilisateur)) : champs, options résolues des listes, état `open` / `closed` / `full` | `404` (y compris un formulaire non configuré) |
+| GET | `/forms/:id/prefill?rowKey=` | lecture page | Formulaire de ligne : valeurs actuelles de la ligne, pour pré-remplir | `404`, `422 ROW_KEY_NOT_FOUND`, `422 ROW_KEY_DUPLICATE` |
+| POST | `/forms/:id/submissions` | lecture page | Soumettre `{ values, rowKey? }`. Les champs automatiques sont remplis par le serveur (toute valeur envoyée pour eux est ignorée). Réponse : la soumission, `pending`, ou `validated` en validation automatique | `VALIDATION_FAILED`, `422 FORM_CLOSED`, `422 FORM_FULL`, `422 ROW_KEY_NOT_FOUND` |
+| GET | `/me/submissions/:id` | auteur | Détail d'une de ses soumissions | `404` |
+
+### Espaces de discussion — [07](07-discussions.md#espaces-de-discussion)
+| Méthode | Chemin | Accès | Rôle | Erreurs |
+|---|---|---|---|---|
+| GET | `/spaces/:id/topics` | lecture espace | Sujets (épinglés en tête, puis selon le tri de l'espace), paginés | `404` |
+| POST | `/spaces/:id/topics` | ouvrir sujet | Ouvrir `{ title, firstMessage }` | `403`, `VALIDATION_FAILED` |
+| GET | `/topics/:id` | lecture espace | Sujet et messages (paginés) ; les messages masqués ou supprimés sont exclus | `404` |
+| PATCH | `/topics/:id` | auteur ou admin | Renommer `{ title }` ou clore `{ closed: true }` | `403 NOT_AUTHOR` |
+| POST | `/topics/:id/messages` | poster | Poster `{ content, attachmentIds? }` | `403`, `422 TOPIC_CLOSED` |
+| PUT | `/messages/:id` | auteur | Modifier (l'ancienne version est archivée) | `403 NOT_AUTHOR`, `422 TOPIC_CLOSED` |
+| DELETE | `/messages/:id` | auteur | Supprimer (archivé) | `403 NOT_AUTHOR` |
+| POST | `/attachments` | connecté | Upload d'une image jointe (`multipart`), à rattacher ensuite à un message | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE` |
+
+### Chat — [07](07-discussions.md#chat)
+| Méthode | Chemin | Accès | Rôle | Erreurs |
+|---|---|---|---|---|
+| GET | `/chats/:blockId/messages` | lecture page | Historique par curseur (`?before=` ou `?after=`, `limit`), utilisé au chargement et au rattrapage après une reconnexion | `404` |
+| PUT | `/chat-messages/:id` | auteur | Modifier son message (archivé) ; diffusé en temps réel | `403 NOT_AUTHOR` |
+| DELETE | `/chat-messages/:id` | auteur | Supprimer son message (archivé) ; diffusé | `403 NOT_AUTHOR` |
+
+L'envoi d'un message passe par le WebSocket (voir [§4](#4-websocket-du-chat)).
+
+### Médias
+| Méthode | Chemin | Accès | Rôle | Erreurs |
+|---|---|---|---|---|
+| GET | `/media/:id` | connecté | Fichier de la médiathèque ou pièce jointe (voir [Questions ouvertes](#questions-ouvertes)) | `404` |
+
+## 3. Routes d'administration (`/api/v1/admin`)
+Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des données écrit dans le journal, dans la même transaction (voir [Administration](04-administration.md#journal-des-modifications)).
+
+### Comptes — [02](02-comptes-authentification.md), [04](04-administration.md)
+| Méthode | Chemin | Rôle | Erreurs |
+|---|---|---|---|
+| GET | `/users` | Liste paginée, filtrable (statut, groupe) | — |
+| POST | `/users` | Créer `{ username, temporaryPassword, groupIds? }` → `must_change_credentials = true` | `USERNAME_TAKEN` |
+| GET | `/users/:id` | Fiche : groupes, droits effectifs, page personnelle | `404` |
+| PATCH | `/users/:id` | Modifier le pseudo et la page personnelle (`personalPageId`) | `USERNAME_TAKEN`, `EDIT_CONFLICT` |
+| POST | `/users/:id/reset-password` | `{ temporaryPassword }` → mot de passe temporaire, sessions révoquées | — |
+| POST | `/users/:id/disable` · `/enable` | Désactiver (sessions révoquées) ou réactiver | — |
+| DELETE | `/users/:id` | Suppression douce | — |
+| GET | `/users/:id/notes` | Notes de l'utilisateur, **en lecture seule** ; chaque appel est tracé (`notes.read`) | — |
+
+### Groupes et droits — [03](03-droits-groupes.md)
+| Méthode | Chemin | Rôle | Erreurs |
+|---|---|---|---|
+| GET / POST | `/groups` | Lister, créer `{ name, description }` | `GROUP_NAME_TAKEN` |
+| GET / PATCH / DELETE | `/groups/:id` | Fiche, renommer ou décrire, supprimer (douce) | `EDIT_CONFLICT` |
+| PUT | `/groups/:id/members` | Remplacer la liste des membres `{ userIds }` | — |
+| PUT | `/groups/:id/permissions` | Remplacer les permissions `[{ resourceType, resourceId, canRead, canCreateTopic, canPost }]` | `VALIDATION_FAILED` (ex. `canPost` sur une page) |
+| GET | `/rights/users/:id` | Droits effectifs d'un utilisateur, avec les groupes qui les accordent | — |
+| GET | `/rights/resources/:type/:id` | Qui peut lire, ouvrir un sujet ou poster, et via quel groupe | — |
+| GET | `/rights/matrix` | Matrice paginée utilisateurs × ressources, filtres `group`, `type`, `user` | — |
+
+### Supervision — [04](04-administration.md)
+| Méthode | Chemin | Rôle |
+|---|---|---|
+| GET | `/audit` | Journal paginé, filtres : acteur, action, type de cible, période |
+| GET | `/trash` | Corbeille paginée, filtre par type |
+| POST | `/trash/:type/:id/restore` | Restaurer |
+| GET / PUT | `/settings` | Réglages de l'instance : page d'arrivée, thème par défaut, durée de conservation des sauvegardes |
+| GET | `/backups` | Liste des sauvegardes disponibles |
+| GET | `/backups/:id/download` | Télécharger une sauvegarde (flux) |
+
+### Sources — [08](08-sources-donnees.md), [04](04-administration.md#sources)
+| Méthode | Chemin | Rôle | Erreurs |
+|---|---|---|---|
+| GET | `/sources` | Liste : type, état, dernière lecture ou import, usages | — |
+| GET | `/sources/service-account` | Adresse du compte de service Google, à afficher pour le partage | — |
+| POST | `/sources` | Ajouter un Google Sheet `{ type: "gsheet", url }` ou un fichier OneDrive `{ type: "onedrive", itemId }` ; teste l'accès | `SOURCE_UNAVAILABLE` (Sheet non partagé), `SOURCE_AUTH_EXPIRED` |
+| POST | `/sources/upload` | Uploader un Excel (`multipart`) → nouvelle source de type upload | `413`, `415`, `EXCEL_PARSE_FAILED` |
+| POST | `/sources/:id/test` | Tester l'accès | `SOURCE_UNAVAILABLE` |
+| GET | `/sources/:id/download` | Télécharger la version de référence d'un Excel uploadé ; met à jour `last_downloaded_at` | `422` si ce n'est pas un upload |
+| POST | `/sources/:id/reimport/preview` | Uploader le nouveau fichier ; renvoie un `reimportToken` et la liste des **validations qui seraient perdues** (voir [schéma](#aperçu-de-réimport)) | `415`, `EXCEL_PARSE_FAILED` |
+| POST | `/sources/:id/reimport/confirm` | `{ reimportToken, mode: "overwrite" \| "reapply" }` (annuler revient à ne pas confirmer ; le jeton expire) | `409 REIMPORT_TOKEN_EXPIRED`, `422` si une validation réappliquée échoue |
+| DELETE | `/sources/:id` | Retirer (avertissement si encore utilisée) | `409 CONFIRMATION_REQUIRED` |
+| GET | `/onedrive/connect` | Démarre la connexion Microsoft (redirection) | — |
+| GET | `/onedrive/callback` | Retour de Microsoft : vérifie le paramètre `state` (qui remplace le CSRF pour cette redirection) et stocke le jeton chiffré | `SOURCE_AUTH_FAILED` |
+| GET | `/onedrive/browse?path=` | Parcourir le OneDrive connecté pour choisir un fichier | `SOURCE_AUTH_EXPIRED` |
+
+### Page builder — [06](06-page-builder.md)
+| Méthode | Chemin | Rôle | Erreurs |
+|---|---|---|---|
+| GET / POST | `/pages` | Lister (pour les sélecteurs de liens) ; créer une page (brouillon vide) | — |
+| GET | `/pages/:id` | Page avec son brouillon, sa version publiée et ses réglages (thème, header/footer affichés) | `404` |
+| PUT | `/pages/:id/draft` | Enregistrer le brouillon `{ version, config, themeId, showHeader, showFooter }`. Les avertissements (plage non couverte…) sont renvoyés | `VALIDATION_FAILED`, `EDIT_CONFLICT` |
+| GET | `/pages/:id/preview` | Brouillon **assemblé** comme le verrait un utilisateur (valeurs résolues) | — |
+| POST | `/pages/:id/publish` | Publier le brouillon | `VALIDATION_FAILED` (bloc invalide) |
+| DELETE | `/pages/:id` | Suppression douce | — |
+| GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`) | `EDIT_CONFLICT` |
+| POST | `/layout/:kind/publish` | Publier le header ou le footer | — |
+| GET | `/blocks/:blockId/rows?preview=true` | Lignes d'un bloc de brouillon, pour l'aperçu | — |
+| CRUD | `/themes`, `/themes/:id` | Thèmes ; supprimer le thème par défaut est refusé | `422 DEFAULT_THEME` |
+| GET / POST | `/media` | Liste paginée, upload (`multipart`) | `413`, `415`, `MEDIA_NAME_TAKEN` |
+| DELETE | `/media/:id` | Supprimer ; avertissement avec la liste des pages qui l'utilisent | `409 CONFIRMATION_REQUIRED` |
+
+### Formulaires et soumissions — [09](09-formulaires-soumissions.md)
+| Méthode | Chemin | Rôle | Erreurs |
+|---|---|---|---|
+| POST | `/forms` | Créer un formulaire rattaché à un bloc `{ pageBlockId, mode, … }` | `VALIDATION_FAILED` |
+| GET / PUT / DELETE | `/forms/:id` | Lire, modifier (mappings, champs, zone, clé), supprimer. La réponse indique les soumissions **invalidées** par une modification structurelle, et les `warnings` (cellule-formule, plage non couverte) | `EDIT_CONFLICT` |
+| POST | `/forms/:id/open` · `/close` | Ouvrir, fermer | — |
+| PATCH | `/forms/:id/settings` | `{ closesAt?, autoValidate? }` ; activer la validation automatique renvoie les avertissements à confirmer | `409 CONFIRMATION_REQUIRED` |
+| GET | `/submissions` | File paginée, filtres : statut, formulaire, page, utilisateur, période ; conflits signalés (voir [schéma](#élément-de-la-file-des-soumissions)) | — |
+| GET | `/submissions/count` | Compteur des soumissions en attente (affiché en permanence) | — |
+| POST | `/submissions/:id/validate` | Valider ; avertissement cellule-formule à confirmer | `409 CONFIRMATION_REQUIRED`, `409 SUBMISSION_NOT_PENDING`, `422 ADD_ZONE_FULL`, `422 ROW_KEY_NOT_FOUND`, `422 ROW_KEY_DUPLICATE`, `422 MOVEMENT_NOT_NUMERIC`, `503 SOURCE_UNAVAILABLE` |
+| POST | `/submissions/:id/modify` | Valider avec des valeurs corrigées par l'admin `{ values }` → statut `modified` | mêmes erreurs |
+| POST | `/submissions/:id/reject` | Refuser `{ reason? }` | `409 SUBMISSION_NOT_PENDING` |
+
+### Discussions (modération) — [07](07-discussions.md#modération)
+| Méthode | Chemin | Rôle |
+|---|---|---|
+| PATCH | `/topics/:id` | Épingler ou désépingler `{ pinned }` (renommer et clore passent par la route utilisateur, ouverte à l'admin) |
+| POST | `/messages/:id/hide` · `/unhide` | Masquer ou rétablir un message de sujet |
+| POST | `/chat-messages/:id/hide` · `/unhide` | Idem pour le chat (diffusé en temps réel) |
+
+### Modèles — [10](10-modeles-duplication.md)
+| Méthode | Chemin | Rôle |
+|---|---|---|
+| GET | `/templates` | Bibliothèque, filtre par type (`form`, `page`, `topic`) |
+| POST | `/templates` | Enregistrer comme modèle `{ type, sourceId, name }` |
+| DELETE | `/templates/:id` | Supprimer |
+| POST | `/templates/:id/instantiate` | Instancier : page → nouvelle page en brouillon ; formulaire → `{ pageBlockId }` ; sujet → `{ spaceId }`. Mappings et plages réinitialisés |
+
+## 4. WebSocket du chat
+- **Connexion** : `wss://…/api/v1/ws`, authentifiée par le cookie de session. L'en-tête `Origin` est vérifié à la connexion. Une session révoquée (compte désactivé) ferme la connexion.
+- **Rejoindre un salon** : le client envoie `chat.join { blockId }`. Le serveur vérifie le droit de lecture sur la page qui contient le bloc, puis répond `chat.joined` ou `chat.error { code: "NOT_FOUND" }`. `chat.leave { blockId }` pour quitter.
+- **Envoyer** : `chat.send { blockId, clientId, content }` → accusé `chat.ack { clientId, message }` ou `chat.error { clientId, code }`. Les validations et la limite de fréquence sont les mêmes qu'en REST.
+- **Événements diffusés** aux membres du salon : `chat.message.created`, `chat.message.updated`, `chat.message.deleted`, `chat.message.hidden` (voir [schéma](#événement-de-chat)).
+- **Reconnexion** : le client rattrape les messages manqués via `GET /chats/:blockId/messages?after=<dernier id reçu>`.
+
+## 5. Schémas clés
+
+### Page assemblée
+Réponse de `GET /pages/:id` (et de `GET /admin/pages/:id/preview`) :
+
+```json
+{
+  "id": "…", "name": "Tournoi", "publishedAt": "…",
+  "theme": { "id": "…", "config": { } },
+  "showHeader": true, "showFooter": true,
+  "zones": {
+    "main": [
+      { "columns": [
+        { "width": "2/3", "block": { "id": "b1", "type": "table", "config": { "columns": [ ] }, "rowsUrl": "/api/v1/blocks/b1/rows" } },
+        { "width": "1/3", "block": { "id": "b2", "type": "chat" } }
+      ] }
+    ],
+    "sidebar": []
+  },
+  "unavailableSources": []
+}
+```
+
+- Les modules non autorisés, non configurés, et les liens vers des pages illisibles sont **absents** : le frontend ne peut pas les afficher par erreur.
+- Les liens « Ma page personnelle » sont déjà résolus en identifiant de page.
+- Les valeurs insérées dans un Contenu libre sont **déjà résolues** (`{ "value": "4 250", "needsRecalc": false }`).
+- Les lignes des tableaux et catalogues ne sont pas incluses : elles sont chargées page par page via `rowsUrl`.
+- Si une source est injoignable, la page est tout de même renvoyée. Les blocs concernés portent `"error": "SOURCE_UNAVAILABLE"` et la source est listée dans `unavailableSources`.
+
+### Formulaire côté utilisateur
+```json
+{
+  "id": "…", "mode": "ajout", "state": "open", "closesAt": null,
+  "title": "Inscription", "intro": "…", "successMessage": "…",
+  "fields": [
+    { "key": "pseudo", "type": "text", "auto": "pseudo", "readOnly": true, "value": "Kira" },
+    { "key": "classe", "type": "select", "required": true, "options": ["Mage", "Voleur", "Guerrier"] },
+    { "key": "niveau", "type": "number", "required": true, "min": 1, "max": 60 }
+  ]
+}
+```
+Pour un champ « mouvement » : `"movement": true` ; l'utilisateur saisit une quantité signée. Les cellules, colonnes et sources visées ne sont **jamais** exposées à l'utilisateur.
+
+### Soumission
+```json
+{
+  "id": "…", "formId": "…", "formTitle": "Inscription",
+  "status": "pending", "submittedAt": "…", "decidedAt": null,
+  "values": { "classe": "Mage", "niveau": 42 },
+  "rowKey": null, "reason": null
+}
+```
+`status` ∈ `pending`, `validated`, `rejected`, `modified`, `invalidated`.
+
+### Élément de la file des soumissions
+Côté admin, chaque soumission s'accompagne de son contexte :
+
+```json
+{
+  "submission": { },
+  "user": { "id": "…", "username": "Kira" },
+  "form": { "id": "…", "title": "…", "mode": "ligne", "pageId": "…" },
+  "targets": [ { "field": "stock", "sourceId": "…", "sheet": "Stock", "cell": "D138", "currentValue": "8", "proposed": "-3", "movement": true } ],
+  "conflicts": [ "…ids des autres soumissions en attente sur les mêmes cellules…" ],
+  "warnings": [ { "code": "FORMULA_CELL_TARGETED", "cell": "F12" } ]
+}
+```
+`currentValue` est lue au moment de l'affichage de la file ; elle peut avoir changé au moment de la validation.
+
+### Aperçu de réimport
+```json
+{
+  "reimportToken": "…", "expiresAt": "…",
+  "lastDownloadedAt": "…",
+  "lostValidations": [
+    { "submissionId": "…", "cell": "Stock!C2", "validatedValue": "8", "valueInNewFile": "10", "validatedAt": "…" }
+  ]
+}
+```
+Une liste vide signifie que le réimport ne perd rien.
+
+### Événement de chat
+```json
+{ "type": "chat.message.created", "blockId": "…",
+  "message": { "id": "…", "author": { "id": "…", "username": "Kira" }, "content": "…", "createdAt": "…", "editedAt": null } }
+```
+Pour `deleted` et `hidden`, seul `message.id` est envoyé.
+
+## 6. Qui protège quoi
+| Protection | Portée |
+|---|---|
+| `AuthGuard` (global) | Toutes les routes sauf `auth/csrf` et `auth/login` |
+| Guard « identifiants à changer » (global) | Tout sauf `auth/me`, `auth/change-credentials`, `auth/logout` |
+| Guard CSRF (global) | Toutes les méthodes qui modifient des données, sauf le retour OAuth (protégé par `state`) |
+| Guard admin | Tout `/api/v1/admin/**`, et la passerelle pour les événements de modération |
+| `PermissionsGuard` | Routes de pages, blocs, formulaires, chats (lecture page) et d'espaces, sujets, messages (droits de l'espace) |
+| Propriété | Notes, ses soumissions, ses messages (sujets et chat), renommer ou clore son sujet |
+
+## Dépendances
+Toutes les parties ; en particulier [02](02-comptes-authentification.md), [03](03-droits-groupes.md), [06](06-page-builder.md), [07](07-discussions.md), [08](08-sources-donnees.md) et [09](09-formulaires-soumissions.md).
+
+## Questions ouvertes
+Incohérences ou manques révélés par l'écriture de l'API :
+
+1. **Formulaires, espaces et brouillon.** Les pages ont un brouillon et une version publiée, mais les formulaires, espaces de discussion et chats sont des objets à part (tables propres, rattachées à un `page_block_id`). Modifier le mapping d'un formulaire prend donc effet **immédiatement**, même si la page est encore en brouillon, et peut invalider des soumissions en attente. Faut-il que la configuration des formulaires suive elle aussi le cycle brouillon → publication ? Même question pour les espaces de discussion et les chats : en l'état, leur ligne en base est créée dès l'enregistrement du brouillon qui contient leur bloc, mais ils ne deviennent accessibles qu'à la publication de la page.
+2. **Accès aux images.** `GET /media/:id` : vérifier, pour chaque image, que l'utilisateur peut lire au moins une page qui l'utilise est coûteux. Proposition : toute image de la médiathèque est accessible à **tout utilisateur connecté**, et les pièces jointes des messages sont accessibles à qui peut lire l'espace. Est-ce acceptable, sachant qu'une image « confidentielle » placée dans la médiathèque pourrait être vue par un utilisateur qui devinerait son identifiant (très improbable avec des UUID) ?
+3. **Pièces jointes des messages.** Les images jointes aux messages n'avaient pas de règles : je propose 5 Mo au maximum, formats JPEG, PNG, WebP et GIF, 4 images par message au plus.
+4. **Aperçu « comme un utilisateur ».** L'aperçu admin montre le brouillon avec tous les droits. Faut-il pouvoir prévisualiser la page **comme la verrait un groupe donné** (modules et liens filtrés), pour vérifier les droits avant de publier ?
+
+**Décisions (2026-09-25)**
+- Markdown de conception ; OpenAPI généré depuis le code.
+- Deux espaces de routes, `/api/v1` et `/api/v1/admin`, plus un WebSocket pour le chat.
+- `404` pour toute ressource illisible (pas de `403` qui révèlerait son existence).
+- Codes d'erreur stables, traduits par le frontend ; confirmation des avertissements par `confirm: true`.

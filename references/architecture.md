@@ -18,6 +18,7 @@ Ce document est le squelette technique de Strategos : il relie les parties de la
 | 10 | [Modèles et duplication](conception/10-modeles-duplication.md) | Bibliothèque de modèles |
 | 11 | [Transverse](conception/11-transverse.md) | Stack, suppression, sauvegardes, langue, RGPD |
 | 12 | [Parcours](conception/12-parcours.md) | Scénarios de bout en bout qui éprouvent la conception |
+| 13 | [API](conception/13-api.md) | Conventions, routes utilisateur et admin, WebSocket du chat, schémas clés |
 
 ## 1. Vue d'ensemble
 
@@ -100,18 +101,18 @@ sequenceDiagram
     participant ES as ExcelSyncModule
     participant SRC as Fichier/Sheet
 
-    FE->>BE: GET page config
+    FE->>BE: GET /api/v1/pages/:id
     BE->>ES: résoudre données des blocs
     ES-->>BE: valeurs (staging/cache)
-    BE-->>FE: page assemblée
+    BE-->>FE: page assemblée (filtrée par les droits)
 
-    FE->>BE: POST submission (formulaire)
-    BE-->>FE: statut "pending"
+    FE->>BE: POST /api/v1/forms/:id/submissions
+    BE-->>FE: statut "pending" (ou "validated" en validation automatique)
 
-    Note over BE: Admin valide la soumission
-    BE->>ES: appliquer la cellule
+    Note over BE: Admin : POST /api/v1/admin/submissions/:id/validate
+    BE->>ES: appliquer la cellule (file par source)
     ES->>SRC: écrire la valeur brute
-    BE-->>FE: statut "validated"
+    Note over FE: GET /api/v1/me/submissions → "validated"
 ```
 
 ## 7. Déploiement
@@ -121,6 +122,7 @@ Un seul `docker-compose.yml` : services `proxy` (Caddy, HTTPS automatique), `fro
 ## 8. Sécurité transverse
 
 - `PermissionsGuard` appliqué à chaque route (lecture/création) — jamais de vérification uniquement côté frontend.
+- Ressource illisible → `404` (jamais `403`, qui révèlerait son existence) ; CSRF par en-tête `X-CSRF-Token` ; tableau complet des protections dans [13 — API](conception/13-api.md#6-qui-protège-quoi).
 - Règles propres à chaque domaine :
   - sessions et révocation : [02](conception/02-comptes-authentification.md#points-techniques) ;
   - guard admin et intégrité du journal : [04](conception/04-administration.md#points-techniques) ;

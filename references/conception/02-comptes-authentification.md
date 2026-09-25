@@ -43,6 +43,7 @@ Géré depuis l'espace d'administration (voir [Administration](04-administration
 - Script CLI de réinitialisation, exécuté par `docker compose exec backend …` : il fixe un mot de passe temporaire, remet `must_change_credentials` à `true` et révoque les sessions de l'admin. L'action est tracée dans le journal.
 
 ## Dépendances
+- [13 — API](13-api.md#2-routes-utilisateur-apiv1) : routes d'authentification, CSRF et limitation (`429`).
 - [03 — Droits et groupes](03-droits-groupes.md) : appartenance d'un compte aux groupes.
 - [04 — Administration](04-administration.md) : interface de gestion et journal des modifications.
 - [11 — Transverse](11-transverse.md) : notifications, suppression douce.

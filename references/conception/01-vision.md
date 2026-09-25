@@ -22,6 +22,14 @@ Strategos fait toujours écran entre l'utilisateur et les fichiers Excel/Sheet :
 - **En écriture** : l'administrateur construit un formulaire et relie chacun de ses champs à une cellule précise du document. L'utilisateur ne remplit que ce formulaire ; sa soumission reste une *proposition* en attente de validation admin (voir [Formulaires et soumissions](09-formulaires-soumissions.md)).
 - **En lecture** : l'administrateur construit une page et y place des modules (tableau, catalogue, contenu libre...) qui vont chercher leurs données dans le document. L'utilisateur ne voit que ce que l'admin a choisi d'exposer, jamais le fichier brut (voir [Page builder](06-page-builder.md)).
 
+> **Exception : la validation automatique.** L'administrateur peut, **formulaire par formulaire**, laisser les soumissions s'écrire directement dans le document, sans validation manuelle (voir [Formulaires et soumissions](09-formulaires-soumissions.md#formulaires)). C'est une exception encadrée :
+> - elle relève de **la seule décision de l'administrateur** : elle n'est jamais active par défaut et ne peut jamais être demandée par un utilisateur ;
+> - son **périmètre est celui du formulaire** : l'utilisateur n'écrit que dans les cellules, colonnes ou zones d'ajout que l'admin a explicitement définies, jamais ailleurs dans le document ;
+> - chaque écriture reste **tracée** dans le journal et visible dans « mes soumissions » ;
+> - l'admin peut la **désactiver** à tout moment.
+>
+> Le principe tient donc toujours : l'utilisateur n'accède jamais au document brut. Seule l'étape de validation humaine peut être levée, sur un périmètre choisi.
+
 Cet encadrement systématique des interactions a deux objectifs : **fluidifier le trafic** (pas d'accès concurrent non maîtrisé sur le fichier source, un seul point de passage pour l'écriture) et **limiter les erreurs** (l'utilisateur ne peut jamais casser une structure ou une formule du document, puisqu'il n'interagit qu'avec des champs et des affichages que l'admin a explicitement définis).
 
 ### Profils
@@ -37,7 +45,7 @@ L'administrateur construit **tout l'environnement** dans lequel évoluent les ut
 - [02 — Comptes et authentification](02-comptes-authentification.md) · [03 — Droits et groupes](03-droits-groupes.md) · [04 — Administration](04-administration.md) · [05 — Profil utilisateur](05-profil-utilisateur.md)
 - [06 — Page builder](06-page-builder.md) · [07 — Discussions](07-discussions.md)
 - [08 — Sources de données](08-sources-donnees.md) · [09 — Formulaires et soumissions](09-formulaires-soumissions.md) · [10 — Modèles et duplication](10-modeles-duplication.md)
-- [11 — Transverse](11-transverse.md) · [12 — Parcours](12-parcours.md)
+- [11 — Transverse](11-transverse.md) · [12 — Parcours](12-parcours.md) · [13 — API](13-api.md)
 
 ## Questions ouvertes
 _Aucune pour l'instant._
@@ -46,3 +54,4 @@ _Aucune pour l'instant._
 - Publics : communautés de jeux en ligne et entreprises.
 - Admin unique : choix assumé pour la v1.
 - Pas de menu ni de navigation automatiques : l'admin construit tout l'environnement.
+- Validation automatique : exception au principe fondateur, sur décision de l'admin seul et limitée au périmètre d'un formulaire.
