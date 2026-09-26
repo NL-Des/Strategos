@@ -1,6 +1,6 @@
 # Strategos
 
-Site web construit par un administrateur au-dessus de fichiers Excel, Google Sheets et OneDrive : les utilisateurs lisent via des pages et écrivent via des formulaires, jamais dans le document lui-même. La conception complète est dans [references/](references/) ; le code n'existe pas encore.
+Site web construit par un administrateur au-dessus de fichiers Excel, Google Sheets et OneDrive : les utilisateurs lisent via des pages et écrivent via des formulaires, jamais dans le document lui-même. La conception complète est dans [references/](references/) ; le code suit l'ordre du [plan de réalisation](references/plan-realisation.md).
 
 ## Méthode de travail
 
@@ -50,4 +50,23 @@ Site web construit par un administrateur au-dessus de fichiers Excel, Google She
 
 ## Commandes
 
-_À compléter à l'étape 0 (installation, lancement, tests, lint, migrations)._
+Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, Vite), `packages/shared` (contrats). Node ≥ 22.12, TypeScript 6.0, tests Vitest.
+
+| But | Commande |
+|---|---|
+| Installer pnpm (une fois) | `corepack enable pnpm` (ou `corepack enable --install-directory ~/.local/bin pnpm`) |
+| Installer les dépendances | `pnpm install` (compile `shared` et génère le client Prisma) |
+| Tout lancer (production locale, HTTPS) | `docker compose up --build` → `https://localhost` (réglages dans `.env`, voir `.env.example`) |
+| Base seule pour le dev | `pnpm db:up` (Postgres sur `127.0.0.1:5432`) |
+| Dev avec rechargement | `cp apps/backend/.env.example apps/backend/.env` une fois, puis `pnpm dev` → `http://localhost:5173` |
+| Lint / format | `pnpm lint` · `pnpm format` · `pnpm format:check` |
+| Typage | `pnpm typecheck` |
+| Tests unitaires | `pnpm test` |
+| Tests e2e API | `pnpm test:e2e` (base `strategos_test` créée et migrée automatiquement ; `TEST_DATABASE_URL` pour en changer) |
+| Nouvelle migration | modifier `apps/backend/prisma/schema.prisma`, puis `pnpm --filter @strategos/backend prisma migrate dev --name <nom>` (ajouter `--create-only` pour compléter en SQL : `CHECK`, index partiels, trigger) |
+| Appliquer les migrations | `pnpm --filter @strategos/backend prisma migrate deploy` (automatique au démarrage du conteneur `backend`) |
+
+Conventions du code :
+- **Code d'erreur** : l'ajouter dans `packages/shared/src/errors.ts`, puis son texte de secours dans `apps/backend/src/common/error-messages.ts` et sa traduction `errors.<CODE>` dans `apps/frontend/src/i18n/fr.json` (typage et tests échouent sinon). Lever `new AppException(status, ErrorCode.X, details)`.
+- **Enum** : l'ajouter dans `schema.prisma` et dans `packages/shared/src/enums.ts` (un test compare les deux).
+- Backend ESM : imports relatifs avec l'extension `.js`.

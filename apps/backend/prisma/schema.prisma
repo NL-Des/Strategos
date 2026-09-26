@@ -1,0 +1,107 @@
+// Modèle de données : voir references/conception/14-modele-donnees.md.
+// Ce que Prisma n'exprime pas (CHECK, index partiels, trigger, extensions) est
+// ajouté en SQL dans les migrations.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. Types enum (ordre de création, 14 §13). Ils doivent rester identiques à
+// packages/shared/src/enums.ts (vérifié par src/prisma/enums.spec.ts).
+
+enum BackupStatus {
+  running
+  ok
+  failed
+
+  @@map("backup_status")
+}
+
+enum LayoutKind {
+  header
+  footer
+
+  @@map("layout_kind")
+}
+
+enum TopicSort {
+  activity
+  created
+
+  @@map("topic_sort")
+}
+
+enum RevisionAction {
+  edit
+  delete
+  hide
+  unhide
+
+  @@map("revision_action")
+}
+
+enum SourceType {
+  upload
+  gsheet
+  onedrive
+
+  @@map("source_type")
+}
+
+enum SourceStatus {
+  ok
+  unavailable
+  auth_expired
+
+  @@map("source_status")
+}
+
+enum CellType {
+  empty
+  text
+  number
+  bool
+  date
+  error
+
+  @@map("cell_type")
+}
+
+enum FormMode {
+  modification
+  ligne
+  ajout
+
+  @@map("form_mode")
+}
+
+enum SubmissionStatus {
+  pending
+  validated
+  rejected
+  modified
+  invalidated
+
+  @@map("submission_status")
+}
+
+enum TemplateType {
+  form
+  page
+  topic
+
+  @@map("template_type")
+}
+
+enum ActorKind {
+  user
+  system
+  cli
+
+  @@map("actor_kind")
+}

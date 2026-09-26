@@ -31,10 +31,11 @@ Toute erreur a le même format :
 | `400` | Données invalides (`VALIDATION_FAILED`, avec `details.fields` par champ) |
 | `401` | Non connecté ou session expirée (`UNAUTHENTICATED`) |
 | `403` | La ressource est **lisible**, mais l'action n'est pas permise (ex. poster sans le droit « poster », modifier le message d'un autre) ; ou changement d'identifiants requis |
-| `404` | La ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
+| `404` | `NOT_FOUND` : la ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
 | `409` | Conflit d'état : modification concurrente, soumission déjà traitée, confirmation d'avertissement requise, élément encore utilisé |
 | `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé…) |
 | `429` | Trop de tentatives (`AUTH_TOO_MANY_ATTEMPTS`, avec `details.retryAfter`) |
+| `500` | Erreur inattendue (`INTERNAL_ERROR`) : ni sa cause ni sa trace ne sont renvoyées, elles sont journalisées côté serveur |
 | `502` / `503` | Source de données injoignable (`SOURCE_UNAVAILABLE`) ou connexion expirée (`SOURCE_AUTH_EXPIRED`) |
 
 ### Avertissements à confirmer

@@ -1,0 +1,5 @@
+references/
+pnpm-lock.yaml
+**/dist/
+**/generated/
+*.md

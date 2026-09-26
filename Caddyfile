@@ -1,0 +1,14 @@
+# DOMAIN=localhost → certificat interne de Caddy (HTTPS local) ;
+# un vrai nom de domaine → certificat Let's Encrypt obtenu et renouvelé automatiquement.
+{$DOMAIN:localhost} {
+	encode zstd gzip
+
+	# API REST et WebSocket du chat (/api/v1/ws).
+	handle /api/* {
+		reverse_proxy backend:3000
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}

@@ -1,0 +1,7 @@
+# Sert l'application compilée ; toute route inconnue renvoie index.html (routage côté client).
+:80 {
+	root * /srv
+	encode zstd gzip
+	try_files {path} /index.html
+	file_server
+}

@@ -1,0 +1,31 @@
+{
+  "name": "strategos",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "postinstall": "pnpm build:shared",
+    "build:shared": "pnpm --filter @strategos/shared build",
+    "build": "pnpm -r build",
+    "dev": "pnpm build:shared && pnpm --parallel --filter @strategos/backend --filter @strategos/frontend dev",
+    "db:up": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm build:shared && pnpm -r typecheck",
+    "test": "pnpm build:shared && pnpm -r test",
+    "test:e2e": "pnpm build:shared && pnpm --filter @strategos/backend test:e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.6.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

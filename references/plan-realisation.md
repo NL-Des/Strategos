@@ -59,12 +59,12 @@ docker-compose.yml · Caddyfile · CLAUDE.md · .github/workflows/ci.yml
 - Filtre d'exception global au format d'erreur commun ; i18n côté frontend.
 
 **Critères d'acceptation**
-- [ ] `docker compose up` démarre les quatre services sans étape manuelle.
-- [ ] `GET /api/v1/health` répond `200`.
-- [ ] Une exception non gérée renvoie le format `{ code, message, details }`.
-- [ ] `packages/shared` est importé par le backend et le frontend.
+- [x] `docker compose up` démarre les quatre services sans étape manuelle.
+- [x] `GET /api/v1/health` répond `200`.
+- [x] Une exception non gérée renvoie le format `{ code, message, details }`.
+- [x] `packages/shared` est importé par le backend et le frontend.
 - [ ] La CI (lint, typage, tests) tourne sur chaque PR.
-- [ ] Les commandes sont documentées dans `CLAUDE.md`.
+- [x] Les commandes sont documentées dans `CLAUDE.md`.
 
 **Démo** : `docker compose up` sert une page vide en HTTPS local, et `/api/v1/health` répond.
 

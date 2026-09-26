@@ -1,0 +1,6 @@
+# Développement local : expose la base sur la machine pour `pnpm dev` et les tests e2e.
+# Utilisé par `pnpm db:up`.
+services:
+  db:
+    ports:
+      - '127.0.0.1:5432:5432'
