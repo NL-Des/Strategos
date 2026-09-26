@@ -24,8 +24,8 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 Un **monorepo pnpm workspaces**, choisi pour faciliter les évolutions et la maintenance par IA sous supervision humaine :
 
 - **Une seule source de vérité pour les contrats** : `packages/shared` porte les schémas de configuration des blocs (les 9 types de modules), les codes d'erreur (clés de traduction), les enums et les types de l'API. Un changement de contrat tient dans un seul diff : le backend et le frontend ne peuvent pas diverger sans que cela se voie.
-- **Une étape = une branche = une PR** : chaque étape touche ensemble backend, frontend et `shared`, et se relit comme une tranche complète.
-- **Un cadre commun** : un `CLAUDE.md` à la racine donne les conventions, les commandes et les renvois vers `references/` ; la CI (lint, typage, tests) doit passer avant la relecture humaine.
+- **Une seule branche, `main`** : chaque étape touche ensemble backend, frontend et `shared`, et se commite sur `main` comme une tranche complète, relue avant le commit.
+- **Un cadre commun** : un `CLAUDE.md` à la racine donne les conventions, les commandes et les renvois vers `references/` ; la CI (lint, typage, tests) tourne à chaque push sur `main` et doit rester verte.
 
 ```
 apps/backend      NestJS, Prisma (+ SQL pour les CHECK, index partiels et trigger)
@@ -63,7 +63,7 @@ docker-compose.yml · Caddyfile · CLAUDE.md · .github/workflows/ci.yml
 - [x] `GET /api/v1/health` répond `200`.
 - [x] Une exception non gérée renvoie le format `{ code, message, details }`.
 - [x] `packages/shared` est importé par le backend et le frontend.
-- [ ] La CI (lint, typage, tests) tourne sur chaque PR.
+- [ ] La CI (lint, typage, tests) tourne à chaque push sur `main`.
 - [x] Les commandes sont documentées dans `CLAUDE.md`.
 
 **Démo** : `docker compose up` sert une page vide en HTTPS local, et `/api/v1/health` répond.

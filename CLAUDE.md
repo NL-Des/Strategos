@@ -4,11 +4,14 @@ Site web construit par un administrateur au-dessus de fichiers Excel, Google She
 
 ## Méthode de travail
 
+Une seule branche, `main` : pas de branche par étape ni de PR.
+
+
 1. **Repérer l'étape** en cours dans [references/plan-realisation.md](references/plan-realisation.md) (première case non cochée de « Avancement »).
 2. **Lire toutes les sections de « À lire »** de l'étape avant d'écrire du code. Ne pas coder de mémoire une règle de conception.
 3. **Réaliser l'étape** en respectant les « Règles communes à toutes les étapes » du plan.
 4. **Vérifier chaque critère d'acceptation** de l'étape, puis rejouer sa démo.
-5. **Écart avec la conception** : s'arrêter et le signaler. S'il est validé, mettre à jour le fichier de conception concerné dans la même PR. La conception doit toujours décrire ce que fait le code.
+5. **Écart avec la conception** : s'arrêter et le signaler. S'il est validé, mettre à jour le fichier de conception concerné dans le même commit. La conception doit toujours décrire ce que fait le code.
 
 ## Où trouver quoi
 
