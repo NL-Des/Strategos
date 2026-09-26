@@ -62,14 +62,18 @@ Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, 
 | Tout lancer (production locale, HTTPS) | `docker compose up --build` → `https://localhost` (réglages dans `.env`, voir `.env.example`) |
 | Base seule pour le dev | `pnpm db:up` (Postgres sur `127.0.0.1:5432`) |
 | Dev avec rechargement | `cp apps/backend/.env.example apps/backend/.env` une fois, puis `pnpm dev` → `http://localhost:5173` |
+| **Tout vérifier (avant chaque commit ; pas de CI)** | `pnpm check` (base de test : `pnpm db:up`) |
 | Lint / format | `pnpm lint` · `pnpm format` · `pnpm format:check` |
 | Typage | `pnpm typecheck` |
 | Tests unitaires | `pnpm test` |
 | Tests e2e API | `pnpm test:e2e` (base `strategos_test` créée et migrée automatiquement ; `TEST_DATABASE_URL` pour en changer) |
 | Nouvelle migration | modifier `apps/backend/prisma/schema.prisma`, puis `pnpm --filter @strategos/backend prisma migrate dev --name <nom>` (ajouter `--create-only` pour compléter en SQL : `CHECK`, index partiels, trigger) |
+| Réinitialiser le compte admin | `docker compose exec backend node dist/src/cli/reset-admin.js` (en local : `pnpm --filter @strategos/backend build` puis `node dist/src/cli/reset-admin.js` depuis `apps/backend`) |
 | Appliquer les migrations | `pnpm --filter @strategos/backend prisma migrate deploy` (automatique au démarrage du conteneur `backend`) |
 
 Conventions du code :
 - **Code d'erreur** : l'ajouter dans `packages/shared/src/errors.ts`, puis son texte de secours dans `apps/backend/src/common/error-messages.ts` et sa traduction `errors.<CODE>` dans `apps/frontend/src/i18n/fr.json` (typage et tests échouent sinon). Lever `new AppException(status, ErrorCode.X, details)`.
 - **Enum** : l'ajouter dans `schema.prisma` et dans `packages/shared/src/enums.ts` (un test compare les deux).
 - Backend ESM : imports relatifs avec l'extension `.js`.
+- **Routes** : tout est protégé par défaut (guards globaux dans `apps/backend/src/auth/auth.module.ts`) ; `@Public()` pour une route sans session, `@AllowPendingCredentials()` pour une route permise avant le changement d'identifiants. Tout contrôleur sous `admin/` est réservé à l'admin.
+- **Tests e2e** : `apps/backend/test/helpers.ts` fournit `TestClient` (cookies, `Origin`, CSRF, IP propre), `adminClient`, `resetDatabase`.

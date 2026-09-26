@@ -1,25 +1,60 @@
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { ApiRequestError, apiFetch } from './api/client';
+import type { ReactNode } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { RequireAdmin, RequireAuth } from './auth/guards';
+import { AppLayout } from './components/AppLayout';
+import { ChangeCredentialsPage } from './pages/ChangeCredentialsPage';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { UserPage } from './pages/admin/UserPage';
+import { UsersPage } from './pages/admin/UsersPage';
+
+function Authenticated({ admin, children }: { admin?: boolean; children: ReactNode }) {
+  return (
+    <RequireAuth>
+      <AppLayout>{admin ? <RequireAdmin>{children}</RequireAdmin> : children}</AppLayout>
+    </RequireAuth>
+  );
+}
 
 export function App() {
-  const { t } = useTranslation();
-  const health = useQuery({
-    queryKey: ['health'],
-    queryFn: () => apiFetch<{ status: 'ok' }>('/health'),
-  });
-
-  let status = t('health.checking');
-  if (health.isSuccess) status = t('health.ok');
-  if (health.error) {
-    const code = health.error instanceof ApiRequestError ? health.error.code : 'INTERNAL_ERROR';
-    status = t('health.error', { message: t(`errors.${code}`) });
-  }
-
   return (
-    <main>
-      <h1>{t('app.name')}</h1>
-      <p role="status">{status}</p>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/change-credentials"
+          element={
+            <Authenticated>
+              <ChangeCredentialsPage />
+            </Authenticated>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <Authenticated>
+              <HomePage />
+            </Authenticated>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <Authenticated admin>
+              <UsersPage />
+            </Authenticated>
+          }
+        />
+        <Route
+          path="/admin/users/:id"
+          element={
+            <Authenticated admin>
+              <UserPage />
+            </Authenticated>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

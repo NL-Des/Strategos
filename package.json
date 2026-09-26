@@ -16,7 +16,8 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm build:shared && pnpm -r typecheck",
     "test": "pnpm build:shared && pnpm -r test",
-    "test:e2e": "pnpm build:shared && pnpm --filter @strategos/backend test:e2e"
+    "test:e2e": "pnpm build:shared && pnpm --filter @strategos/backend test:e2e",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

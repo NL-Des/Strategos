@@ -1,12 +1,13 @@
-import { Controller, Get, type INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Controller, Get } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { AppModule } from '../src/app.module.js';
-import { configureApp } from '../src/setup.js';
+import { Public } from '../src/auth/decorators.js';
+import { createTestApp } from './helpers.js';
 
 /** Route présente seulement dans les tests : lève une erreur non gérée. */
 @Controller('test-only')
 class ThrowingController {
+  @Public()
   @Get('crash')
   crash(): never {
     throw new Error('détail interne à ne pas divulguer');
@@ -14,16 +15,10 @@ class ThrowingController {
 }
 
 describe('Socle (e2e)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-      controllers: [ThrowingController],
-    }).compile();
-    app = moduleRef.createNestApplication({ logger: false });
-    configureApp(app);
-    await app.init();
+    app = await createTestApp([ThrowingController]);
   });
 
   afterAll(async () => {
@@ -47,7 +42,7 @@ describe('Socle (e2e)', () => {
 
   it('JSON mal formé → 400 VALIDATION_FAILED au format commun', async () => {
     const res = await request(app.getHttpServer())
-      .post('/api/v1/health')
+      .post('/api/v1/auth/login')
       .set('Content-Type', 'application/json')
       .send('{ pas du json')
       .expect(400);

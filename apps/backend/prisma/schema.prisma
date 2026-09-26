@@ -105,3 +105,56 @@ enum ActorKind {
 
   @@map("actor_kind")
 }
+
+// 2. Comptes et sessions (14 §2).
+// SQL ajouté dans la migration : extension citext, index uniques partiels
+// (username) where deleted_at is null, (is_admin) where is_admin.
+
+model User {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  username              String    @db.Citext
+  passwordHash          String    @map("password_hash")
+  isAdmin               Boolean   @default(false) @map("is_admin")
+  mustChangeCredentials Boolean   @default(true) @map("must_change_credentials")
+  /// FK vers pages ajoutée à l'étape 3 (14 §13, point 4).
+  personalPageId        String?   @map("personal_page_id") @db.Uuid
+  disabledAt            DateTime? @map("disabled_at") @db.Timestamptz
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz
+  version               Int       @default(1)
+
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Session {
+  /// Empreinte SHA-256 du jeton ; le jeton en clair n'est jamais stocké.
+  id         String   @id
+  userId     String   @map("user_id") @db.Uuid
+  csrfSecret String   @map("csrf_secret")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz
+  ip         String?
+  userAgent  String?  @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  username  String   @db.Citext
+  ip        String   @db.Inet
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([username, createdAt])
+  @@index([ip, createdAt])
+  @@map("login_attempts")
+}

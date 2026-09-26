@@ -31,6 +31,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      # Origines autorisées pour les requêtes qui modifient des données (CSRF).
+      APP_ORIGINS: https://${DOMAIN:-localhost}
       DATABASE_URL: postgresql://${POSTGRES_USER:-strategos}:${POSTGRES_PASSWORD:-strategos}@db:5432/${POSTGRES_DB:-strategos}
       UPLOADS_DIR: /data/uploads
       BACKUPS_DIR: /data/backups

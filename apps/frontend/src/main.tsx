@@ -1,10 +1,28 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { ApiRequestError } from './api/client';
+import { ME_KEY } from './auth/useMe';
 import './i18n';
+import './styles.css';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  // Session expirée ou révoquée : on revient à l'état « non connecté ».
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        queryClient.setQueryData(ME_KEY, null);
+      }
+    },
+  }),
+  defaultOptions: {
+    queries: {
+      retry: (count, error) =>
+        !(error instanceof ApiRequestError && error.status < 500) && count < 2,
+    },
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

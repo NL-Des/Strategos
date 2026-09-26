@@ -3,6 +3,5 @@
 **/generated
 **/*.tsbuildinfo
 .git
-.github
 references
 .env

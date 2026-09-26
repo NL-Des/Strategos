@@ -6,7 +6,9 @@ Comment un compte naît, se connecte, évolue et disparaît. Les comptes sont ex
 ## Règles fonctionnelles
 
 ### Authentification
-Authentification par **session**, mots de passe **hachés** (bcrypt ou argon2 — à sens unique, jamais réversible).
+Authentification par **session**, mots de passe **hachés** (argon2id — à sens unique, jamais réversible). Une session expire après **7 jours sans activité**.
+
+Mot de passe : **12 à 128 caractères**, sans autre règle (une phrase facile à retenir convient). Pseudo : 2 à 32 caractères, insensible à la casse.
 
 **Comptes créés par l'administrateur** : page admin dédiée où l'admin saisit lui-même pseudo et mot de passe pour chaque profil.
 
@@ -15,7 +17,7 @@ Authentification par **session**, mots de passe **hachés** (bcrypt ou argon2 �
 - L'administrateur peut **réinitialiser** le mot de passe d'un utilisateur, sans jamais avoir accès à l'ancien (seul un hash est stocké). Le mot de passe fixé par l'admin est **temporaire** : l'utilisateur doit le changer à sa connexion suivante.
 
 ### Protection de la connexion
-- **Limitation des tentatives** : après 5 échecs consécutifs sur un même compte ou depuis une même adresse IP, la connexion est temporairement bloquée.
+- **Limitation des tentatives** : après 5 échecs consécutifs sur un même compte ou depuis une même adresse IP, la connexion est bloquée pendant **15 minutes**.
 - **Protection CSRF** : toutes les requêtes qui modifient des données sont protégées, car l'authentification repose sur un cookie de session.
 
 ### Compte administrateur
@@ -32,15 +34,16 @@ Géré depuis l'espace d'administration (voir [Administration](04-administration
 - Consultation, en lecture seule, des notes personnelles de l'utilisateur depuis sa fiche (voir [Profil utilisateur](05-profil-utilisateur.md)).
 
 ## Points techniques
-- **AuthModule** : session (cookie signé, table `sessions` en Postgres), hash bcrypt/argon2, `AuthGuard`.
+- **AuthModule** : session (jeton aléatoire de 256 bits dans le cookie ; la table `sessions` n'en garde que l'empreinte SHA-256), hash argon2id, `AuthGuard`.
 - **UsersModule** : CRUD des comptes, réinitialisation du mot de passe par l'admin, désactivation/réactivation (révocation des sessions via la table `sessions` d'AuthModule).
-- Sessions : cookie `httpOnly`, `secure` en production, rotation à la connexion.
+- Sessions : cookie `httpOnly`, `SameSite=Strict`, `secure` en production, rotation à la connexion. Glissantes : 7 jours après la dernière activité (prolongation écrite au plus une fois par minute) ; purge quotidienne des sessions expirées.
 - Désactivation ou suppression d'un compte → révocation immédiate de toutes ses sessions.
 - Création d'un compte et réinitialisation par l'admin → `must_change_credentials = true` sur le compte, et révocation de ses sessions.
-- Limitation des tentatives : compteur d'échecs par compte et par IP, avec blocage temporaire (throttler NestJS ou équivalent).
-- CSRF : cookie `SameSite=Strict`, vérification de l'en-tête `Origin` et jeton CSRF sur les requêtes qui modifient des données.
-- Compte admin initial créé par une migration ou un seed au premier démarrage, avec le drapeau `users.must_change_credentials = true`. Tant que ce drapeau est actif, un guard global ne laisse passer que la route de changement d'identifiants et la déconnexion.
-- Script CLI de réinitialisation, exécuté par `docker compose exec backend …` : il fixe un mot de passe temporaire, remet `must_change_credentials` à `true` et révoque les sessions de l'admin. L'action est tracée dans le journal.
+- Limitation des tentatives : table `login_attempts`. Bloqué quand les 5 dernières tentatives d'un compte ou d'une IP sont des échecs et que la dernière date de moins de 15 minutes ; une tentative bloquée n'est pas enregistrée. S'applique aussi au mot de passe actuel saisi lors d'un changement d'identifiants. Un compte désactivé ou supprimé n'est signalé (`AUTH_ACCOUNT_DISABLED`) qu'avec le bon mot de passe, pour ne pas révéler quels comptes existent.
+- CSRF : cookie `SameSite=Strict`, vérification de l'en-tête `Origin` (obligatoire, parmi `APP_ORIGINS`) et jeton CSRF sur les requêtes qui modifient des données. Le jeton est un HMAC du `csrf_secret` de la session ; avant connexion, `GET /auth/csrf` pose un cookie de pré-session qui porte ce secret, supprimé à la connexion.
+- Compte admin initial créé par la migration des comptes, avec le drapeau `users.must_change_credentials = true`. Tant que ce drapeau est actif, un guard global ne laisse passer que `auth/me`, le changement d'identifiants, la déconnexion et les routes publiques. Un changement d'identifiants réussi révoque les autres sessions du compte.
+- Le compte admin ne peut être ni désactivé, ni supprimé, ni réinitialisé depuis le site (`422 ADMIN_ACCOUNT_PROTECTED`) : sa récupération passe uniquement par la commande serveur.
+- Script CLI de réinitialisation, exécuté par `docker compose exec backend node dist/src/cli/reset-admin.js` : il génère et affiche un mot de passe temporaire, remet `must_change_credentials` à `true` et révoque les sessions de l'admin. L'action est tracée dans le journal.
 
 ## Dépendances
 - [13 — API](13-api.md#2-routes-utilisateur-apiv1) : routes d'authentification, CSRF et limitation (`429`).
@@ -56,3 +59,8 @@ _Aucune pour l'instant._
 - Limitation des tentatives de connexion et protection CSRF.
 - Compte `admin` / `admin` au déploiement, avec changement forcé à la première connexion.
 - Récupération par commande serveur uniquement : pas de question secrète.
+
+**Décisions (2026-09-26)**
+- Session de 7 jours glissants ; blocage de 15 minutes après 5 échecs ; mot de passe de 12 à 128 caractères sans autre règle.
+- Jeton CSRF avant connexion porté par un cookie de pré-session.
+- Compte admin protégé des actions web de désactivation, suppression et réinitialisation.

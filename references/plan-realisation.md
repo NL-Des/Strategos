@@ -4,8 +4,8 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 
 ## Avancement
 
-- [ ] [Étape 0 — Socle](#étape-0--socle)
-- [ ] [Étape 1 — Comptes et authentification](#étape-1--comptes-et-authentification)
+- [x] [Étape 0 — Socle](#étape-0--socle)
+- [x] [Étape 1 — Comptes et authentification](#étape-1--comptes-et-authentification)
 - [ ] [Étape 2 — Journal des modifications](#étape-2--journal-des-modifications)
 - [ ] [Étape 3 — Pages minimales, header, footer et réglages](#étape-3--pages-minimales-header-footer-et-réglages)
 - [ ] [Étape 4 — Groupes, droits et profil](#étape-4--groupes-droits-et-profil)
@@ -25,13 +25,13 @@ Un **monorepo pnpm workspaces**, choisi pour faciliter les évolutions et la mai
 
 - **Une seule source de vérité pour les contrats** : `packages/shared` porte les schémas de configuration des blocs (les 9 types de modules), les codes d'erreur (clés de traduction), les enums et les types de l'API. Un changement de contrat tient dans un seul diff : le backend et le frontend ne peuvent pas diverger sans que cela se voie.
 - **Une seule branche, `main`** : chaque étape touche ensemble backend, frontend et `shared`, et se commite sur `main` comme une tranche complète, relue avant le commit.
-- **Un cadre commun** : un `CLAUDE.md` à la racine donne les conventions, les commandes et les renvois vers `references/` ; la CI (lint, typage, tests) tourne à chaque push sur `main` et doit rester verte.
+- **Un cadre commun** : un `CLAUDE.md` à la racine donne les conventions, les commandes et les renvois vers `references/` ; pas de CI : `pnpm check` lance en local toutes les vérifications (format, lint, typage, tests, build) et doit passer avant chaque commit.
 
 ```
 apps/backend      NestJS, Prisma (+ SQL pour les CHECK, index partiels et trigger)
 apps/frontend     React + TypeScript, Vite, React Query, i18next (fr)
 packages/shared   types des blocs, codes d'erreur, enums, DTO partagés
-docker-compose.yml · Caddyfile · CLAUDE.md · .github/workflows/ci.yml
+docker-compose.yml · Caddyfile · CLAUDE.md
 ```
 
 ## Règles communes à toutes les étapes
@@ -42,7 +42,7 @@ docker-compose.yml · Caddyfile · CLAUDE.md · .github/workflows/ci.yml
 - **Textes** : aucun texte d'interface en dur, tout passe par le fichier de traduction `fr`.
 - **Tests** : unitaires sur la logique pure (résolution des droits, calcul de ligne, invalidation des soumissions) ; e2e API (supertest sur une base Postgres de test) pour chaque route ; e2e navigateur (Playwright) pour les parcours.
 - **Avant de coder** : lire toutes les sections de « À lire avant de coder » de l'étape.
-- **Définition de « terminé »** : CI verte, tous les critères d'acceptation cochés, démo de l'étape rejouée, et conception mise à jour si un écart est apparu en cours de route.
+- **Définition de « terminé »** : `pnpm check` vert, tous les critères d'acceptation cochés, démo de l'étape rejouée, et conception mise à jour si un écart est apparu en cours de route.
 
 ## Étapes
 
@@ -53,7 +53,7 @@ docker-compose.yml · Caddyfile · CLAUDE.md · .github/workflows/ci.yml
 - [13 — Codes de retour et erreurs](conception/13-api.md#codes-de-retour-et-erreurs)
 - [14 — Conventions](conception/14-modele-donnees.md#1-conventions), [Ordre de création](conception/14-modele-donnees.md#13-ordre-de-création-migrations)
 
-- Monorepo, CI ; compléter les commandes de `CLAUDE.md`.
+- Monorepo, commande de vérification locale ; compléter les commandes de `CLAUDE.md`.
 - `docker-compose.yml` : services `proxy` (Caddy), `frontend`, `backend`, `db` ; volumes `db_data`, `uploads`, `backups`.
 - Prisma initialisé avec les types `enum`.
 - Filtre d'exception global au format d'erreur commun ; i18n côté frontend.
@@ -63,7 +63,7 @@ docker-compose.yml · Caddyfile · CLAUDE.md · .github/workflows/ci.yml
 - [x] `GET /api/v1/health` répond `200`.
 - [x] Une exception non gérée renvoie le format `{ code, message, details }`.
 - [x] `packages/shared` est importé par le backend et le frontend.
-- [ ] La CI (lint, typage, tests) tourne à chaque push sur `main`.
+- [x] `pnpm check` lance toutes les vérifications (format, lint, typage, tests, build) en une commande.
 - [x] Les commandes sont documentées dans `CLAUDE.md`.
 
 **Démo** : `docker compose up` sert une page vide en HTTPS local, et `/api/v1/health` répond.
@@ -81,15 +81,15 @@ docker-compose.yml · Caddyfile · CLAUDE.md · .github/workflows/ci.yml
 - Admin : création des comptes avec mot de passe temporaire, modification, réinitialisation, désactivation et réactivation (révocation des sessions).
 
 **Critères d'acceptation**
-- [ ] Cookie de session `httpOnly`, `SameSite=Strict`, `secure` en production, rotation à la connexion.
-- [ ] Mots de passe hachés en argon2, jamais renvoyés par l'API.
-- [ ] 5 échecs sur un compte ou une IP → `429 AUTH_TOO_MANY_ATTEMPTS` avec `details.retryAfter`.
-- [ ] Requête `POST`/`PUT`/`PATCH`/`DELETE` sans `X-CSRF-Token` valide ou avec un `Origin` étranger → refusée.
-- [ ] `must_change_credentials` actif : toute route sauf `auth/me`, `auth/change-credentials`, `auth/logout` → `403 CREDENTIALS_CHANGE_REQUIRED`.
-- [ ] `newUsername` n'est accepté que pour l'admin.
-- [ ] Création et réinitialisation d'un compte → mot de passe temporaire, `must_change_credentials = true`, sessions révoquées.
-- [ ] Désactivation ou suppression → sessions révoquées immédiatement ; connexion refusée (`AUTH_ACCOUNT_DISABLED`).
-- [ ] Le script CLI réinitialise l'admin (mot de passe temporaire, drapeau, sessions révoquées).
+- [x] Cookie de session `httpOnly`, `SameSite=Strict`, `secure` en production, rotation à la connexion.
+- [x] Mots de passe hachés en argon2, jamais renvoyés par l'API.
+- [x] 5 échecs sur un compte ou une IP → `429 AUTH_TOO_MANY_ATTEMPTS` avec `details.retryAfter`.
+- [x] Requête `POST`/`PUT`/`PATCH`/`DELETE` sans `X-CSRF-Token` valide ou avec un `Origin` étranger → refusée.
+- [x] `must_change_credentials` actif : toute route sauf `auth/me`, `auth/change-credentials`, `auth/logout` → `403 CREDENTIALS_CHANGE_REQUIRED`.
+- [x] `newUsername` n'est accepté que pour l'admin.
+- [x] Création et réinitialisation d'un compte → mot de passe temporaire, `must_change_credentials = true`, sessions révoquées.
+- [x] Désactivation ou suppression → sessions révoquées immédiatement ; connexion refusée (`AUTH_ACCOUNT_DISABLED`).
+- [x] Le script CLI réinitialise l'admin (mot de passe temporaire, drapeau, sessions révoquées).
 
 **Démo** : [Parcours A](conception/12-parcours.md#parcours-a--première-installation-communauté--les-loups-gris-), étapes 1 et 2.
 

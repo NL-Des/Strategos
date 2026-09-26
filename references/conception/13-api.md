@@ -30,7 +30,7 @@ Toute erreur a le même format :
 |---|---|
 | `400` | Données invalides (`VALIDATION_FAILED`, avec `details.fields` par champ) |
 | `401` | Non connecté ou session expirée (`UNAUTHENTICATED`) |
-| `403` | La ressource est **lisible**, mais l'action n'est pas permise (ex. poster sans le droit « poster », modifier le message d'un autre) ; ou changement d'identifiants requis |
+| `403` | La ressource est **lisible**, mais l'action n'est pas permise (ex. poster sans le droit « poster », modifier le message d'un autre) ; ou changement d'identifiants requis (`CREDENTIALS_CHANGE_REQUIRED`) ; ou jeton CSRF ou `Origin` invalide (`CSRF_INVALID`) |
 | `404` | `NOT_FOUND` : la ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
 | `409` | Conflit d'état : modification concurrente, soumission déjà traitée, confirmation d'avertissement requise, élément encore utilisé |
 | `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé…) |
@@ -63,11 +63,11 @@ Colonne **Accès** : `public` (sans session), `connecté`, `lecture page`, `lect
 ### Authentification — [02](02-comptes-authentification.md)
 | Méthode | Chemin | Accès | Rôle | Erreurs principales |
 |---|---|---|---|---|
-| GET | `/auth/csrf` | public | Obtenir le jeton CSRF | — |
-| POST | `/auth/login` | public | Connexion `{ username, password }` → `Me` | `AUTH_INVALID_CREDENTIALS`, `AUTH_ACCOUNT_DISABLED`, `429 AUTH_TOO_MANY_ATTEMPTS` |
+| GET | `/auth/csrf` | public | Obtenir le jeton CSRF `{ csrfToken }`. Sans session, pose un cookie de pré-session ; après connexion, en redemander un | — |
+| POST | `/auth/login` | public | Connexion `{ username, password }` → `Me` | `401 AUTH_INVALID_CREDENTIALS`, `403 AUTH_ACCOUNT_DISABLED` (seulement avec le bon mot de passe), `429 AUTH_TOO_MANY_ATTEMPTS` |
 | POST | `/auth/logout` | connecté | Déconnexion | — |
 | GET | `/auth/me` | connecté | Utilisateur courant (`Me`) | — |
-| POST | `/auth/change-credentials` | connecté | Changement forcé : `{ currentPassword, newPassword, newUsername? }`. `newUsername` n'est accepté que pour l'admin | `AUTH_INVALID_CREDENTIALS`, `VALIDATION_FAILED`, `USERNAME_TAKEN` |
+| POST | `/auth/change-credentials` | connecté | Changement forcé : `{ currentPassword, newPassword, newUsername? }` → `Me`. `newUsername` n'est accepté que pour l'admin. Révoque les autres sessions du compte | `AUTH_INVALID_CREDENTIALS`, `VALIDATION_FAILED`, `409 USERNAME_TAKEN`, `429` |
 
 `Me` = `{ id, username, isAdmin, mustChangeCredentials, landingPageId, personalPageId }`.
 
@@ -133,12 +133,12 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | Méthode | Chemin | Rôle | Erreurs |
 |---|---|---|---|
 | GET | `/users` | Liste paginée, filtrable (statut, groupe) | — |
-| POST | `/users` | Créer `{ username, temporaryPassword, groupIds? }` → `must_change_credentials = true` | `USERNAME_TAKEN` |
+| POST | `/users` | Créer `{ username, temporaryPassword, groupIds? }` → `must_change_credentials = true` | `409 USERNAME_TAKEN` |
 | GET | `/users/:id` | Fiche : groupes, droits effectifs, page personnelle | `404` |
 | PATCH | `/users/:id` | Modifier le pseudo et la page personnelle (`personalPageId`) | `USERNAME_TAKEN`, `EDIT_CONFLICT` |
-| POST | `/users/:id/reset-password` | `{ temporaryPassword }` → mot de passe temporaire, sessions révoquées | — |
-| POST | `/users/:id/disable` · `/enable` | Désactiver (sessions révoquées) ou réactiver | — |
-| DELETE | `/users/:id` | Suppression douce | — |
+| POST | `/users/:id/reset-password` | `{ temporaryPassword }` → mot de passe temporaire, sessions révoquées | `422 ADMIN_ACCOUNT_PROTECTED` |
+| POST | `/users/:id/disable` · `/enable` | Désactiver (sessions révoquées) ou réactiver | `422 ADMIN_ACCOUNT_PROTECTED` |
+| DELETE | `/users/:id` | Suppression douce, sessions révoquées | `422 ADMIN_ACCOUNT_PROTECTED` |
 | GET | `/users/:id/notes` | Notes de l'utilisateur, **en lecture seule** ; chaque appel est tracé (`notes.read`) | — |
 
 ### Groupes et droits — [03](03-droits-groupes.md)
@@ -325,9 +325,9 @@ Pour `deleted` et `hidden`, seul `message.id` est envoyé.
 | Protection | Portée |
 |---|---|
 | `AuthGuard` (global) | Toutes les routes sauf `auth/csrf` et `auth/login` |
-| Guard « identifiants à changer » (global) | Tout sauf `auth/me`, `auth/change-credentials`, `auth/logout` |
+| Guard « identifiants à changer » (global) | Tout sauf `auth/me`, `auth/change-credentials`, `auth/logout` et les routes publiques |
 | Guard CSRF (global) | Toutes les méthodes qui modifient des données, sauf le retour OAuth (protégé par `state`) |
-| Guard admin | Tout `/api/v1/admin/**`, et la passerelle pour les événements de modération |
+| Guard admin | Tout `/api/v1/admin/**` (un non-admin reçoit `404`, l'espace admin n'est pas révélé), et la passerelle pour les événements de modération |
 | `PermissionsGuard` | Routes de pages, blocs, formulaires, chats (lecture page) et d'espaces, sujets, messages (droits de l'espace) |
 | Propriété | Notes, ses soumissions, ses messages (sujets et chat), renommer ou clore son sujet |
 

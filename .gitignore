@@ -4,3 +4,4 @@ coverage/
 *.tsbuildinfo
 .env
 apps/backend/src/generated/
+.vitest/

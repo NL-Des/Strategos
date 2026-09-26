@@ -2,19 +2,96 @@
   "app": {
     "name": "Strategos"
   },
-  "health": {
-    "checking": "Vérification du serveur…",
-    "ok": "Serveur disponible.",
-    "error": "Serveur indisponible : {{message}}"
+  "common": {
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {{page}} sur {{total}}"
+  },
+  "account": {
+    "menu": "Menu du compte",
+    "logout": "Se déconnecter"
+  },
+  "login": {
+    "title": "Connexion",
+    "submit": "Se connecter"
+  },
+  "changeCredentials": {
+    "title": "Changez vos identifiants",
+    "intro": "Votre mot de passe est temporaire. Choisissez-en un nouveau pour continuer.",
+    "introAdmin": "Les identifiants par défaut doivent être changés avant toute autre action. Choisissez votre pseudo et votre mot de passe.",
+    "mismatch": "Les deux mots de passe ne sont pas identiques."
+  },
+  "home": {
+    "welcome": "Bienvenue, {{username}}",
+    "placeholder": "La page d’accueil sera construite par l’administrateur."
+  },
+  "admin": {
+    "title": "Administration",
+    "users": {
+      "title": "Comptes",
+      "search": "Rechercher un pseudo",
+      "status": "Statut",
+      "allStatuses": "Tous les statuts",
+      "status_active": "Actif",
+      "status_disabled": "Désactivé",
+      "createdAt": "Créé le",
+      "admin": "Admin",
+      "temporaryPassword": "Mot de passe temporaire",
+      "create": "Créer un compte",
+      "createSubmit": "Créer le compte",
+      "back": "← Tous les comptes"
+    },
+    "user": {
+      "rename": "Pseudo",
+      "renamed": "Pseudo modifié.",
+      "resetPassword": "Réinitialiser le mot de passe",
+      "resetSubmit": "Réinitialiser",
+      "passwordReset": "Mot de passe réinitialisé. Communiquez-le à l’utilisateur : il devra le changer à sa prochaine connexion.",
+      "disable": "Désactiver le compte",
+      "enable": "Réactiver le compte",
+      "disabled": "Compte désactivé : ses sessions ont été fermées.",
+      "enabled": "Compte réactivé.",
+      "delete": "Supprimer le compte",
+      "deleteConfirm": "Supprimer le compte « {{username}} » ? Ses sessions seront fermées.",
+      "adminProtected": "Le compte administrateur ne peut être ni désactivé, ni supprimé, ni réinitialisé depuis le site. En cas de perte du mot de passe, utilisez la commande serveur."
+    }
+  },
+  "fields": {
+    "username": "Pseudo",
+    "password": "Mot de passe",
+    "newUsername": "Nouveau pseudo",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmation": "Confirmation du nouveau mot de passe",
+    "temporaryPassword": "Mot de passe temporaire"
+  },
+  "hints": {
+    "password": "Au moins {{min}} caractères. Une phrase facile à retenir fonctionne très bien.",
+    "temporaryPassword": "Au moins {{min}} caractères. L’utilisateur devra le changer à sa première connexion."
+  },
+  "validation": {
+    "invalid": "valeur invalide",
+    "isLength": "longueur incorrecte",
+    "matches": "caractères non autorisés",
+    "notAllowed": "non autorisé",
+    "sameAsCurrent": "doit être différent de l’actuel"
   },
   "errors": {
     "VALIDATION_FAILED": "Les données envoyées sont invalides.",
     "UNAUTHENTICATED": "Vous devez être connecté.",
     "CREDENTIALS_CHANGE_REQUIRED": "Vous devez changer vos identifiants.",
+    "CSRF_INVALID": "Requête refusée. Rechargez la page et réessayez.",
+    "AUTH_INVALID_CREDENTIALS": "Pseudo ou mot de passe incorrect.",
+    "AUTH_ACCOUNT_DISABLED": "Ce compte est désactivé.",
+    "USERNAME_TAKEN": "Ce pseudo est déjà utilisé.",
+    "ADMIN_ACCOUNT_PROTECTED": "Le compte administrateur ne peut pas subir cette action.",
     "NOT_FOUND": "Cette page n’existe pas ou ne vous est pas accessible.",
     "EDIT_CONFLICT": "Cet élément a été modifié entre-temps. Rechargez-le avant de continuer.",
     "CONFIRMATION_REQUIRED": "Cette action demande une confirmation.",
     "AUTH_TOO_MANY_ATTEMPTS": "Trop de tentatives. Réessayez plus tard.",
+    "AUTH_TOO_MANY_ATTEMPTS_RETRY": "Trop de tentatives. Réessayez dans {{minutes}} min.",
     "SOURCE_UNAVAILABLE": "Les données sont momentanément indisponibles.",
     "SOURCE_AUTH_EXPIRED": "La connexion à la source de données a expiré.",
     "INTERNAL_ERROR": "Une erreur interne est survenue.",
