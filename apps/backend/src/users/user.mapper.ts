@@ -25,3 +25,13 @@ export function toUserDetail(user: User): UserDetail {
     version: user.version,
   };
 }
+
+/** État d'un compte tel qu'écrit au journal (avant/après) ; jamais de hash. */
+export function toUserAuditState(user: User) {
+  return {
+    username: user.username,
+    status: user.disabledAt ? 'disabled' : 'active',
+    mustChangeCredentials: user.mustChangeCredentials,
+    deleted: user.deletedAt !== null,
+  };
+}

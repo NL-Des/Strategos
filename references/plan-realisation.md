@@ -6,7 +6,7 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 
 - [x] [Étape 0 — Socle](#étape-0--socle)
 - [x] [Étape 1 — Comptes et authentification](#étape-1--comptes-et-authentification)
-- [ ] [Étape 2 — Journal des modifications](#étape-2--journal-des-modifications)
+- [x] [Étape 2 — Journal des modifications](#étape-2--journal-des-modifications)
 - [ ] [Étape 3 — Pages minimales, header, footer et réglages](#étape-3--pages-minimales-header-footer-et-réglages)
 - [ ] [Étape 4 — Groupes, droits et profil](#étape-4--groupes-droits-et-profil)
 - [ ] [Étape 5 — Excel uploadé, tableaux et catalogues](#étape-5--excel-uploadé-tableaux-et-catalogues)
@@ -106,11 +106,11 @@ docker-compose.yml · Caddyfile · CLAUDE.md
 Placé tôt pour que chaque étape suivante trace ses actions dès sa création.
 
 **Critères d'acceptation**
-- [ ] `UPDATE` et `DELETE` sur `audit_log` échouent en base (trigger).
-- [ ] Aucune route ne modifie ni ne supprime le journal.
-- [ ] Une modification dont la transaction échoue ne laisse aucune entrée au journal.
-- [ ] Les actions de l'étape 1 sont tracées, y compris le script CLI.
-- [ ] `GET /admin/audit` est paginé et filtrable par acteur, action, type de cible et période.
+- [x] `UPDATE` et `DELETE` sur `audit_log` échouent en base (trigger).
+- [x] Aucune route ne modifie ni ne supprime le journal.
+- [x] Une modification dont la transaction échoue ne laisse aucune entrée au journal.
+- [x] Les actions de l'étape 1 sont tracées, y compris le script CLI.
+- [x] `GET /admin/audit` est paginé et filtrable par acteur, action, type de cible et période.
 
 ### Étape 3 — Pages minimales, header, footer et réglages
 **À lire avant de coder**

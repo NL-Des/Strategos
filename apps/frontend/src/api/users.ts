@@ -3,12 +3,18 @@ import { apiFetch } from './client';
 
 export interface UserListQuery {
   page: number;
+  pageSize?: number;
   q?: string;
   status?: UserStatus;
 }
 
-export function listUsers({ page, q, status }: UserListQuery): Promise<Paginated<UserSummary>> {
-  const params = new URLSearchParams({ page: String(page), pageSize: '50' });
+export function listUsers({
+  page,
+  pageSize = 50,
+  q,
+  status,
+}: UserListQuery): Promise<Paginated<UserSummary>> {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (q) params.set('q', q);
   if (status) params.set('status', status);
   return apiFetch(`/admin/users?${params}`);

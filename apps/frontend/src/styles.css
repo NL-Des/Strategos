@@ -206,3 +206,37 @@ td {
   align-items: center;
   margin-top: 1rem;
 }
+
+.admin-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-nav a {
+  padding: 0.5rem 0;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.admin-nav a.active {
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+
+.block {
+  display: block;
+}
+
+.changes {
+  margin: 0;
+  padding-left: 1rem;
+}

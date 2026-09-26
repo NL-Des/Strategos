@@ -1,9 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ErrorCode } from '@strategos/shared';
+import { AuditAction, AuditTargetType, ErrorCode } from '@strategos/shared';
+import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
 import type { User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { isUniqueViolation } from '../prisma/prisma.types.js';
+import { toUserAuditState } from '../users/user.mapper.js';
 import type { ChangeCredentialsDto, LoginDto } from './auth.dto.js';
 import { LoginThrottleService } from './login-throttle.service.js';
 import { hashPassword, verifyPassword } from './password.js';
@@ -21,6 +23,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly sessions: SessionService,
     private readonly throttle: LoginThrottleService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -97,6 +100,17 @@ export class AuthService {
           },
         });
         await this.sessions.revokeAllForUser(user.id, tx, auth.sessionId);
+        await this.audit.record(
+          tx,
+          { kind: 'user', userId: user.id, ip: meta.ip },
+          {
+            action: AuditAction.USER_CHANGE_CREDENTIALS,
+            targetType: AuditTargetType.USER,
+            targetId: user.id,
+            before: toUserAuditState(user),
+            after: toUserAuditState(updated),
+          },
+        );
         return updated;
       });
     } catch (error) {

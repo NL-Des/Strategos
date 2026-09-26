@@ -7,7 +7,9 @@
     "save": "Enregistrer",
     "previous": "Précédent",
     "next": "Suivant",
-    "pageOf": "Page {{page}} sur {{total}}"
+    "pageOf": "Page {{page}} sur {{total}}",
+    "yes": "Oui",
+    "no": "Non"
   },
   "account": {
     "menu": "Menu du compte",
@@ -56,6 +58,10 @@
       "delete": "Supprimer le compte",
       "deleteConfirm": "Supprimer le compte « {{username}} » ? Ses sessions seront fermées.",
       "adminProtected": "Le compte administrateur ne peut être ni désactivé, ni supprimé, ni réinitialisé depuis le site. En cas de perte du mot de passe, utilisez la commande serveur."
+    },
+    "nav": {
+      "users": "Comptes",
+      "audit": "Journal"
     }
   },
   "fields": {
@@ -96,5 +102,44 @@
     "SOURCE_AUTH_EXPIRED": "La connexion à la source de données a expiré.",
     "INTERNAL_ERROR": "Une erreur interne est survenue.",
     "NETWORK": "Impossible de joindre le serveur."
+  },
+  "audit": {
+    "title": "Journal des modifications",
+    "intro": "Toutes les modifications tracées, de la plus récente à la plus ancienne. Le journal ne peut être ni modifié ni supprimé.",
+    "date": "Date",
+    "actor": "Acteur",
+    "action": "Action",
+    "target": "Cible",
+    "targetType": "Type de cible",
+    "changes": "Changements",
+    "allActors": "Tous les acteurs",
+    "allActions": "Toutes les actions",
+    "allTargetTypes": "Tous les types",
+    "from": "Du",
+    "to": "Au",
+    "empty": "Aucune entrée pour ces filtres.",
+    "actorKinds": {
+      "user": "Utilisateur",
+      "system": "Système",
+      "cli": "Commande serveur"
+    },
+    "actions": {
+      "user.create": "Création du compte",
+      "user.rename": "Modification du pseudo",
+      "user.reset_password": "Réinitialisation du mot de passe",
+      "user.disable": "Désactivation du compte",
+      "user.enable": "Réactivation du compte",
+      "user.delete": "Suppression du compte",
+      "user.change_credentials": "Changement d’identifiants"
+    },
+    "targetTypes": {
+      "user": "Compte"
+    },
+    "fields": {
+      "username": "Pseudo",
+      "status": "Statut",
+      "mustChangeCredentials": "Mot de passe temporaire",
+      "deleted": "Supprimé"
+    }
   }
 }

@@ -155,7 +155,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 ### Supervision — [04](04-administration.md)
 | Méthode | Chemin | Rôle |
 |---|---|---|
-| GET | `/audit` | Journal paginé, filtres : acteur, action, type de cible, période |
+| GET | `/audit` | Journal paginé, du plus récent au plus ancien. Filtres : `actorKind` (`user`, `system`, `cli`), `actorId`, `action`, `targetType`, `targetId`, période `from` (inclus) – `to` (exclu) en ISO 8601 |
 | GET | `/trash` | Corbeille paginée, filtre par type |
 | POST | `/trash/:type/:id/restore` | Restaurer |
 | GET / PUT | `/settings` | Réglages de l'instance : page d'arrivée, thème par défaut, durée de conservation des sauvegardes |

@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import type { Paginated, UserDetail, UserSummary } from '@strategos/shared';
+import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { toUserDetail } from './user.mapper.js';
 import { CreateUserDto, ListUsersQueryDto, ResetPasswordDto, UpdateUserDto } from './users.dto.js';
 import { UsersService } from './users.service.js';
@@ -27,8 +28,8 @@ export class AdminUsersController {
   }
 
   @Post()
-  async create(@Body() dto: CreateUserDto): Promise<UserDetail> {
-    return toUserDetail(await this.users.create(dto));
+  async create(@Body() dto: CreateUserDto, @Actor() actor: AuditActor): Promise<UserDetail> {
+    return toUserDetail(await this.users.create(dto, actor));
   }
 
   @Get(':id')
@@ -40,8 +41,9 @@ export class AdminUsersController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
+    @Actor() actor: AuditActor,
   ): Promise<UserDetail> {
-    return toUserDetail(await this.users.update(id, dto));
+    return toUserDetail(await this.users.update(id, dto, actor));
   }
 
   @HttpCode(HttpStatus.OK)
@@ -49,25 +51,32 @@ export class AdminUsersController {
   async resetPassword(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ResetPasswordDto,
+    @Actor() actor: AuditActor,
   ): Promise<UserDetail> {
-    return toUserDetail(await this.users.resetPassword(id, dto.temporaryPassword));
+    return toUserDetail(await this.users.resetPassword(id, dto.temporaryPassword, actor));
   }
 
   @HttpCode(HttpStatus.OK)
   @Post(':id/disable')
-  async disable(@Param('id', ParseUUIDPipe) id: string): Promise<UserDetail> {
-    return toUserDetail(await this.users.disable(id));
+  async disable(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Actor() actor: AuditActor,
+  ): Promise<UserDetail> {
+    return toUserDetail(await this.users.disable(id, actor));
   }
 
   @HttpCode(HttpStatus.OK)
   @Post(':id/enable')
-  async enable(@Param('id', ParseUUIDPipe) id: string): Promise<UserDetail> {
-    return toUserDetail(await this.users.enable(id));
+  async enable(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Actor() actor: AuditActor,
+  ): Promise<UserDetail> {
+    return toUserDetail(await this.users.enable(id, actor));
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    await this.users.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string, @Actor() actor: AuditActor): Promise<void> {
+    await this.users.remove(id, actor);
   }
 }

@@ -76,4 +76,5 @@ Conventions du code :
 - **Enum** : l'ajouter dans `schema.prisma` et dans `packages/shared/src/enums.ts` (un test compare les deux).
 - Backend ESM : imports relatifs avec l'extension `.js`.
 - **Routes** : tout est protégé par défaut (guards globaux dans `apps/backend/src/auth/auth.module.ts`) ; `@Public()` pour une route sans session, `@AllowPendingCredentials()` pour une route permise avant le changement d'identifiants. Tout contrôleur sous `admin/` est réservé à l'admin.
+- **Journal** : toute modification tracée appelle `AuditService.record(tx, actor, …)` avec le client de **sa** transaction (le service refuse le client racine). Acteur : `@Actor()` dans un contrôleur, `SYSTEM_ACTOR` ou `CLI_ACTOR` sinon. Nouvelle action : `AuditAction` dans `packages/shared/src/audit.ts` et `audit.actions.<action>` dans `fr.json` (un test vérifie la traduction).
 - **Tests e2e** : `apps/backend/test/helpers.ts` fournit `TestClient` (cookies, `Origin`, CSRF, IP propre), `adminClient`, `resetDatabase`.

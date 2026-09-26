@@ -23,7 +23,7 @@ export async function createTestApp(controllers: Type[] = []): Promise<NestExpre
 /** Base vide, sauf le compte `admin` / `admin` des données initiales. */
 export async function resetDatabase(app: NestExpressApplication): Promise<void> {
   const prisma = app.get(PrismaService);
-  await prisma.$executeRawUnsafe('TRUNCATE users, sessions, login_attempts CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE users, sessions, login_attempts, audit_log CASCADE');
   await prisma.user.create({
     data: {
       username: 'admin',

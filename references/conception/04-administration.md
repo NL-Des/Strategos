@@ -41,7 +41,7 @@ Les éléments supprimés en douceur (pages, formulaires, sujets, messages des s
 
 ### Journal des modifications
 Sont tracées (action, cible, état avant/après, date) :
-- les actions sur les comptes, les appartenances aux groupes et les permissions ;
+- les actions sur les comptes (y compris le changement d'identifiants fait par l'utilisateur lui-même), les appartenances aux groupes et les permissions ;
 - la **validation, le refus et la modification des soumissions**, y compris les validations automatiques, avec la valeur réellement écrite (avant/après pour un mouvement), la cellule et la source ;
 - le téléchargement d'un Excel uploadé, et son réimport avec le choix fait (annuler, écraser, réappliquer) ;
 - le masquage d'un message par l'admin (modération) ;

@@ -430,6 +430,8 @@ Voir [04](04-administration.md#journal-des-modifications).
 
 Index : `(created_at desc)`, `(actor_id, created_at desc)`, `(target_type, target_id)`, `(action, created_at desc)`.
 
+Contrainte `CHECK` : `actor_id` est renseigné si et seulement si `actor_kind = 'user'`. `before` et `after` ne contiennent jamais de secret (hash de mot de passe, jeton).
+
 **Ajout seul** : un trigger `before update or delete` lève une erreur. Le journal ne peut donc pas être modifié, même par un bug de l'application.
 
 ## 12. Vue d'ensemble
