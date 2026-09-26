@@ -9,7 +9,7 @@ const entry = (before: unknown, after: unknown): AuditEntry => ({
   id: '1',
   actorKind: 'user',
   actor: null,
-  action: 'user.rename',
+  action: 'user.update',
   targetType: 'user',
   targetId: 'id-kira',
   before,

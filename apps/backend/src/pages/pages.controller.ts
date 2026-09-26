@@ -1,7 +1,8 @@
 import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
-import type { AssembledLayout, AssembledPage } from '@strategos/shared';
+import { type AssembledLayout, type AssembledPage, ResourceType } from '@strategos/shared';
 import { CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
+import { RequireRead } from '../permissions/permissions.guard.js';
 import { LayoutService } from './layout.service.js';
 import { PagesService } from './pages.service.js';
 
@@ -14,6 +15,7 @@ export class PagesController {
   ) {}
 
   @Get('pages/:id')
+  @RequireRead(ResourceType.page)
   read(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentAuth() auth: AuthContext,

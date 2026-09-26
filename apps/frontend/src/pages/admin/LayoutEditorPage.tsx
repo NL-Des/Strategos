@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { getLayoutPart, previewLayout, publishLayout, saveLayoutDraft } from '../../api/pages';
 import { RowsEditor } from '../../builder/RowsEditor';
+import { PreviewGroupSelect } from '../../builder/PreviewGroupSelect';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { Rows } from '../../render/Rows';
 
@@ -41,6 +42,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
   const [dirty, setDirty] = useState(false);
   const [preview, setPreview] = useState<AssembledRow[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [previewGroup, setPreviewGroup] = useState('');
 
   const onSaved = (part: AdminLayoutPart) => {
     setSaved(part);
@@ -57,9 +59,9 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
     onSuccess: () => setNotice(t('builder.saved')),
   });
   const previewMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (asGroup: string) => {
       if (dirty) await save();
-      return previewLayout(kind);
+      return previewLayout(kind, asGroup || undefined);
     },
     onSuccess: setPreview,
   });
@@ -98,7 +100,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
             type="button"
             className="secondary"
             disabled={busy}
-            onClick={() => previewMutation.mutate()}
+            onClick={() => previewMutation.mutate(previewGroup)}
           >
             {t('builder.preview')}
           </button>
@@ -116,7 +118,16 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
       {preview && (
         <div className="preview">
           <div className="preview-bar">
-            <strong>{t('builder.previewTitle')}</strong>
+            <strong>
+              {t(previewGroup ? 'builder.previewTitleGroup' : 'builder.previewTitle')}
+            </strong>
+            <PreviewGroupSelect
+              value={previewGroup}
+              onChange={(groupId) => {
+                setPreviewGroup(groupId);
+                previewMutation.mutate(groupId);
+              }}
+            />
             <button type="button" className="secondary" onClick={() => setPreview(null)}>
               {t('builder.closePreview')}
             </button>

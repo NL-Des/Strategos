@@ -471,7 +471,7 @@ Les références d'un formulaire ou d'un bloc vers une source (`sourceId` dans l
 3. `themes`, `pages` (sans la FK `users.personal_page_id`, ajoutée ensuite), `layout_parts`, `settings`.
 4. FK `users.personal_page_id`, `pages.published_by`.
 5. `groups`, `user_groups`.
-6. `discussion_spaces`, `topics`, `topic_messages`, `chats`, `chat_messages`, `message_revisions`, `attachments`.
+6. `discussion_spaces` (créée dès l'étape 4, avec les groupes, pour que `group_permissions` puisse la viser), `topics`, `topic_messages`, `chats`, `chat_messages`, `message_revisions`, `attachments`.
 7. `group_permissions` (après pages et espaces).
 8. `sources`, `staging_cells`, `cell_references`, `onedrive_credentials`, `reimport_previews`.
 9. `forms`, `form_versions`, puis la FK composite `forms → form_versions`, puis `submissions`.

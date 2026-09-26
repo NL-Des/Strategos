@@ -2,3 +2,4 @@
 // nécessitent `reflect-metadata`). Le frontend importe `@strategos/shared`.
 export * from './blocks.schema.js';
 export * from './links.schema.js';
+export * from './groups.schema.js';

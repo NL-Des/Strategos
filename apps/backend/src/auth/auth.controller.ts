@@ -16,7 +16,7 @@ function cookieOptions(): CookieOptions {
   return { httpOnly: true, sameSite: 'strict', secure: config.isProduction, path: '/' };
 }
 
-function clientMeta(req: Request): ClientMeta {
+export function clientMeta(req: Request): ClientMeta {
   return { ip: req.ip ?? '0.0.0.0', userAgent: req.headers['user-agent'] };
 }
 

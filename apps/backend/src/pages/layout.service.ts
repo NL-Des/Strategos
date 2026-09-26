@@ -9,13 +9,14 @@ import {
   ErrorCode,
   type LayoutConfig,
   LayoutKind,
+  type Row,
 } from '@strategos/shared';
 import type { AuditActor } from '../audit/audit-actor.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
 import type { LayoutPart, Prisma, User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { assembleRows } from './assembler.js';
+import { assembleRows, type ReaderContext } from './assembler.js';
 import { countBlocks, validateLayoutConfig } from './config-validator.js';
 import type { SaveLayoutDraftDto } from './pages.dto.js';
 import { ReaderContextService } from './reader-context.service.js';
@@ -104,13 +105,27 @@ export class LayoutService {
     });
   }
 
-  async preview(kind: LayoutKind, admin: User): Promise<AssembledRow[]> {
+  async preview(kind: LayoutKind, admin: User, asGroup?: string): Promise<AssembledRow[]> {
     const { rows } = draftOf(await this.prisma.layoutPart.findUniqueOrThrow({ where: { kind } }));
-    return assembleRows(rows, await this.readers.forAdmin(admin, rows));
+    return assembleRows(rows, await this.readers.forPreview(admin, asGroup, rows));
   }
 
   /** Header et footer publiés, assemblés pour un lecteur. */
   async read(user: User): Promise<AssembledLayout> {
+    return this.assemblePublished((rows) => this.readers.forUser(user, rows));
+  }
+
+  /**
+   * Header et footer publiés, vus par l'admin ou avec les droits d'un groupe :
+   * ceux qui encadrent l'aperçu d'une page.
+   */
+  async previewPublished(admin: User, asGroup?: string): Promise<AssembledLayout> {
+    return this.assemblePublished((rows) => this.readers.forPreview(admin, asGroup, rows));
+  }
+
+  private async assemblePublished(
+    contextFor: (rows: Row[]) => Promise<ReaderContext>,
+  ): Promise<AssembledLayout> {
     const parts = await this.prisma.layoutPart.findMany();
     const published = (kind: LayoutKind) => {
       const part = parts.find((p) => p.kind === kind);
@@ -118,10 +133,7 @@ export class LayoutService {
     };
     const header = published(LayoutKind.header);
     const footer = published(LayoutKind.footer);
-    const ctx = await this.readers.forUser(user, [
-      ...(header?.rows ?? []),
-      ...(footer?.rows ?? []),
-    ]);
+    const ctx = await contextFor([...(header?.rows ?? []), ...(footer?.rows ?? [])]);
     return {
       header: header ? assembleRows(header.rows, ctx) : null,
       footer: footer ? assembleRows(footer.rows, ctx) : null,

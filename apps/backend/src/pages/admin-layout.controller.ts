@@ -8,13 +8,14 @@ import {
   ParseEnumPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { type AdminLayoutPart, type AssembledRow, LayoutKind } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { LayoutService } from './layout.service.js';
-import { SaveLayoutDraftDto } from './pages.dto.js';
+import { PreviewQueryDto, SaveLayoutDraftDto } from './pages.dto.js';
 
 const kindPipe = new ParseEnumPipe(LayoutKind);
 
@@ -40,9 +41,10 @@ export class AdminLayoutController {
   @Get('preview')
   preview(
     @Param('kind', kindPipe) kind: LayoutKind,
+    @Query() query: PreviewQueryDto,
     @CurrentAuth() auth: AuthContext,
   ): Promise<AssembledRow[]> {
-    return this.layout.preview(kind, auth.user);
+    return this.layout.preview(kind, auth.user, query.asGroup);
   }
 
   @HttpCode(HttpStatus.OK)

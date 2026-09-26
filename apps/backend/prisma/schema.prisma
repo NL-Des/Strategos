@@ -125,9 +125,10 @@ model User {
 
   sessions       Session[]
   auditLogs      AuditLog[]
-  personalPage   Page?      @relation("PersonalPage", fields: [personalPageId], references: [id], onDelete: SetNull)
-  publishedPages Page[]     @relation("PublishedBy")
+  personalPage   Page?       @relation("PersonalPage", fields: [personalPageId], references: [id], onDelete: SetNull)
+  publishedPages Page[]      @relation("PublishedBy")
   media          Media[]
+  groups         UserGroup[]
 
   @@map("users")
 }
@@ -160,6 +161,63 @@ model LoginAttempt {
   @@index([username, createdAt])
   @@index([ip, createdAt])
   @@map("login_attempts")
+}
+
+// 3. Groupes et droits (14 §3). SQL ajouté dans la migration : index unique
+// partiel groups(name) where deleted_at is null, contraintes CHECK de
+// group_permissions.
+
+model Group {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  name        String    @db.Citext
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz
+  version     Int       @default(1)
+
+  members     UserGroup[]
+  permissions GroupPermission[]
+
+  @@map("groups")
+}
+
+/// Les appartenances d'un compte ou d'un groupe supprimés sont conservées, mais
+/// ignorées par la résolution des droits.
+model UserGroup {
+  userId    String   @map("user_id") @db.Uuid
+  groupId   String   @map("group_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  @@id([userId, groupId])
+  @@index([groupId])
+  @@map("user_groups")
+}
+
+/// Cible : exactement une page ou un espace ; une page n'accorde que la lecture.
+model GroupPermission {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  groupId        String   @map("group_id") @db.Uuid
+  pageId         String?  @map("page_id") @db.Uuid
+  spaceId        String?  @map("space_id") @db.Uuid
+  canRead        Boolean  @default(false) @map("can_read")
+  canCreateTopic Boolean  @default(false) @map("can_create_topic")
+  canPost        Boolean  @default(false) @map("can_post")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  group Group            @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  page  Page?            @relation(fields: [pageId], references: [id], onDelete: Restrict)
+  space DiscussionSpace? @relation(fields: [spaceId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, pageId])
+  @@unique([groupId, spaceId])
+  @@index([pageId])
+  @@index([spaceId])
+  @@map("group_permissions")
 }
 
 // 4. Instance, thèmes, médias (14 §4). SQL ajouté dans la migration :
@@ -227,10 +285,12 @@ model Page {
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
   version         Int       @default(1)
 
-  theme      Theme?    @relation(fields: [themeId], references: [id], onDelete: SetNull)
-  publisher  User?     @relation("PublishedBy", fields: [publishedBy], references: [id], onDelete: Restrict)
-  personalOf User[]    @relation("PersonalPage")
-  landingOf  Setting[]
+  theme       Theme?            @relation(fields: [themeId], references: [id], onDelete: SetNull)
+  publisher   User?             @relation("PublishedBy", fields: [publishedBy], references: [id], onDelete: Restrict)
+  personalOf  User[]            @relation("PersonalPage")
+  landingOf   Setting[]
+  permissions GroupPermission[]
+  spaces      DiscussionSpace[]
 
   @@map("pages")
 }
@@ -244,6 +304,27 @@ model LayoutPart {
   version         Int        @default(1)
 
   @@map("layout_parts")
+}
+
+// 6. Discussions (14 §6). `discussion_spaces` est créée dès l'étape 4, pour
+// que `group_permissions` puisse la viser ; elle reste vide jusqu'à l'étape 8.
+
+model DiscussionSpace {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  pageId    String    @map("page_id") @db.Uuid
+  /// Id du bloc dans la page.
+  blockId   String    @unique @map("block_id") @db.Uuid
+  name      String
+  sortMode  TopicSort @default(activity) @map("sort_mode")
+  /// Ligne créée à la publication de la page.
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  page        Page              @relation(fields: [pageId], references: [id], onDelete: Restrict)
+  permissions GroupPermission[]
+
+  @@map("discussion_spaces")
 }
 
 // 11. Journal (14 §11). SQL ajouté dans la migration : trigger d'ajout seul.

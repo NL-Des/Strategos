@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import type { Row } from '@strategos/shared';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { ErrorCode, type Row } from '@strategos/shared';
+import { AppException } from '../common/app-exception.js';
 import type { User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { collectReferences, type ReaderContext } from './assembler.js';
-import { PageAccessService } from './page-access.service.js';
+import { PageAccessService, readerOf } from './page-access.service.js';
 
 /** Prépare en une fois ce que l'assemblage doit savoir des pages et médias cités. */
 @Injectable()
@@ -18,11 +19,40 @@ export class ReaderContextService {
     const { pageIds, mediaIds } = collectReferences(rows);
     if (user.personalPageId) pageIds.add(user.personalPageId);
     const [readable, media] = await Promise.all([
-      this.access.readablePageIds(pageIds),
+      this.access.readablePageIds(readerOf(user), pageIds),
       this.existingMedia(mediaIds),
     ]);
     return {
       personalPageId: user.personalPageId,
+      canReadPage: (id) => readable.has(id),
+      mediaExists: (id) => media.has(id),
+    };
+  }
+
+  /**
+   * Contexte d'un aperçu : vue administrateur complète, ou vue d'un membre du
+   * seul groupe `asGroup` ; un groupe inconnu ou supprimé → `404`.
+   */
+  async forPreview(admin: User, asGroup: string | undefined, rows: Row[]): Promise<ReaderContext> {
+    if (!asGroup) return this.forAdmin(admin, rows);
+    if (!(await this.prisma.group.count({ where: { id: asGroup, deletedAt: null } }))) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
+    }
+    return this.forGroup(asGroup, rows);
+  }
+
+  /**
+   * Aperçu avec les droits d'un groupe (06) : un membre fictif de ce seul groupe,
+   * sans page personnelle. Même calcul que pour un lecteur réel.
+   */
+  async forGroup(groupId: string, rows: Row[]): Promise<ReaderContext> {
+    const { pageIds, mediaIds } = collectReferences(rows);
+    const [readable, media] = await Promise.all([
+      this.access.readablePageIds({ groupId }, pageIds),
+      this.existingMedia(mediaIds),
+    ]);
+    return {
+      personalPageId: null,
       canReadPage: (id) => readable.has(id),
       mediaExists: (id) => media.has(id),
     };

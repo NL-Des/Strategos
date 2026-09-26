@@ -1,18 +1,19 @@
-import type { AdminPage, AssembledPage, PageConfig, Row } from '@strategos/shared';
+import type { AdminPage, AssembledLayout, AssembledPage, PageConfig, Row } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import {
   deletePage,
   getAdminPage,
-  getLayout,
   previewPage,
+  previewPageLayout,
   publishPage,
   savePageDraft,
 } from '../../api/pages';
 import { listThemes } from '../../api/settings';
 import { RowsEditor } from '../../builder/RowsEditor';
+import { PreviewGroupSelect } from '../../builder/PreviewGroupSelect';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { PageRender } from '../../render/PageRender';
 
@@ -34,10 +35,13 @@ function Editor({ initial }: { initial: AdminPage }) {
   const [name, setName] = useState(initial.name);
   const [draft, setDraft] = useState<PageConfig>(initial.draft);
   const [dirty, setDirty] = useState(false);
-  const [preview, setPreview] = useState<AssembledPage | null>(null);
+  const [preview, setPreview] = useState<{
+    page: AssembledPage;
+    layout: AssembledLayout;
+  } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [previewGroup, setPreviewGroup] = useState('');
   const themes = useQuery({ queryKey: ['admin', 'themes'], queryFn: listThemes });
-  const layout = useQuery({ queryKey: ['layout'], queryFn: getLayout });
 
   const edit = (patch: Partial<PageConfig>) => {
     setDraft({ ...draft, ...patch });
@@ -65,9 +69,14 @@ function Editor({ initial }: { initial: AdminPage }) {
     onSuccess: () => setNotice(t('builder.saved')),
   });
   const previewMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (asGroup: string) => {
       if (dirty) await save();
-      return previewPage(saved.id);
+      const group = asGroup || undefined;
+      const [page, layout] = await Promise.all([
+        previewPage(saved.id, group),
+        previewPageLayout(group),
+      ]);
+      return { page, layout };
     },
     onSuccess: setPreview,
   });
@@ -113,13 +122,16 @@ function Editor({ initial }: { initial: AdminPage }) {
             type="button"
             className="secondary"
             disabled={busy}
-            onClick={() => previewMutation.mutate()}
+            onClick={() => previewMutation.mutate(previewGroup)}
           >
             {t('builder.preview')}
           </button>
           <button type="button" disabled={busy} onClick={() => publishMutation.mutate()}>
             {t('builder.publish')}
           </button>
+          <Link className="button secondary" to={`/admin/rights/page/${saved.id}`}>
+            {t('rights.pageAccess')}
+          </Link>
           <button
             type="button"
             className="danger"
@@ -142,13 +154,22 @@ function Editor({ initial }: { initial: AdminPage }) {
       {preview && (
         <div className="preview">
           <div className="preview-bar">
-            <strong>{t('builder.previewTitle')}</strong>
+            <strong>
+              {t(previewGroup ? 'builder.previewTitleGroup' : 'builder.previewTitle')}
+            </strong>
+            <PreviewGroupSelect
+              value={previewGroup}
+              onChange={(groupId) => {
+                setPreviewGroup(groupId);
+                previewMutation.mutate(groupId);
+              }}
+            />
             <button type="button" className="secondary" onClick={() => setPreview(null)}>
               {t('builder.closePreview')}
             </button>
           </div>
           <div className="preview-frame">
-            <PageRender page={preview} layout={layout.data ?? null} />
+            <PageRender page={preview.page} layout={preview.layout} />
           </div>
         </div>
       )}

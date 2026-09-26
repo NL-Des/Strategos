@@ -8,6 +8,8 @@ const LINKS = [
   ['/admin/layout/footer', 'footer'],
   ['/admin/media', 'media'],
   ['/admin/users', 'users'],
+  ['/admin/groups', 'groups'],
+  ['/admin/rights', 'rights'],
   ['/admin/settings', 'settings'],
   ['/admin/audit', 'audit'],
 ] as const;

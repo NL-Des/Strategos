@@ -18,7 +18,6 @@ import type { Db } from '../prisma/prisma.types.js';
 import { ThemesService } from '../themes/themes.service.js';
 import { assembleRows, type ReaderContext } from './assembler.js';
 import { countBlocks, validatePageConfig } from './config-validator.js';
-import { PageAccessService } from './page-access.service.js';
 import type { CreatePageDto, SavePageDraftDto } from './pages.dto.js';
 import { ReaderContextService } from './reader-context.service.js';
 
@@ -67,7 +66,6 @@ export class PagesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly themes: ThemesService,
-    private readonly access: PageAccessService,
     private readonly readers: ReaderContextService,
   ) {}
 
@@ -192,16 +190,19 @@ export class PagesService {
     });
   }
 
-  /** Brouillon assemblé, vu par l'administrateur. */
-  async preview(id: string, admin: User): Promise<AssembledPage> {
+  /** Brouillon assemblé, vu par l'administrateur ou avec les droits d'un groupe. */
+  async preview(id: string, admin: User, asGroup?: string): Promise<AssembledPage> {
     const page = await this.getIn(this.prisma, id);
     const config = draftOf(page);
-    return this.assemble(page, config, await this.readers.forAdmin(admin, this.rowsOf(config)));
+    const ctx = await this.readers.forPreview(admin, asGroup, this.rowsOf(config));
+    return this.assemble(page, config, ctx);
   }
 
-  /** Page publiée, assemblée pour un lecteur ; illisible ou jamais publiée → `404`. */
+  /**
+   * Page publiée, assemblée pour un lecteur ; jamais publiée → `404`. Le droit de
+   * lecture est vérifié en amont par `PermissionsGuard`.
+   */
   async read(id: string, user: User): Promise<AssembledPage> {
-    if (!(await this.access.canReadPage(id))) throw notFound();
     const page = await this.getIn(this.prisma, id);
     const config = publishedOf(page);
     if (!config) throw notFound();

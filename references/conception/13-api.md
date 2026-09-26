@@ -75,7 +75,7 @@ Colonne **Accès** : `public` (sans session), `connecté`, `lecture page`, `lect
 | Méthode | Chemin | Accès | Rôle | Erreurs |
 |---|---|---|---|---|
 | GET | `/me/profile` | connecté | Pseudo, date de création, statut, groupes, droits effectifs avec les groupes qui les accordent | — |
-| PUT | `/me/password` | connecté | `{ currentPassword, newPassword }` ; limité comme la connexion | `AUTH_INVALID_CREDENTIALS`, `429` |
+| PUT | `/me/password` | connecté | `{ currentPassword, newPassword }` → `204` ; limité comme la connexion ; ferme les autres sessions du compte | `AUTH_INVALID_CREDENTIALS`, `VALIDATION_FAILED`, `429` |
 | GET | `/me/notes` | connecté | Liste de ses notes | — |
 | POST | `/me/notes` | connecté | Créer `{ title, content }` (HTML nettoyé) | `VALIDATION_FAILED` |
 | PUT | `/me/notes/:id` | auteur | Modifier | `404` |
@@ -132,10 +132,11 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 ### Comptes — [02](02-comptes-authentification.md), [04](04-administration.md)
 | Méthode | Chemin | Rôle | Erreurs |
 |---|---|---|---|
-| GET | `/users` | Liste paginée, filtrable (statut, groupe) | — |
-| POST | `/users` | Créer `{ username, temporaryPassword, groupIds? }` → `must_change_credentials = true` | `409 USERNAME_TAKEN` |
+| GET | `/users` | Liste paginée, filtrable (`status`, `groupId`, `q`) | — |
+| POST | `/users` | Créer `{ username, temporaryPassword, groupIds? }` → `must_change_credentials = true` | `409 USERNAME_TAKEN`, `VALIDATION_FAILED` (groupe inconnu) |
 | GET | `/users/:id` | Fiche : groupes, droits effectifs, page personnelle | `404` |
-| PATCH | `/users/:id` | Modifier le pseudo et la page personnelle (`personalPageId`) | `USERNAME_TAKEN`, `EDIT_CONFLICT` |
+| PATCH | `/users/:id` | Modifier le pseudo et la page personnelle (`personalPageId`, `null` pour la retirer, absent pour la laisser) | `USERNAME_TAKEN`, `EDIT_CONFLICT`, `VALIDATION_FAILED` (page inconnue) |
+| PUT | `/users/:id/groups` | Remplacer les groupes du compte `{ groupIds }`, depuis sa fiche (pendant de `PUT /groups/:id/members`) | `VALIDATION_FAILED` |
 | POST | `/users/:id/reset-password` | `{ temporaryPassword }` → mot de passe temporaire, sessions révoquées | `422 ADMIN_ACCOUNT_PROTECTED` |
 | POST | `/users/:id/disable` · `/enable` | Désactiver (sessions révoquées) ou réactiver | `422 ADMIN_ACCOUNT_PROTECTED` |
 | DELETE | `/users/:id` | Suppression douce, sessions révoquées | `422 ADMIN_ACCOUNT_PROTECTED` |
@@ -145,12 +146,12 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | Méthode | Chemin | Rôle | Erreurs |
 |---|---|---|---|
 | GET / POST | `/groups` | Lister, créer `{ name, description }` | `GROUP_NAME_TAKEN` |
-| GET / PATCH / DELETE | `/groups/:id` | Fiche, renommer ou décrire, supprimer (douce) | `EDIT_CONFLICT` |
-| PUT | `/groups/:id/members` | Remplacer la liste des membres `{ userIds }` | — |
-| PUT | `/groups/:id/permissions` | Remplacer les permissions `[{ resourceType, resourceId, canRead, canCreateTopic, canPost }]` | `VALIDATION_FAILED` (ex. `canPost` sur une page) |
+| GET / PATCH / DELETE | `/groups/:id` | Fiche (membres et permissions déclarées), renommer ou décrire `{ name, description, version }`, supprimer (douce) | `EDIT_CONFLICT`, `GROUP_NAME_TAKEN` |
+| PUT | `/groups/:id/members` | Remplacer la liste des membres `{ userIds }` | `VALIDATION_FAILED` (compte inconnu) |
+| PUT | `/groups/:id/permissions` | Remplacer les permissions `{ permissions: [{ resourceType, resourceId, canRead, canCreateTopic, canPost }] }` ; une ligne sans aucun droit est ignorée | `VALIDATION_FAILED` (ex. `canPost` sur une page, ressource inconnue ou en double) |
 | GET | `/rights/users/:id` | Droits effectifs d'un utilisateur, avec les groupes qui les accordent | — |
 | GET | `/rights/resources/:type/:id` | Qui peut lire, ouvrir un sujet ou poster, et via quel groupe | — |
-| GET | `/rights/matrix` | Matrice paginée utilisateurs × ressources, filtres `group`, `type`, `user` | — |
+| GET | `/rights/matrix` | Matrice paginée utilisateurs × ressources, filtres `group` (membres du groupe), `type`, `user` (recherche sur le pseudo) | — |
 
 ### Supervision — [04](04-administration.md)
 | Méthode | Chemin | Rôle |
@@ -185,6 +186,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/pages/:id` | Page avec son brouillon, sa version publiée et ses réglages (thème, header/footer affichés) | `404` |
 | PUT | `/pages/:id/draft` | Enregistrer le brouillon `{ version, name, config }`, où `config = { zones, themeId, showHeader, showFooter }` (le nom interne change tout de suite, le reste à la publication). Les avertissements (plage non couverte…) sont renvoyés | `VALIDATION_FAILED` (chemin du champ dans `details.fields`), `EDIT_CONFLICT` |
 | GET | `/pages/:id/preview?asGroup=` | Brouillon **assemblé** (valeurs résolues). Sans `asGroup` : vue administrateur complète. Avec `asGroup=<groupId>` : vue d'un membre de ce seul groupe (modules et liens filtrés) | `404` (groupe inconnu) |
+| GET | `/pages/preview/layout?asGroup=` | Header et footer **publiés** qui encadrent l'aperçu d'une page, assemblés pour l'admin ou pour un membre de ce seul groupe (même forme que `GET /layout`) | `404` (groupe inconnu) |
 | GET | `/pages/:id/publish/preview` | Ce que la publication va changer : formulaires modifiés, **soumissions qui seraient invalidées**, espaces et chats créés ou retirés | — |
 | POST | `/pages/:id/publish` | Publier le brouillon, avec ses formulaires, espaces et chats, en une transaction ; confirmation requise si des soumissions seraient invalidées | `VALIDATION_FAILED` (bloc invalide), `409 CONFIRMATION_REQUIRED` |
 | DELETE | `/pages/:id` | Suppression douce | — |

@@ -6,8 +6,11 @@ import { AccountMenu } from '../components/AccountMenu';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PageRender } from '../render/PageRender';
 
-/** Page publiée, vue par un utilisateur. */
-export function PageView({ pageId }: { pageId: string }) {
+/**
+ * Page publiée, vue par un utilisateur. Une page d'arrivée illisible affiche
+ * l'écran neutre « Aucun espace ne vous est encore attribué » (03).
+ */
+export function PageView({ pageId, landing = false }: { pageId: string; landing?: boolean }) {
   const { t } = useTranslation();
   const page = useQuery({ queryKey: ['page', pageId], queryFn: () => getPage(pageId) });
   const layout = useQuery({ queryKey: ['layout'], queryFn: getLayout });
@@ -18,7 +21,11 @@ export function PageView({ pageId }: { pageId: string }) {
     return (
       <main className="page narrow">
         <AccountMenu />
-        {notFound ? <p>{t('errors.NOT_FOUND')}</p> : <ErrorMessage error={page.error} />}
+        {notFound ? (
+          <p>{t(landing ? 'home.noSpace' : 'errors.NOT_FOUND')}</p>
+        ) : (
+          <ErrorMessage error={page.error} />
+        )}
       </main>
     );
   }

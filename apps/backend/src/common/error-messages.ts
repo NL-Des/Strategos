@@ -12,6 +12,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   AUTH_INVALID_CREDENTIALS: 'Identifiants incorrects.',
   AUTH_ACCOUNT_DISABLED: 'Ce compte est désactivé.',
   USERNAME_TAKEN: 'Ce pseudo est déjà utilisé.',
+  GROUP_NAME_TAKEN: 'Un groupe porte déjà ce nom.',
   ADMIN_ACCOUNT_PROTECTED: 'Le compte administrateur ne peut pas subir cette action.',
   NOT_FOUND: 'Ressource introuvable.',
   EDIT_CONFLICT: 'Cet élément a été modifié entre-temps.',

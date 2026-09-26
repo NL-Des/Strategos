@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PermissionsModule } from '../permissions/permissions.module.js';
 import { ThemesModule } from '../themes/themes.module.js';
 import { AdminLayoutController } from './admin-layout.controller.js';
 import { AdminPagesController } from './admin-pages.controller.js';
@@ -9,7 +10,7 @@ import { PagesService } from './pages.service.js';
 import { ReaderContextService } from './reader-context.service.js';
 
 @Module({
-  imports: [ThemesModule],
+  imports: [ThemesModule, PermissionsModule],
   controllers: [AdminPagesController, AdminLayoutController, PagesController],
   providers: [PagesService, LayoutService, PageAccessService, ReaderContextService],
   exports: [PageAccessService],

@@ -8,12 +8,12 @@ import { PageView } from './PageView';
 export function HomePage() {
   const { t } = useTranslation();
   const { data: me } = useMe();
-  if (me?.landingPageId) return <PageView pageId={me.landingPageId} />;
+  if (me?.landingPageId) return <PageView pageId={me.landingPageId} landing />;
   return (
     <main className="page narrow">
       <AccountMenu />
       <h1>{t('app.name')}</h1>
-      <p>{t('home.noLandingPage')}</p>
+      <p>{t(me?.isAdmin ? 'home.noLandingPage' : 'home.noSpace')}</p>
       {me?.isAdmin && (
         <p>
           <Link to="/admin/settings">{t('home.configureLanding')}</Link>

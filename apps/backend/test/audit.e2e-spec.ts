@@ -114,7 +114,7 @@ describe('Journal des modifications (e2e)', () => {
       const log = (await entries(`&targetId=${id}`)).reverse();
       expect(log.map((e) => e.action)).toEqual([
         'user.create',
-        'user.rename',
+        'user.update',
         'user.reset_password',
         'user.disable',
         'user.enable',

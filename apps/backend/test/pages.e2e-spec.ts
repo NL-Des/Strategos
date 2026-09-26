@@ -5,8 +5,11 @@ import {
   PNG,
   TestClient,
   adminClient,
+  createGroup,
   createTestApp,
   expectStatus,
+  grantRead,
+  meId,
   resetDatabase,
   uid,
   userClient,
@@ -52,6 +55,8 @@ describe('Pages (e2e)', () => {
   let prisma: PrismaService;
   let admin: TestClient;
   let kira: TestClient;
+  /** Groupe de Kira : chaque page créée par `createPage` lui est lisible. */
+  let readers: string;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -62,6 +67,7 @@ describe('Pages (e2e)', () => {
     await resetDatabase(app);
     admin = await adminClient(app);
     kira = await userClient(app, admin, 'kira');
+    readers = await createGroup(admin, 'Lecteurs', { userIds: [await meId(kira)] });
   });
 
   afterAll(async () => {
@@ -71,6 +77,7 @@ describe('Pages (e2e)', () => {
   async function createPage(name: string): Promise<AdminPage> {
     const res = await admin.send('post', '/admin/pages', { name });
     expectStatus(res, 201);
+    await grantRead(admin, readers, [res.body.id as string]);
     return res.body as AdminPage;
   }
 

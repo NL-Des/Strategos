@@ -13,14 +13,17 @@ export class LoginDto {
   password: string;
 }
 
-export class ChangeCredentialsDto {
+/** Changement du mot de passe depuis le profil (`PUT /me/password`). */
+export class ChangePasswordDto {
   @IsString()
   @MaxLength(PASSWORD_MAX_LENGTH)
   currentPassword: string;
 
   @IsNewPassword()
   newPassword: string;
+}
 
+export class ChangeCredentialsDto extends ChangePasswordDto {
   /** Accepté seulement pour l'admin. */
   @IsOptional()
   @IsUsername()

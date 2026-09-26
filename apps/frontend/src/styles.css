@@ -625,3 +625,64 @@ fieldset {
 .preview-frame .themed {
   min-height: auto;
 }
+
+/* Lien présenté comme un bouton (ex. « Droits d'accès » dans l'éditeur). */
+a.button {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+a.button.secondary {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.preview-bar label.inline {
+  color: #fff;
+}
+
+.preview-bar select {
+  color: initial;
+}
+
+/* Listes de cases à cocher longues (membres, groupes, pages). */
+.check-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.25rem 1rem;
+  max-height: 20rem;
+  overflow: auto;
+  padding: 0.5rem 0;
+}
+
+/* Matrice des droits : lettres L, S, P. */
+.rights-matrix th.resource {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.rights-matrix td.cell {
+  text-align: center;
+  font-family: ui-monospace, monospace;
+}
+
+/* Fiche en lecture seule (profil). */
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.facts dt {
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 0;
+}

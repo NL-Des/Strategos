@@ -5,6 +5,8 @@ export const PASSWORD_MAX_LENGTH = 128;
 export const USERNAME_MIN_LENGTH = 2;
 export const USERNAME_MAX_LENGTH = 32;
 
+import type { GroupRef, UserRights } from './rights.js';
+
 /** Utilisateur courant, renvoyé par `GET /auth/me` et `POST /auth/login`. */
 export interface Me {
   id: string;
@@ -28,8 +30,12 @@ export interface UserSummary {
   version: number;
 }
 
-/** Fiche d'un compte (`GET /admin/users/:id`) ; groupes, droits et page personnelle arrivent à l'étape 4. */
-export type UserDetail = UserSummary;
+/** Fiche d'un compte (`GET /admin/users/:id`) : groupes, droits effectifs, page personnelle. */
+export interface UserDetail extends UserSummary {
+  personalPageId: string | null;
+  groups: GroupRef[];
+  rights: UserRights;
+}
 
 export interface Paginated<T> {
   items: T[];

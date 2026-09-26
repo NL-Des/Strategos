@@ -5,6 +5,7 @@ import {
   AuditTargetType,
   ErrorCode,
   type Paginated,
+  type UserDetail,
   type UserSummary,
 } from '@strategos/shared';
 import { CLI_ACTOR, type AuditActor } from '../audit/audit-actor.js';
@@ -13,13 +14,16 @@ import { hashPassword } from '../auth/password.js';
 import { SessionService } from '../auth/session.service.js';
 import { AppException } from '../common/app-exception.js';
 import type { Prisma, User } from '../generated/prisma/client.js';
+import { RightsService } from '../groups/rights.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { type Db, isUniqueViolation } from '../prisma/prisma.types.js';
-import { toUserAuditState, toUserDetail } from './user.mapper.js';
+import { toUserAuditState, toUserDetail, toUserSummary } from './user.mapper.js';
 import type { CreateUserDto, ListUsersQueryDto, UpdateUserDto } from './users.dto.js';
 
 const notFound = () => new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
 const usernameTaken = () => new AppException(HttpStatus.CONFLICT, ErrorCode.USERNAME_TAKEN);
+const invalid = (fields: Record<string, string[]>) =>
+  new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, { fields });
 
 /** Cycle de vie des comptes (02) ; chaque action est tracée au journal dans sa transaction. */
 @Injectable()
@@ -28,6 +32,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly sessions: SessionService,
     private readonly audit: AuditService,
+    private readonly rights: RightsService,
   ) {}
 
   async list(query: ListUsersQueryDto): Promise<Paginated<UserSummary>> {
@@ -36,6 +41,9 @@ export class UsersService {
       ...(query.status === 'active' ? { disabledAt: null } : {}),
       ...(query.status === 'disabled' ? { disabledAt: { not: null } } : {}),
       ...(query.q ? { username: { contains: query.q, mode: 'insensitive' } } : {}),
+      ...(query.groupId
+        ? { groups: { some: { groupId: query.groupId, group: { deletedAt: null } } } }
+        : {}),
     };
     const [users, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
@@ -46,26 +54,41 @@ export class UsersService {
       }),
       this.prisma.user.count({ where }),
     ]);
-    return { items: users.map(toUserDetail), total, page: query.page, pageSize: query.pageSize };
+    return { items: users.map(toUserSummary), total, page: query.page, pageSize: query.pageSize };
   }
 
-  async get(id: string): Promise<User> {
-    return this.getIn(this.prisma, id);
+  /** Fiche : compte, page personnelle, groupes et droits effectifs. */
+  async detail(id: string): Promise<UserDetail> {
+    const user = await this.getIn(this.prisma, id);
+    return toUserDetail(user, await this.rights.userRights(id));
   }
 
-  /** Création avec un mot de passe temporaire : changement forcé à la première connexion. */
+  /**
+   * Création avec un mot de passe temporaire (changement forcé à la première
+   * connexion), et éventuellement ses groupes.
+   */
   async create(dto: CreateUserDto, actor: AuditActor): Promise<User> {
+    const groupIds = [...new Set(dto.groupIds ?? [])];
+    const groups = await this.prisma.group.findMany({
+      where: { id: { in: groupIds }, deletedAt: null },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+    if (groups.length !== groupIds.length) throw invalid({ groupIds: ['notFound'] });
     const passwordHash = await hashPassword(dto.temporaryPassword);
     try {
       return await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: { username: dto.username, passwordHash, mustChangeCredentials: true },
         });
+        await tx.userGroup.createMany({
+          data: groupIds.map((groupId) => ({ userId: user.id, groupId })),
+        });
         await this.audit.record(tx, actor, {
           action: AuditAction.USER_CREATE,
           targetType: AuditTargetType.USER,
           targetId: user.id,
-          after: toUserAuditState(user),
+          after: { ...toUserAuditState(user), groups: groups.map((g) => g.name) },
         });
         return user;
       });
@@ -75,19 +98,29 @@ export class UsersService {
     }
   }
 
-  /** Modification du pseudo, avec verrouillage optimiste. */
+  /** Modification du pseudo et de la page personnelle, avec verrouillage optimiste. */
   async update(id: string, dto: UpdateUserDto, actor: AuditActor): Promise<User> {
+    if (
+      dto.personalPageId &&
+      !(await this.prisma.page.count({ where: { id: dto.personalPageId, deletedAt: null } }))
+    ) {
+      throw invalid({ personalPageId: ['notFound'] });
+    }
     try {
       return await this.prisma.$transaction(async (tx) => {
         const before = await this.getIn(tx, id);
         const { count } = await tx.user.updateMany({
           where: { id, deletedAt: null, version: dto.version },
-          data: { username: dto.username, version: { increment: 1 } },
+          data: {
+            username: dto.username,
+            ...(dto.personalPageId !== undefined ? { personalPageId: dto.personalPageId } : {}),
+            version: { increment: 1 },
+          },
         });
         if (count === 0) throw new AppException(HttpStatus.CONFLICT, ErrorCode.EDIT_CONFLICT);
         const after = await this.getIn(tx, id);
         await this.audit.record(tx, actor, {
-          action: AuditAction.USER_RENAME,
+          action: AuditAction.USER_UPDATE,
           targetType: AuditTargetType.USER,
           targetId: id,
           before: toUserAuditState(before),

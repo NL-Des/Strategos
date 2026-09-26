@@ -9,18 +9,28 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
-import type { AdminPage, AdminPageSummary, AssembledPage } from '@strategos/shared';
+import type {
+  AdminPage,
+  AdminPageSummary,
+  AssembledLayout,
+  AssembledPage,
+} from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
-import { CreatePageDto, SavePageDraftDto } from './pages.dto.js';
+import { CreatePageDto, PreviewQueryDto, SavePageDraftDto } from './pages.dto.js';
+import { LayoutService } from './layout.service.js';
 import { PagesService } from './pages.service.js';
 
 /** Page builder, côté admin (13 — Page builder). */
 @Controller('admin/pages')
 export class AdminPagesController {
-  constructor(private readonly pages: PagesService) {}
+  constructor(
+    private readonly pages: PagesService,
+    private readonly layout: LayoutService,
+  ) {}
 
   @Get()
   list(): Promise<AdminPageSummary[]> {
@@ -46,12 +56,22 @@ export class AdminPagesController {
     return this.pages.saveDraft(id, dto, actor);
   }
 
+  /** Header et footer publiés qui encadrent l'aperçu, éventuellement avec les droits d'un groupe. */
+  @Get('preview/layout')
+  previewLayout(
+    @Query() query: PreviewQueryDto,
+    @CurrentAuth() auth: AuthContext,
+  ): Promise<AssembledLayout> {
+    return this.layout.previewPublished(auth.user, query.asGroup);
+  }
+
   @Get(':id/preview')
   preview(
     @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: PreviewQueryDto,
     @CurrentAuth() auth: AuthContext,
   ): Promise<AssembledPage> {
-    return this.pages.preview(id, auth.user);
+    return this.pages.preview(id, auth.user, query.asGroup);
   }
 
   @HttpCode(HttpStatus.OK)

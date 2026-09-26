@@ -25,6 +25,6 @@ import { SessionService } from './session.service.js';
     { provide: APP_GUARD, useClass: CredentialsChangeGuard },
     { provide: APP_GUARD, useClass: AdminGuard },
   ],
-  exports: [SessionService, LoginThrottleService],
+  exports: [AuthService, SessionService, LoginThrottleService],
 })
 export class AuthModule {}

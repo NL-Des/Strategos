@@ -6,6 +6,7 @@ export interface UserListQuery {
   pageSize?: number;
   q?: string;
   status?: UserStatus;
+  groupId?: string;
 }
 
 export function listUsers({
@@ -13,10 +14,12 @@ export function listUsers({
   pageSize = 50,
   q,
   status,
+  groupId,
 }: UserListQuery): Promise<Paginated<UserSummary>> {
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (q) params.set('q', q);
   if (status) params.set('status', status);
+  if (groupId) params.set('groupId', groupId);
   return apiFetch(`/admin/users?${params}`);
 }
 
@@ -25,8 +28,13 @@ export const getUser = (id: string) => apiFetch<UserDetail>(`/admin/users/${id}`
 export const createUser = (body: { username: string; temporaryPassword: string }) =>
   apiFetch<UserDetail>('/admin/users', { method: 'POST', body });
 
-export const renameUser = (id: string, body: { username: string; version: number }) =>
-  apiFetch<UserDetail>(`/admin/users/${id}`, { method: 'PATCH', body });
+export const updateUser = (
+  id: string,
+  body: { username: string; personalPageId: string | null; version: number },
+) => apiFetch<UserDetail>(`/admin/users/${id}`, { method: 'PATCH', body });
+
+export const replaceUserGroups = (id: string, groupIds: string[]) =>
+  apiFetch<UserDetail>(`/admin/users/${id}/groups`, { method: 'PUT', body: { groupIds } });
 
 export const resetPassword = (id: string, temporaryPassword: string) =>
   apiFetch<UserDetail>(`/admin/users/${id}/reset-password`, {

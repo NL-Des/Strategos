@@ -14,7 +14,8 @@
   },
   "account": {
     "menu": "Menu du compte",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "profile": "Profil"
   },
   "login": {
     "title": "Connexion",
@@ -28,7 +29,8 @@
   },
   "home": {
     "noLandingPage": "Aucune page d’accueil n’est encore définie.",
-    "configureLanding": "Choisir la page d’arrivée dans les réglages"
+    "configureLanding": "Choisir la page d’arrivée dans les réglages",
+    "noSpace": "Aucun espace ne vous est encore attribué."
   },
   "admin": {
     "title": "Administration",
@@ -47,8 +49,13 @@
       "back": "← Tous les comptes"
     },
     "user": {
-      "rename": "Pseudo",
-      "renamed": "Pseudo modifié.",
+      "identity": "Pseudo et page personnelle",
+      "saved": "Compte enregistré.",
+      "noPersonalPage": "Aucune page personnelle",
+      "personalPageHint": "Destination des liens « Ma page personnelle ». Pensez aussi à donner à l’utilisateur le droit de lire cette page.",
+      "groups": "Groupes",
+      "saveGroups": "Enregistrer les groupes",
+      "groupsSaved": "Groupes enregistrés.",
       "resetPassword": "Réinitialiser le mot de passe",
       "resetSubmit": "Réinitialiser",
       "passwordReset": "Mot de passe réinitialisé. Communiquez-le à l’utilisateur : il devra le changer à sa prochaine connexion.",
@@ -60,12 +67,34 @@
       "deleteConfirm": "Supprimer le compte « {{username}} » ? Ses sessions seront fermées.",
       "adminProtected": "Le compte administrateur ne peut être ni désactivé, ni supprimé, ni réinitialisé depuis le site. En cas de perte du mot de passe, utilisez la commande serveur."
     },
+    "groups": {
+      "title": "Groupes",
+      "intro": "Les groupes portent les droits de lecture sur les pages. Un utilisateur a l’union des droits de ses groupes ; sans groupe, il n’a accès à rien.",
+      "members": "Membres",
+      "create": "Créer un groupe",
+      "createSubmit": "Créer le groupe",
+      "empty": "Aucun groupe pour l’instant.",
+      "back": "← Tous les groupes"
+    },
+    "group": {
+      "saved": "Groupe enregistré.",
+      "delete": "Supprimer le groupe",
+      "deleteConfirm": "Supprimer le groupe « {{name}} » ? Ses membres perdront les droits qu’il accorde.",
+      "members": "Membres ({{n}})",
+      "saveMembers": "Enregistrer les membres",
+      "permissions": "Permissions",
+      "permissionsHint": "Une page n’accorde que la lecture. Les permissions des espaces de discussion arriveront avec eux.",
+      "readPages": "Pages lisibles",
+      "savePermissions": "Enregistrer les permissions"
+    },
     "nav": {
       "pages": "Pages",
       "header": "Header",
       "footer": "Footer",
       "media": "Médiathèque",
       "users": "Comptes",
+      "groups": "Groupes",
+      "rights": "Droits",
       "settings": "Réglages",
       "audit": "Journal"
     }
@@ -93,7 +122,9 @@
     "themeId": "Thème",
     "columns": "Colonnes",
     "id": "Identifiant",
-    "type": "Type de module"
+    "type": "Type de module",
+    "description": "Description",
+    "personalPageId": "Page personnelle"
   },
   "hints": {
     "password": "Au moins {{min}} caractères. Une phrase facile à retenir fonctionne très bien.",
@@ -123,7 +154,10 @@
     "isInt": "nombre entier attendu",
     "min": "trop petit",
     "max": "trop grand",
-    "filename": "nom de fichier invalide"
+    "filename": "nom de fichier invalide",
+    "pageReadOnly": "une page n’accorde que la lecture",
+    "createRequiresRead": "ouvrir un sujet ou poster exige la lecture",
+    "duplicate": "en double"
   },
   "errors": {
     "VALIDATION_FAILED": "Les données envoyées sont invalides.",
@@ -133,6 +167,7 @@
     "AUTH_INVALID_CREDENTIALS": "Pseudo ou mot de passe incorrect.",
     "AUTH_ACCOUNT_DISABLED": "Ce compte est désactivé.",
     "USERNAME_TAKEN": "Ce pseudo est déjà utilisé.",
+    "GROUP_NAME_TAKEN": "Un groupe porte déjà ce nom.",
     "ADMIN_ACCOUNT_PROTECTED": "Le compte administrateur ne peut pas subir cette action.",
     "NOT_FOUND": "Cette page n’existe pas ou ne vous est pas accessible.",
     "EDIT_CONFLICT": "Cet élément a été modifié entre-temps. Rechargez-le avant de continuer.",
@@ -170,12 +205,19 @@
     },
     "actions": {
       "user.create": "Création du compte",
-      "user.rename": "Modification du pseudo",
+      "user.update": "Modification du compte",
+      "user.groups": "Modification des groupes du compte",
       "user.reset_password": "Réinitialisation du mot de passe",
       "user.disable": "Désactivation du compte",
       "user.enable": "Réactivation du compte",
       "user.delete": "Suppression du compte",
       "user.change_credentials": "Changement d’identifiants",
+      "user.change_password": "Changement de mot de passe",
+      "group.create": "Création du groupe",
+      "group.update": "Modification du groupe",
+      "group.delete": "Suppression du groupe",
+      "group.members": "Modification des membres",
+      "group.permissions": "Modification des permissions",
       "page.create": "Création de page",
       "page.update": "Modification du brouillon",
       "page.publish": "Publication de page",
@@ -188,6 +230,7 @@
     },
     "targetTypes": {
       "user": "Compte",
+      "group": "Groupe",
       "page": "Page",
       "layout": "Header/footer",
       "media": "Image",
@@ -211,7 +254,12 @@
       "usedBy": "Utilisée par",
       "landingPageId": "Page d’arrivée",
       "defaultThemeId": "Thème par défaut",
-      "backupRetentionDays": "Conservation (jours)"
+      "backupRetentionDays": "Conservation (jours)",
+      "description": "Description",
+      "members": "Membres",
+      "permissions": "Permissions",
+      "groups": "Groupes",
+      "personalPageId": "Page personnelle"
     }
   },
   "settings": {
@@ -232,6 +280,9 @@
     "unsaved": "modifications non enregistrées",
     "lastPublished": "Dernière publication : {{date}}",
     "previewTitle": "Aperçu du brouillon (vue administrateur)",
+    "previewTitleGroup": "Aperçu du brouillon (vue d’un membre de ce seul groupe)",
+    "previewAs": "Voir comme",
+    "previewAsAdmin": "Administrateur",
     "closePreview": "Fermer l’aperçu",
     "layoutIntro": "Partagé par toutes les pages qui l’affichent.",
     "theme": "Thème",
@@ -338,5 +389,49 @@
   },
   "warnings": {
     "MEDIA_IN_USE": "L’image « {{filename}} » est encore utilisée ici. Si vous la supprimez, les modules qui l’affichent seront masqués :"
+  },
+  "rights": {
+    "title": "Droits",
+    "intro": "Droits effectifs, calculés comme ils sont appliqués. Lettres :",
+    "effective": "Droits effectifs",
+    "none": "Aucun droit : cet utilisateur n’a accès à aucune page.",
+    "adminHasAll": "L’administrateur a tous les droits, sans passer par les groupes.",
+    "resource": "Ressource",
+    "type": "Type de ressource",
+    "group": "Groupe",
+    "allGroups": "Tous les groupes",
+    "allTypes": "Tous les types",
+    "names": {
+      "read": "Lecture",
+      "createTopic": "Ouvrir un sujet",
+      "post": "Poster"
+    },
+    "letters": {
+      "read": "L",
+      "createTopic": "S",
+      "post": "P"
+    },
+    "resourceTypes": {
+      "page": "Page",
+      "space": "Espace de discussion"
+    },
+    "via": "via {{groups}}",
+    "pageAccess": "Droits d’accès",
+    "back": "← Matrice des droits",
+    "resourceTitle": "{{type}} « {{name}} »",
+    "openEditor": "Ouvrir dans le page builder",
+    "declaringGroups": "Groupes qui déclarent une permission",
+    "adminOnly": "Aucun groupe : visible par l’administrateur seul.",
+    "users": "Utilisateurs",
+    "noUsers": "Aucun utilisateur."
+  },
+  "profile": {
+    "title": "Mon profil",
+    "createdAt": "Compte créé le",
+    "groups": "Groupes",
+    "noGroup": "Aucun groupe",
+    "changePassword": "Changer mon mot de passe",
+    "changePasswordSubmit": "Changer le mot de passe",
+    "passwordChanged": "Mot de passe changé. Vos autres sessions ont été fermées."
   }
 }

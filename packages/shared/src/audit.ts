@@ -6,12 +6,19 @@ import type { ActorKind } from './enums.js';
  */
 export const AuditAction = {
   USER_CREATE: 'user.create',
-  USER_RENAME: 'user.rename',
+  USER_UPDATE: 'user.update',
+  USER_GROUPS: 'user.groups',
   USER_RESET_PASSWORD: 'user.reset_password',
   USER_DISABLE: 'user.disable',
   USER_ENABLE: 'user.enable',
   USER_DELETE: 'user.delete',
   USER_CHANGE_CREDENTIALS: 'user.change_credentials',
+  USER_CHANGE_PASSWORD: 'user.change_password',
+  GROUP_CREATE: 'group.create',
+  GROUP_UPDATE: 'group.update',
+  GROUP_DELETE: 'group.delete',
+  GROUP_MEMBERS: 'group.members',
+  GROUP_PERMISSIONS: 'group.permissions',
   PAGE_CREATE: 'page.create',
   PAGE_UPDATE: 'page.update',
   PAGE_PUBLISH: 'page.publish',
@@ -27,6 +34,7 @@ export const AUDIT_ACTIONS = Object.values(AuditAction);
 
 export const AuditTargetType = {
   USER: 'user',
+  GROUP: 'group',
   PAGE: 'page',
   LAYOUT: 'layout',
   MEDIA: 'media',

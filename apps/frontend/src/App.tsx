@@ -8,16 +8,24 @@ import { ChangeCredentialsPage } from './pages/ChangeCredentialsPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { PageRoute } from './pages/PageRoute';
+import { ProfilePage } from './pages/ProfilePage';
 
 // Espace d'administration chargé à part : les utilisateurs ne téléchargent pas
 // l'éditeur de pages (TipTap) ni les autres écrans admin.
 const admin = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
   lazy(() => load().then((m) => ({ default: m[name] })));
 const AuditPage = admin(() => import('./pages/admin/AuditPage'), 'AuditPage');
+const GroupPage = admin(() => import('./pages/admin/GroupPage'), 'GroupPage');
+const GroupsPage = admin(() => import('./pages/admin/GroupsPage'), 'GroupsPage');
 const LayoutEditorPage = admin(() => import('./pages/admin/LayoutEditorPage'), 'LayoutEditorPage');
 const MediaPage = admin(() => import('./pages/admin/MediaPage'), 'MediaPage');
 const PageEditorPage = admin(() => import('./pages/admin/PageEditorPage'), 'PageEditorPage');
 const PagesPage = admin(() => import('./pages/admin/PagesPage'), 'PagesPage');
+const ResourceRightsPage = admin(
+  () => import('./pages/admin/ResourceRightsPage'),
+  'ResourceRightsPage',
+);
+const RightsPage = admin(() => import('./pages/admin/RightsPage'), 'RightsPage');
 const SettingsPage = admin(() => import('./pages/admin/SettingsPage'), 'SettingsPage');
 const UserPage = admin(() => import('./pages/admin/UserPage'), 'UserPage');
 const UsersPage = admin(() => import('./pages/admin/UsersPage'), 'UsersPage');
@@ -58,6 +66,10 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/media', <MediaPage />],
   ['/admin/users', <UsersPage />],
   ['/admin/users/:id', <UserPage />],
+  ['/admin/groups', <GroupsPage />],
+  ['/admin/groups/:id', <GroupPage />],
+  ['/admin/rights', <RightsPage />],
+  ['/admin/rights/:type/:id', <ResourceRightsPage />],
   ['/admin/settings', <SettingsPage />],
   ['/admin/audit', <AuditPage />],
 ];
@@ -72,6 +84,14 @@ export function App() {
           element={
             <Framed>
               <ChangeCredentialsPage />
+            </Framed>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <Framed>
+              <ProfilePage />
             </Framed>
           }
         />

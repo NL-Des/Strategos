@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import type { Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import type { GroupDetail } from '@strategos/shared';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { hashPassword } from '../src/auth/password.js';
@@ -25,7 +26,7 @@ export async function createTestApp(controllers: Type[] = []): Promise<NestExpre
 export async function resetDatabase(app: NestExpressApplication): Promise<void> {
   const prisma = app.get(PrismaService);
   await prisma.$executeRawUnsafe(
-    'TRUNCATE users, sessions, login_attempts, audit_log, pages, media, settings CASCADE',
+    'TRUNCATE users, sessions, login_attempts, audit_log, pages, media, settings, groups, discussion_spaces CASCADE',
   );
   // Données initiales de la migration des pages : réglages, header et footer vides.
   await prisma.$executeRawUnsafe(
@@ -171,4 +172,44 @@ export async function userClient(
     200,
   );
   return client;
+}
+
+/** Crée un groupe par l'admin, avec ses membres et la lecture de pages ; renvoie son id. */
+export async function createGroup(
+  admin: TestClient,
+  name: string,
+  { userIds = [], pageIds = [] }: { userIds?: string[]; pageIds?: string[] } = {},
+): Promise<string> {
+  const res = await admin.send('post', '/admin/groups', { name });
+  expectStatus(res, 201);
+  const id = res.body.id as string;
+  if (userIds.length) {
+    expectStatus(await admin.send('put', `/admin/groups/${id}/members`, { userIds }), 200);
+  }
+  if (pageIds.length) await grantRead(admin, id, pageIds);
+  return id;
+}
+
+/** Ajoute au groupe la lecture de pages, en gardant ses autres permissions. */
+export async function grantRead(admin: TestClient, groupId: string, pageIds: string[]) {
+  const { permissions } = (await admin.get(`/admin/groups/${groupId}`)).body as GroupDetail;
+  const body = [
+    ...permissions.map(({ resourceName: _name, ...permission }) => permission),
+    ...pageIds.map((resourceId) => ({
+      resourceType: 'page',
+      resourceId,
+      canRead: true,
+      canCreateTopic: false,
+      canPost: false,
+    })),
+  ];
+  expectStatus(
+    await admin.send('put', `/admin/groups/${groupId}/permissions`, { permissions: body }),
+    200,
+  );
+}
+
+/** Id du compte connecté. */
+export async function meId(client: TestClient): Promise<string> {
+  return (await client.get('/auth/me')).body.id as string;
 }

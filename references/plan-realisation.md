@@ -8,7 +8,7 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 1 — Comptes et authentification](#étape-1--comptes-et-authentification)
 - [x] [Étape 2 — Journal des modifications](#étape-2--journal-des-modifications)
 - [x] [Étape 3 — Pages minimales, header, footer et réglages](#étape-3--pages-minimales-header-footer-et-réglages)
-- [ ] [Étape 4 — Groupes, droits et profil](#étape-4--groupes-droits-et-profil)
+- [x] [Étape 4 — Groupes, droits et profil](#étape-4--groupes-droits-et-profil)
 - [ ] [Étape 5 — Excel uploadé, tableaux et catalogues](#étape-5--excel-uploadé-tableaux-et-catalogues)
 - [ ] [Étape 6 — Formulaires et soumissions](#étape-6--formulaires-et-soumissions)
 - [ ] [Étape 7 — Google Sheets et OneDrive](#étape-7--google-sheets-et-onedrive)
@@ -155,15 +155,15 @@ Placé tôt pour que chaque étape suivante trace ses actions dès sa création.
 - Profil : page administrative et changement du mot de passe.
 
 **Critères d'acceptation**
-- [ ] Une seule fonction de résolution sert au `PermissionsGuard` et aux vues de droits (un test compare les deux).
-- [ ] Droits effectifs = union des groupes ; aucun droit sans groupe.
-- [ ] `canCreateTopic` ou `canPost` sur une page → `VALIDATION_FAILED`, et la contrainte `CHECK` le refuse aussi en base.
-- [ ] Page illisible → `404`, jamais `403`.
-- [ ] Liens vers une page illisible absents du JSON : bouton retiré, image sans lien ; « Ma page personnelle » résolu, ou retiré si l'utilisateur n'en a pas.
-- [ ] Utilisateur sans accès à la page d'arrivée → écran « Aucun espace ne vous est encore attribué ».
-- [ ] L'aperçu `asGroup` est identique à la page vue par un membre de ce seul groupe.
-- [ ] Profil accessible par propriété, jamais via `PermissionsGuard` ; `PUT /me/password` limité comme la connexion.
-- [ ] Groupes, membres, permissions et page personnelle tracés au journal.
+- [x] Une seule fonction de résolution sert au `PermissionsGuard` et aux vues de droits (un test compare les deux).
+- [x] Droits effectifs = union des groupes ; aucun droit sans groupe.
+- [x] `canCreateTopic` ou `canPost` sur une page → `VALIDATION_FAILED`, et la contrainte `CHECK` le refuse aussi en base.
+- [x] Page illisible → `404`, jamais `403`.
+- [x] Liens vers une page illisible absents du JSON : bouton retiré, image sans lien ; « Ma page personnelle » résolu, ou retiré si l'utilisateur n'en a pas.
+- [x] Utilisateur sans accès à la page d'arrivée → écran « Aucun espace ne vous est encore attribué ».
+- [x] L'aperçu `asGroup` est identique à la page vue par un membre de ce seul groupe.
+- [x] Profil accessible par propriété, jamais via `PermissionsGuard` ; `PUT /me/password` limité comme la connexion.
+- [x] Groupes, membres, permissions et page personnelle tracés au journal.
 
 **Démo** : Parcours A complet (étapes 1 à 6).
 

@@ -6,7 +6,7 @@ import type { User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { isUniqueViolation } from '../prisma/prisma.types.js';
 import { toUserAuditState } from '../users/user.mapper.js';
-import type { ChangeCredentialsDto, LoginDto } from './auth.dto.js';
+import type { ChangeCredentialsDto, ChangePasswordDto, LoginDto } from './auth.dto.js';
 import { LoginThrottleService } from './login-throttle.service.js';
 import { hashPassword, verifyPassword } from './password.js';
 import type { AuthContext } from './request-context.js';
@@ -61,21 +61,38 @@ export class AuthService {
   }
 
   /**
-   * Changement d'identifiants (forcé après un mot de passe temporaire). Lève le
-   * drapeau et révoque les autres sessions du compte.
+   * Changement d'identifiants (forcé après un mot de passe temporaire). Seul
+   * l'admin peut changer de pseudo.
    */
   async changeCredentials(
     auth: AuthContext,
     dto: ChangeCredentialsDto,
     meta: ClientMeta,
   ): Promise<User> {
-    const { user } = auth;
-    if (dto.newUsername !== undefined && !user.isAdmin) {
+    if (dto.newUsername !== undefined && !auth.user.isAdmin) {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
         fields: { newUsername: ['notAllowed'] },
       });
     }
+    return this.updatePassword(auth, dto, meta, AuditAction.USER_CHANGE_CREDENTIALS);
+  }
 
+  /** Changement du mot de passe depuis le profil (05), limité comme la connexion. */
+  async changePassword(auth: AuthContext, dto: ChangePasswordDto, meta: ClientMeta) {
+    return this.updatePassword(auth, dto, meta, AuditAction.USER_CHANGE_PASSWORD);
+  }
+
+  /**
+   * Vérifie l'ancien mot de passe (tentatives limitées), enregistre le nouveau,
+   * lève le drapeau de changement forcé et révoque les autres sessions du compte.
+   */
+  private async updatePassword(
+    auth: AuthContext,
+    dto: ChangePasswordDto & { newUsername?: string },
+    meta: ClientMeta,
+    action: AuditAction,
+  ): Promise<User> {
+    const { user } = auth;
     await this.throttle.assertAllowed(user.username, meta.ip);
     if (!(await verifyPassword(user.passwordHash, dto.currentPassword))) {
       await this.throttle.record(user.username, meta.ip, false);
@@ -104,7 +121,7 @@ export class AuthService {
           tx,
           { kind: 'user', userId: user.id, ip: meta.ip },
           {
-            action: AuditAction.USER_CHANGE_CREDENTIALS,
+            action,
             targetType: AuditTargetType.USER,
             targetId: user.id,
             before: toUserAuditState(user),

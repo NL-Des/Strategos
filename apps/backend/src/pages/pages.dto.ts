@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsDefined, IsInt, IsString, Length, Min } from 'class-validator';
+import { IsDefined, IsInt, IsOptional, IsString, IsUUID, Length, Min } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -34,4 +34,11 @@ export class SaveLayoutDraftDto {
   @IsInt()
   @Min(1)
   version: number;
+}
+
+/** Aperçu, éventuellement avec les droits d'un groupe (`?asGroup=<groupId>`). */
+export class PreviewQueryDto {
+  @IsOptional()
+  @IsUUID()
+  asGroup?: string;
 }

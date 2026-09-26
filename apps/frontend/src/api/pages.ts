@@ -24,7 +24,13 @@ export const savePageDraft = (
   id: string,
   body: { name: string; config: PageConfig; version: number },
 ) => apiFetch<AdminPage>(`/admin/pages/${id}/draft`, { method: 'PUT', body });
-export const previewPage = (id: string) => apiFetch<AssembledPage>(`/admin/pages/${id}/preview`);
+/** Aperçu du brouillon ; avec `asGroup`, vu par un membre de ce seul groupe. */
+const previewQuery = (asGroup?: string) => (asGroup ? `?asGroup=${asGroup}` : '');
+export const previewPage = (id: string, asGroup?: string) =>
+  apiFetch<AssembledPage>(`/admin/pages/${id}/preview${previewQuery(asGroup)}`);
+/** Header et footer publiés qui encadrent l'aperçu d'une page, vus par l'admin ou par un groupe. */
+export const previewPageLayout = (asGroup?: string) =>
+  apiFetch<AssembledLayout>(`/admin/pages/preview/layout${previewQuery(asGroup)}`);
 export const publishPage = (id: string) =>
   apiFetch<AdminPage>(`/admin/pages/${id}/publish`, { method: 'POST' });
 export const deletePage = (id: string) =>
@@ -37,7 +43,7 @@ export const saveLayoutDraft = (
   kind: LayoutKind,
   body: { config: LayoutConfig; version: number },
 ) => apiFetch<AdminLayoutPart>(`/admin/layout/${kind}/draft`, { method: 'PUT', body });
-export const previewLayout = (kind: LayoutKind) =>
-  apiFetch<AssembledRow[]>(`/admin/layout/${kind}/preview`);
+export const previewLayout = (kind: LayoutKind, asGroup?: string) =>
+  apiFetch<AssembledRow[]>(`/admin/layout/${kind}/preview${previewQuery(asGroup)}`);
 export const publishLayout = (kind: LayoutKind) =>
   apiFetch<AdminLayoutPart>(`/admin/layout/${kind}/publish`, { method: 'POST' });
