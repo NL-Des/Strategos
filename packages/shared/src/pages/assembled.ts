@@ -1,4 +1,4 @@
-import type { Alignment } from './blocks.js';
+import type { Alignment, CatalogLayout, CellFormat } from './blocks.js';
 import type { ResolvedLink } from './links.js';
 import type { ColumnWidth } from './structure.js';
 import type { ThemeConfig } from './themes.js';
@@ -28,14 +28,82 @@ export interface AssembledButtonsBlock {
   };
 }
 
+/** Valeur de cellule déjà formatée ; `needsRecalc` : à recalculer (Excel uploadé, 08). */
+export interface CellValue {
+  value: string;
+  needsRecalc: boolean;
+}
+
+/** Erreur d'un module de données : sa source est injoignable, la page reste affichée. */
+export type BlockError = 'SOURCE_UNAVAILABLE';
+
+/**
+ * Contenu libre : chaque valeur insérée est remplacée dans le HTML par
+ * `<span data-value="i"></span>`, où `i` est son indice dans `values`.
+ */
 export interface AssembledRichContentBlock {
   id: string;
   type: 'rich_content';
-  config: { html: string };
+  config: { html: string; values: CellValue[] };
+  error?: BlockError;
+}
+
+/** Tableau : ni source, ni feuille, ni plage ; les lignes se chargent par `rowsUrl`. */
+export interface AssembledTableBlock {
+  id: string;
+  type: 'table';
+  config: {
+    columns: { label: string; format: CellFormat }[];
+    pageSize: number;
+    sortable: boolean;
+    searchable: boolean;
+  };
+  rowsUrl: string;
+  error?: BlockError;
+}
+
+export interface AssembledCatalogBlock {
+  id: string;
+  type: 'catalog';
+  config: {
+    layout: CatalogLayout;
+    hasImage: boolean;
+    detailLabels: string[];
+    perRow: number;
+    pageSize: number;
+    searchable: boolean;
+  };
+  rowsUrl: string;
+  error?: BlockError;
 }
 
 export type AssembledBlock =
-  AssembledImageBlock | AssembledButtonsBlock | AssembledRichContentBlock;
+  | AssembledImageBlock
+  | AssembledButtonsBlock
+  | AssembledRichContentBlock
+  | AssembledTableBlock
+  | AssembledCatalogBlock;
+
+/** Cellule d'une ligne de Tableau ou d'une carte, déjà formatée. */
+export interface RowCell extends CellValue {
+  /** Format `link` : adresse web. */
+  href?: string;
+  /** Format `image` : adresse de l'image, ou `null` si introuvable (image par défaut). */
+  image?: string | null;
+}
+
+/** Ligne d'un Tableau (`GET /blocks/:blockId/rows`), colonnes dans l'ordre affiché. */
+export interface TableRow {
+  cells: RowCell[];
+}
+
+/** Carte d'un Catalogue ; `image: null` = image par défaut. */
+export interface CatalogCard {
+  image: string | null;
+  title: RowCell | null;
+  subtitle: RowCell | null;
+  details: RowCell[];
+}
 
 export interface AssembledColumn {
   width: ColumnWidth;
@@ -55,7 +123,8 @@ export interface AssembledPage {
   showHeader: boolean;
   showFooter: boolean;
   zones: { main: AssembledRow[] | null; sidebar: AssembledRow[] | null };
-  unavailableSources: string[];
+  /** Sources injoignables : renseigné pour l'admin seul, vide pour les utilisateurs. */
+  unavailableSources: { id: string; name: string }[];
 }
 
 /** Header et footer partagés publiés (`GET /layout`) ; `null` s'ils ne l'ont jamais été. */

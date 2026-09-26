@@ -92,6 +92,7 @@
       "header": "Header",
       "footer": "Footer",
       "media": "Médiathèque",
+      "sources": "Sources",
       "users": "Comptes",
       "groups": "Groupes",
       "rights": "Droits",
@@ -124,7 +125,13 @@
     "id": "Identifiant",
     "type": "Type de module",
     "description": "Description",
-    "personalPageId": "Page personnelle"
+    "personalPageId": "Page personnelle",
+    "sourceId": "Source",
+    "sheet": "Feuille",
+    "range": "Plage",
+    "ref": "Plage",
+    "startRow": "Ligne de départ",
+    "col": "Colonne"
   },
   "hints": {
     "password": "Au moins {{min}} caractères. Une phrase facile à retenir fonctionne très bien.",
@@ -157,7 +164,10 @@
     "filename": "nom de fichier invalide",
     "pageReadOnly": "une page n’accorde que la lecture",
     "createRequiresRead": "ouvrir un sujet ou poster exige la lecture",
-    "duplicate": "en double"
+    "duplicate": "en double",
+    "sourceNotFound": "source introuvable",
+    "sheetNotFound": "feuille introuvable dans la source",
+    "outOfRange": "colonne hors de la plage"
   },
   "errors": {
     "VALIDATION_FAILED": "Les données envoyées sont invalides.",
@@ -181,7 +191,9 @@
     "BLOCK_NOT_ALLOWED_IN_LAYOUT": "Les formulaires, espaces de discussion et chats ne peuvent pas être placés dans le header ou le footer.",
     "MEDIA_NAME_TAKEN": "Une image porte déjà ce nom.",
     "FILE_TOO_LARGE": "Le fichier est trop volumineux.",
-    "UNSUPPORTED_FILE_TYPE": "Ce type de fichier n’est pas accepté."
+    "UNSUPPORTED_FILE_TYPE": "Ce type de fichier n’est pas accepté.",
+    "EXCEL_PARSE_FAILED": "Ce fichier Excel n’a pas pu être lu. Vérifiez qu’il s’agit bien d’un classeur .xlsx.",
+    "SOURCE_NOT_UPLOAD": "Cette action ne concerne que les fichiers Excel uploadés."
   },
   "audit": {
     "title": "Journal des modifications",
@@ -226,7 +238,10 @@
       "layout.publish": "Publication",
       "media.upload": "Ajout d’une image",
       "media.delete": "Suppression d’une image",
-      "settings.update": "Modification des réglages"
+      "settings.update": "Modification des réglages",
+      "source.upload": "Ajout d’une source",
+      "source.download": "Téléchargement d’une source",
+      "source.delete": "Retrait d’une source"
     },
     "targetTypes": {
       "user": "Compte",
@@ -234,7 +249,8 @@
       "page": "Page",
       "layout": "Header/footer",
       "media": "Image",
-      "settings": "Réglages"
+      "settings": "Réglages",
+      "source": "Source"
     },
     "fields": {
       "username": "Pseudo",
@@ -259,7 +275,11 @@
       "members": "Membres",
       "permissions": "Permissions",
       "groups": "Groupes",
-      "personalPageId": "Page personnelle"
+      "personalPageId": "Page personnelle",
+      "sheets": "Feuilles",
+      "cells": "Cellules",
+      "links": "Liaisons",
+      "lastDownloadedAt": "Dernier téléchargement"
     }
   },
   "settings": {
@@ -357,7 +377,9 @@
       "link": "Lien",
       "linkPrompt": "Adresse du lien",
       "table": "Tableau",
-      "image": "Image"
+      "image": "Image",
+      "value": "Insérer une valeur",
+      "insertValue": "Insérer"
     },
     "media": {
       "title": "Médiathèque",
@@ -385,10 +407,60 @@
       "untitled": "Page sans nom",
       "delete": "Supprimer la page",
       "deleteConfirm": "Supprimer la page « {{name}} » ? Les liens qui y mènent disparaîtront."
+    },
+    "data": {
+      "source": "Données",
+      "sourceFile": "Source",
+      "chooseSource": "Choisir une source…",
+      "sheet": "Feuille",
+      "cell": "Cellule",
+      "rangeMode": "Plage",
+      "extensible": "Extensible",
+      "fixed": "Fixe",
+      "extensibleHint": "Des colonnes à partir d’une ligne, jusqu’à la dernière ligne remplie : les lignes ajoutées apparaissent toutes seules.",
+      "fixedHint": "Une plage précise, par exemple A1:D11.",
+      "rangeRef": "Plage (ex. A1:D11)",
+      "columns": "Colonnes (ex. A:D)",
+      "startRow": "À partir de la ligne",
+      "headerRow": "La première ligne contient les en-têtes",
+      "tableColumns": "Colonnes affichées",
+      "labelHint": "Libellé vide : l’en-tête du document est utilisé.",
+      "column": "Colonne",
+      "label": "Libellé",
+      "format": "Format",
+      "visible": "Visible",
+      "addColumn": "Ajouter une colonne",
+      "pageSize": "Lignes par page",
+      "sortable": "Tri par colonne",
+      "searchable": "Recherche",
+      "none": "Aucune",
+      "layout": "Mise en page des cartes",
+      "layouts": {
+        "image_top": "Image en haut",
+        "image_left": "Image à gauche",
+        "image_right": "Image à droite",
+        "image_background": "Image en fond"
+      },
+      "imageCol": "Colonne de l’image",
+      "imageHint": "Nom d’un fichier de la médiathèque (« epee.png ») ou lien web (https://…).",
+      "titleCol": "Colonne du titre",
+      "subtitleCol": "Colonne du sous-titre",
+      "details": "Détails",
+      "addDetail": "Ajouter un détail",
+      "perRow": "Cartes par rangée",
+      "formats": {
+        "text": "Texte",
+        "number": "Nombre",
+        "date": "Date",
+        "currency": "Monnaie",
+        "image": "Image",
+        "link": "Lien"
+      }
     }
   },
   "warnings": {
-    "MEDIA_IN_USE": "L’image « {{filename}} » est encore utilisée ici. Si vous la supprimez, les modules qui l’affichent seront masqués :"
+    "MEDIA_IN_USE": "L’image « {{filename}} » est encore utilisée ici. Si vous la supprimez, les modules qui l’affichent seront masqués :",
+    "SOURCE_IN_USE": "La source « {{name}} » est encore utilisée par :"
   },
   "rights": {
     "title": "Droits",
@@ -433,5 +505,42 @@
     "changePassword": "Changer mon mot de passe",
     "changePasswordSubmit": "Changer le mot de passe",
     "passwordChanged": "Mot de passe changé. Vos autres sessions ont été fermées."
+  },
+  "sources": {
+    "title": "Sources",
+    "intro": "Les fichiers dont les pages lisent les données. Les utilisateurs ne voient jamais ces fichiers : seulement les valeurs affichées par les modules.",
+    "upload": "Ajouter un fichier Excel",
+    "uploadSubmit": "Importer",
+    "limits": "Classeur .xlsx, {{mb}} Mo au plus. La copie importée devient la version de référence.",
+    "name": "Nom",
+    "type": "Type",
+    "status": "État",
+    "lastImportedAt": "Dernier import",
+    "lastDownloadedAt": "Dernier téléchargement",
+    "usages": "Utilisée par",
+    "sheets": "Feuilles : {{sheets}}",
+    "download": "Télécharger",
+    "delete": "Retirer",
+    "deleteConfirm": "Retirer la source « {{name}} » ?",
+    "deleteAnyway": "Retirer quand même",
+    "empty": "Aucune source pour l’instant.",
+    "types": {
+      "upload": "Excel uploadé",
+      "gsheet": "Google Sheets",
+      "onedrive": "OneDrive"
+    },
+    "statuses": {
+      "ok": "Joignable",
+      "unavailable": "Injoignable",
+      "auth_expired": "Connexion expirée"
+    }
+  },
+  "render": {
+    "sourceUnavailable": "Ces données sont momentanément indisponibles.",
+    "unavailableSources": "Sources injoignables : {{names}}",
+    "needsRecalc": "À recalculer : cette valeur dépend d’une donnée modifiée depuis le dernier import.",
+    "search": "Rechercher",
+    "noRows": "Aucune ligne.",
+    "image": "Image"
   }
 }

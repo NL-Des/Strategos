@@ -125,10 +125,12 @@ model User {
 
   sessions       Session[]
   auditLogs      AuditLog[]
-  personalPage   Page?       @relation("PersonalPage", fields: [personalPageId], references: [id], onDelete: SetNull)
-  publishedPages Page[]      @relation("PublishedBy")
+  personalPage   Page?             @relation("PersonalPage", fields: [personalPageId], references: [id], onDelete: SetNull)
+  publishedPages Page[]            @relation("PublishedBy")
   media          Media[]
   groups         UserGroup[]
+  sources        Source[]
+  reimports      ReimportPreview[]
 
   @@map("users")
 }
@@ -325,6 +327,86 @@ model DiscussionSpace {
   permissions GroupPermission[]
 
   @@map("discussion_spaces")
+}
+
+// 7. Sources de données (14 §7). `onedrive_credentials` arrive à l'étape 7.
+
+model Source {
+  id               String       @id @default(uuid(7)) @db.Uuid
+  type             SourceType
+  /// Nom affiché : nom du fichier ou du Sheet.
+  name             String
+  /// `upload` : `storagePath` ; `gsheet` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId`.
+  connectionInfo   Json         @map("connection_info")
+  status           SourceStatus @default(ok)
+  lastReadAt       DateTime?    @map("last_read_at") @db.Timestamptz
+  lastImportedAt   DateTime?    @map("last_imported_at") @db.Timestamptz
+  lastDownloadedAt DateTime?    @map("last_downloaded_at") @db.Timestamptz
+  createdBy        String       @map("created_by") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime?    @map("deleted_at") @db.Timestamptz
+  version          Int          @default(1)
+
+  creator    User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  cells      StagingCell[]
+  references CellReference[]   @relation("ReferencingSource")
+  referenced CellReference[]   @relation("ReferencedSource")
+  reimports  ReimportPreview[]
+
+  @@map("sources")
+}
+
+/// Excel uploadés uniquement ; seules les cellules non vides sont stockées.
+model StagingCell {
+  sourceId    String   @map("source_id") @db.Uuid
+  sheet       String
+  row         Int
+  col         Int
+  valueType   CellType @map("value_type")
+  valueText   String?  @map("value_text")
+  valueNumber Decimal? @map("value_number") @db.Decimal
+  formula     String?
+  needsRecalc Boolean  @default(false) @map("needs_recalc")
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@id([sourceId, sheet, row, col])
+  @@map("staging_cells")
+}
+
+/// Liaison inter-fichiers : résolue par source, jamais par chemin.
+model CellReference {
+  id                 String @id @default(uuid(7)) @db.Uuid
+  sourceId           String @map("source_id") @db.Uuid
+  sheet              String
+  row                Int
+  col                Int
+  referencedSourceId String @map("referenced_source_id") @db.Uuid
+  referencedSheet    String @map("referenced_sheet")
+  referencedRange    String @map("referenced_range")
+
+  source           Source @relation("ReferencingSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  referencedSource Source @relation("ReferencedSource", fields: [referencedSourceId], references: [id], onDelete: Restrict)
+
+  @@index([sourceId, sheet, row, col])
+  @@index([referencedSourceId, referencedSheet])
+  @@map("cell_references")
+}
+
+model ReimportPreview {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  sourceId         String   @map("source_id") @db.Uuid
+  uploadedFilePath String   @map("uploaded_file_path")
+  lostValidations  Json     @map("lost_validations")
+  createdBy        String   @map("created_by") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt        DateTime @map("expires_at") @db.Timestamptz
+
+  source  Source @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  creator User   @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@map("reimport_previews")
 }
 
 // 11. Journal (14 §11). SQL ajouté dans la migration : trigger d'ajout seul.

@@ -16,10 +16,11 @@ import type { Page, Prisma, User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Db } from '../prisma/prisma.types.js';
 import { ThemesService } from '../themes/themes.service.js';
-import { assembleRows, type ReaderContext } from './assembler.js';
+import { assembleRows } from './assembler.js';
+import { DataBlocksService } from './data-blocks.service.js';
 import { countBlocks, validatePageConfig } from './config-validator.js';
 import type { CreatePageDto, SavePageDraftDto } from './pages.dto.js';
-import { ReaderContextService } from './reader-context.service.js';
+import { type PreparedContext, ReaderContextService } from './reader-context.service.js';
 
 const notFound = () => new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
 
@@ -67,6 +68,7 @@ export class PagesService {
     private readonly audit: AuditService,
     private readonly themes: ThemesService,
     private readonly readers: ReaderContextService,
+    private readonly dataBlocks: DataBlocksService,
   ) {}
 
   async list(): Promise<AdminPageSummary[]> {
@@ -108,6 +110,7 @@ export class PagesService {
   /** Enregistre le brouillon ; les utilisateurs continuent de voir la version publiée. */
   async saveDraft(id: string, dto: SavePageDraftDto, actor: AuditActor): Promise<AdminPage> {
     const config = validatePageConfig(dto.config);
+    await this.dataBlocks.checkReferences({ ...config.zones }, 'config.zones');
     if (config.themeId && !(await this.themes.exists(config.themeId))) {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
         fields: { 'config.themeId': ['notFound'] },
@@ -216,7 +219,7 @@ export class PagesService {
   private async assemble(
     page: Page,
     config: PageConfig,
-    ctx: ReaderContext,
+    ctx: PreparedContext,
   ): Promise<AssembledPage> {
     return {
       id: page.id,
@@ -229,7 +232,7 @@ export class PagesService {
         main: config.zones.main ? assembleRows(config.zones.main, ctx) : null,
         sidebar: config.zones.sidebar ? assembleRows(config.zones.sidebar, ctx) : null,
       },
-      unavailableSources: [],
+      unavailableSources: ctx.unavailableSources,
     };
   }
 

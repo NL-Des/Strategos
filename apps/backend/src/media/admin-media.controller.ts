@@ -16,7 +16,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ErrorCode, MEDIA_MAX_BYTES, type MediaItem, type Paginated } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { AppException } from '../common/app-exception.js';
-import { ConfirmDto, ListMediaQueryDto, UploadMediaDto } from './media.dto.js';
+import { ConfirmDto } from '../common/confirm.dto.js';
+import { ListMediaQueryDto, UploadMediaDto } from './media.dto.js';
 import { MediaService } from './media.service.js';
 
 /** Ce que l'intercepteur fournit d'un fichier envoyé. */

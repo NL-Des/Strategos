@@ -686,3 +686,187 @@ a.button.secondary {
 .facts dd {
   margin: 0;
 }
+
+/* Champs côte à côte dans les éditeurs de modules (colonnes, plage). */
+.inline-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.inline-fields > label {
+  flex: 1 1 8rem;
+}
+
+a.usage {
+  display: block;
+}
+
+.notice.warning {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Modules de données (06 — Tableau, Catalogue, Contenu libre). */
+.block-unavailable {
+  padding: 0.75rem;
+  border: 1px dashed var(--t-border, var(--border));
+  border-radius: var(--t-radius, 6px);
+  opacity: 0.8;
+}
+
+.block-search {
+  margin-bottom: 0.5rem;
+  max-width: 20rem;
+  width: 100%;
+}
+
+.block-table table {
+  background: var(--t-surface, #fff);
+}
+
+.block-table th button.sort {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.block-table .format-number,
+.block-table .format-currency {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.needs-recalc {
+  margin-left: 0.15rem;
+  color: var(--danger);
+  font-weight: 700;
+  cursor: help;
+}
+
+.cell-value-tag {
+  padding: 0 0.2rem;
+  border-radius: 4px;
+  background: #e8eefc;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+}
+
+.catalog-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(var(--per-row, 3), minmax(0, 1fr));
+}
+
+.catalog-grid.per-row-1 {
+  --per-row: 1;
+}
+.catalog-grid.per-row-2 {
+  --per-row: 2;
+}
+.catalog-grid.per-row-3 {
+  --per-row: 3;
+}
+.catalog-grid.per-row-4 {
+  --per-row: 4;
+}
+
+@media (max-width: 700px) {
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--t-surface, #fff);
+  border: 1px solid var(--t-border, var(--border));
+  border-radius: var(--t-radius, 8px);
+}
+
+.catalog-card.image_left {
+  flex-direction: row;
+}
+
+.catalog-card.image_right {
+  flex-direction: row-reverse;
+}
+
+.catalog-card.image_left .card-image,
+.catalog-card.image_right .card-image {
+  width: 40%;
+  aspect-ratio: auto;
+}
+
+.catalog-card.image_background {
+  min-height: 12rem;
+  justify-content: flex-end;
+}
+
+.catalog-card.image_background .card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.catalog-card.image_background .card-body {
+  position: relative;
+  background: color-mix(in srgb, var(--t-surface, #fff) 85%, transparent);
+}
+
+.card-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.card-body {
+  padding: 0.75rem;
+}
+
+.card-body h3 {
+  margin: 0 0 0.25rem;
+}
+
+.card-subtitle {
+  margin: 0 0 0.5rem;
+  opacity: 0.8;
+}
+
+.card-body dl {
+  margin: 0;
+}
+
+.card-body dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.card-body dt {
+  font-weight: 600;
+}
+
+.card-body dd {
+  margin: 0;
+}
+
+.cell-image {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* Image par défaut d'un catalogue (image introuvable). */
+.image-placeholder {
+  display: block;
+  background:
+    linear-gradient(135deg, transparent 45%, var(--t-border, #d9dde5) 45% 55%, transparent 55%),
+    var(--t-bg, #f6f7f9);
+}

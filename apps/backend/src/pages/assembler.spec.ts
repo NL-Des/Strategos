@@ -1,4 +1,5 @@
 import type { Row } from '@strategos/shared';
+import { EMPTY_CELL } from '../sources/cell-format.js';
 import { assembleRows, type ReaderContext } from './assembler.js';
 
 const readable = 'page-lisible';
@@ -6,6 +7,9 @@ const ctx = (personalPageId: string | null = null): ReaderContext => ({
   personalPageId,
   canReadPage: (id) => id === readable || id === 'perso',
   mediaExists: (id) => id === 'img',
+  cell: () => EMPTY_CELL,
+  sourceAvailable: () => true,
+  rowsUrl: (id) => `/api/v1/blocks/${id}/rows`,
 });
 
 const row = (block: Row['columns'][number]['block']): Row[] => [

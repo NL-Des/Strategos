@@ -2,13 +2,86 @@ import Image from '@tiptap/extension-image';
 import { TableKit } from '@tiptap/extension-table';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { CELL_REF_PATTERN, INLINE_CELL_FORMATS, type InlineCellFormat } from '@strategos/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CellValue, type CellValueAttrs } from './CellValueNode';
+import { useSources } from './DataBlockEditors';
 import { MediaPicker } from './MediaPicker';
+
+/** « Insérer une valeur » (06) : source, feuille, cellule et format. */
+function CellValuePicker({ onInsert }: { onInsert: (attrs: CellValueAttrs) => void }) {
+  const { t } = useTranslation();
+  const sources = useSources();
+  const [source, setSource] = useState('');
+  const [sheet, setSheet] = useState('');
+  const [ref, setRef] = useState('');
+  const [format, setFormat] = useState<InlineCellFormat>('text');
+  const sheets = sources.data?.find((s) => s.id === source)?.sheets ?? [];
+  const valid = !!source && !!sheet && CELL_REF_PATTERN.test(ref);
+
+  return (
+    <div className="card form cell-value-picker">
+      <label>
+        {t('builder.data.sourceFile')}
+        <select
+          value={source}
+          onChange={(e) => {
+            setSource(e.target.value);
+            setSheet(sources.data?.find((s) => s.id === e.target.value)?.sheets[0] ?? '');
+          }}
+        >
+          <option value="">{t('builder.data.chooseSource')}</option>
+          {sources.data?.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t('builder.data.sheet')}
+        <select value={sheet} onChange={(e) => setSheet(e.target.value)}>
+          {sheets.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t('builder.data.cell')}
+        <input
+          value={ref}
+          placeholder="B2"
+          onChange={(e) => setRef(e.target.value.toUpperCase())}
+        />
+      </label>
+      <label>
+        {t('builder.data.format')}
+        <select value={format} onChange={(e) => setFormat(e.target.value as InlineCellFormat)}>
+          {INLINE_CELL_FORMATS.map((f) => (
+            <option key={f} value={f}>
+              {t(`builder.data.formats.${f}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        disabled={!valid}
+        onClick={() => onInsert({ source, sheet, ref, format })}
+      >
+        {t('builder.rich.insertValue')}
+      </button>
+    </div>
+  );
+}
 
 /**
  * Éditeur du Contenu libre : titres, gras, italique, listes, liens, tableaux
- * simples et images de la médiathèque. Le backend nettoie le HTML produit.
+ * simples, images de la médiathèque et valeurs de cellules. Le backend nettoie
+ * le HTML produit.
  */
 export function RichTextEditor({
   html,
@@ -19,11 +92,13 @@ export function RichTextEditor({
 }) {
   const { t } = useTranslation();
   const [picking, setPicking] = useState(false);
+  const [insertingValue, setInsertingValue] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3, 4] }, code: false, codeBlock: false }),
       Image,
       TableKit.configure({ table: { resizable: false } }),
+      CellValue,
     ],
     content: html,
     onUpdate: ({ editor: e }) => onChange(e.getHTML()),
@@ -77,7 +152,18 @@ export function RichTextEditor({
         <button type="button" className="tool" onClick={() => setPicking(!picking)}>
           {t('builder.rich.image')}
         </button>
+        <button type="button" className="tool" onClick={() => setInsertingValue(!insertingValue)}>
+          {t('builder.rich.value')}
+        </button>
       </div>
+      {insertingValue && (
+        <CellValuePicker
+          onInsert={(attrs) => {
+            chain().insertCellValue(attrs).run();
+            setInsertingValue(false);
+          }}
+        />
+      )}
       {picking && (
         <MediaPicker
           value=""

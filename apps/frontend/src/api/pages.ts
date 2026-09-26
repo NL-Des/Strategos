@@ -8,6 +8,7 @@ import type {
   LayoutConfig,
   LayoutKind,
   PageConfig,
+  Paginated,
 } from '@strategos/shared';
 import { apiFetch } from './client';
 
@@ -47,3 +48,15 @@ export const previewLayout = (kind: LayoutKind, asGroup?: string) =>
   apiFetch<AssembledRow[]>(`/admin/layout/${kind}/preview${previewQuery(asGroup)}`);
 export const publishLayout = (kind: LayoutKind) =>
   apiFetch<AdminLayoutPart>(`/admin/layout/${kind}/publish`, { method: 'POST' });
+
+/** Lignes d'un Tableau ou d'un Catalogue, par l'adresse donnée dans la page assemblée. */
+export function fetchRows<T>(
+  rowsUrl: string,
+  query: { page: number; sort?: string; q?: string },
+): Promise<Paginated<T>> {
+  const url = new URL(rowsUrl, window.location.origin);
+  url.searchParams.set('page', String(query.page));
+  if (query.sort) url.searchParams.set('sort', query.sort);
+  if (query.q) url.searchParams.set('q', query.q);
+  return apiFetch(`${url.pathname.replace(/^\/api\/v1/, '')}${url.search}`);
+}

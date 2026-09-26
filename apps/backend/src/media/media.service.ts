@@ -15,6 +15,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import type { AuditActor } from '../audit/audit-actor.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
+import { findJsonUsages, type JsonUsages } from '../common/json-usages.js';
 import { config } from '../config.js';
 import type { Media } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -130,20 +131,8 @@ export class MediaService {
   }
 
   /** Pages (brouillon ou version publiée) et header/footer qui citent l'image. */
-  async usages(id: string): Promise<{ pages: { id: string; name: string }[]; layouts: string[] }> {
-    const pattern = `%${id}%`;
-    const [pages, layouts] = await Promise.all([
-      this.prisma.$queryRaw<{ id: string; name: string }[]>`
-        SELECT id, name FROM pages
-        WHERE deleted_at IS NULL
-          AND (draft_config::text LIKE ${pattern} OR published_config::text LIKE ${pattern})
-        ORDER BY name`,
-      this.prisma.$queryRaw<{ kind: string }[]>`
-        SELECT kind::text AS kind FROM layout_parts
-        WHERE draft_config::text LIKE ${pattern} OR published_config::text LIKE ${pattern}
-        ORDER BY kind`,
-    ]);
-    return { pages, layouts: layouts.map((l) => l.kind) };
+  usages(id: string): Promise<JsonUsages> {
+    return findJsonUsages(this.prisma, id);
   }
 
   /**

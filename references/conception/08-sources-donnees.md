@@ -39,7 +39,8 @@ Strategos lit des valeurs et en écrit, mais **n'exécute aucune formule**.
 ## Points techniques
 Moteur Excel/Sheets (**ExcelSyncModule**) :
 - Chaque source reçoit un `source_id` stable, indépendant de tout chemin de fichier ; `sources.type[upload|gsheet|onedrive]` ([14](14-modele-donnees.md#7-sources-de-données)).
-- À l'import/sync, les cellules contenant une formule de liaison externe sont détectées et résolues en référence (source, feuille, plage), stockée dans `cell_references` — jamais par chemin.
+- À l'import/sync, les cellules contenant une formule de liaison externe sont détectées et résolues en référence (source, feuille, plage), stockée dans `cell_references` — jamais par chemin. Pour un Excel uploadé, le classeur lié est retrouvé **une fois, à l'import**, parmi les Excel uploadés, par son nom de fichier ; ensuite, seul le `source_id` compte. Sans source correspondante, aucune référence n'est créée.
+- Une cellule dont la formule n'est **qu'une** référence à une cellule d'un autre classeur (`=[1]Stock!B2`) prend la valeur de la cellule liée. Toute autre formule, même si elle cite un autre classeur, garde sa valeur stockée : rien n'est calculé.
 - À la lecture d'une page, le backend **suit** ces références via la table pour lire les valeurs, sans reparser ni calculer les formules.
 - **Cache mémoire** (30-60s) pour les sources connectées, invalidé par `source_id`, en particulier après chaque écriture. Il n'y a aucune copie en base pour ces sources.
 - **Staging en base** (`staging_cells`, lignes et colonnes stockées en entiers), réservé aux Excel uploadés. Il conserve la valeur, la formule et un drapeau `needs_recalc`. Après une écriture, `needs_recalc` est posé sur les cellules dont la formule référence, directement ou transitivement, la cellule écrite, y compris via `cell_references`.
@@ -57,6 +58,9 @@ Moteur Excel/Sheets (**ExcelSyncModule**) :
 
 ## Questions ouvertes
 _Aucune pour l'instant._
+
+**Décisions (2026-09-26)**
+- Liaisons des Excel uploadés : classeur lié retrouvé par son nom de fichier à l'import ; une formule qui n'est qu'une référence suit la cellule liée, les autres gardent leur valeur stockée.
 
 **Décisions (2026-09-25)**
 - Trois types de source : Excel uploadé, Google Sheets, OneDrive/SharePoint.

@@ -1,4 +1,5 @@
 import type { AssembledLayout, AssembledPage } from '@strategos/shared';
+import { useTranslation } from 'react-i18next';
 import { AccountMenu } from '../components/AccountMenu';
 import { Rows } from './Rows';
 import { ThemeScope } from './ThemeScope';
@@ -14,10 +15,19 @@ export function PageRender({
   page: AssembledPage;
   layout: AssembledLayout | null;
 }) {
+  const { t } = useTranslation();
   const { main, sidebar } = page.zones;
   return (
     <ThemeScope theme={page.theme.config}>
       <AccountMenu />
+      {/* Renseigné pour l'admin seul (13 — Page assemblée). */}
+      {page.unavailableSources.length > 0 && (
+        <p className="notice warning" role="status">
+          {t('render.unavailableSources', {
+            names: page.unavailableSources.map((s) => s.name).join(', '),
+          })}
+        </p>
+      )}
       {page.showHeader && layout?.header && (
         <header className="zone zone-header">
           <Rows rows={layout.header} />

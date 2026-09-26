@@ -7,6 +7,7 @@ const LINKS = [
   ['/admin/layout/header', 'header'],
   ['/admin/layout/footer', 'footer'],
   ['/admin/media', 'media'],
+  ['/admin/sources', 'sources'],
   ['/admin/users', 'users'],
   ['/admin/groups', 'groups'],
   ['/admin/rights', 'rights'],

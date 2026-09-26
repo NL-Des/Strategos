@@ -16,10 +16,11 @@ import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
 import type { LayoutPart, Prisma, User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { assembleRows, type ReaderContext } from './assembler.js';
+import { assembleRows } from './assembler.js';
+import { DataBlocksService } from './data-blocks.service.js';
 import { countBlocks, validateLayoutConfig } from './config-validator.js';
 import type { SaveLayoutDraftDto } from './pages.dto.js';
-import { ReaderContextService } from './reader-context.service.js';
+import { type PreparedContext, ReaderContextService } from './reader-context.service.js';
 
 function draftOf(part: LayoutPart): LayoutConfig {
   return { ...EMPTY_LAYOUT_CONFIG, ...(part.draftConfig as object) } as LayoutConfig;
@@ -54,6 +55,7 @@ export class LayoutService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly readers: ReaderContextService,
+    private readonly dataBlocks: DataBlocksService,
   ) {}
 
   async get(kind: LayoutKind): Promise<AdminLayoutPart> {
@@ -62,6 +64,7 @@ export class LayoutService {
 
   async saveDraft(kind: LayoutKind, dto: SaveLayoutDraftDto, actor: AuditActor) {
     const config = validateLayoutConfig(dto.config);
+    await this.dataBlocks.checkReferences({ '': config.rows }, 'config.rows');
     return this.prisma.$transaction(async (tx) => {
       const before = await tx.layoutPart.findUniqueOrThrow({ where: { kind } });
       const { count } = await tx.layoutPart.updateMany({
@@ -124,7 +127,7 @@ export class LayoutService {
   }
 
   private async assemblePublished(
-    contextFor: (rows: Row[]) => Promise<ReaderContext>,
+    contextFor: (rows: Row[]) => Promise<PreparedContext>,
   ): Promise<AssembledLayout> {
     const parts = await this.prisma.layoutPart.findMany();
     const published = (kind: LayoutKind) => {

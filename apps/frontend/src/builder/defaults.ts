@@ -19,6 +19,44 @@ export function newBlock(type: AvailableBlockType): Block {
       };
     case 'rich_content':
       return { id: newId(), type, config: { html: '<p></p>' } };
+    case 'table':
+      return {
+        id: newId(),
+        type,
+        config: {
+          sourceId: '',
+          sheet: '',
+          range: { mode: 'extensible', columns: 'A:C', startRow: 1 },
+          headerRow: true,
+          columns: ['A', 'B', 'C'].map((col) => ({
+            col,
+            visible: true,
+            label: '',
+            format: 'text',
+          })),
+          pageSize: 25,
+          sortable: true,
+          searchable: true,
+        },
+      };
+    case 'catalog':
+      return {
+        id: newId(),
+        type,
+        config: {
+          sourceId: '',
+          sheet: '',
+          range: { mode: 'extensible', columns: 'A:D', startRow: 1 },
+          headerRow: true,
+          layout: 'image_top',
+          imageCol: 'A',
+          titleCol: 'B',
+          details: [],
+          perRow: 3,
+          pageSize: 25,
+          searchable: true,
+        },
+      };
   }
 }
 

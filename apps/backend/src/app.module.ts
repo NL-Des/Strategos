@@ -10,6 +10,7 @@ import { PermissionsModule } from './permissions/permissions.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ProfileModule } from './profile/profile.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { SourcesModule } from './sources/sources.module.js';
 import { ThemesModule } from './themes/themes.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -25,6 +26,7 @@ import { UsersModule } from './users/users.module.js';
     PermissionsModule,
     ProfileModule,
     ThemesModule,
+    SourcesModule,
     PagesModule,
     MediaModule,
   ],

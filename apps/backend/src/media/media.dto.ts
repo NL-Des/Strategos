@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../common/pagination.dto.js';
 
 export class ListMediaQueryDto extends PaginationQueryDto {}
@@ -8,11 +8,4 @@ export class UploadMediaDto {
   @IsString()
   @MaxLength(300)
   alt?: string;
-}
-
-/** Avertissements à confirmer (13) : même appel avec `"confirm": true`. */
-export class ConfirmDto {
-  @IsOptional()
-  @IsBoolean()
-  confirm?: boolean;
 }

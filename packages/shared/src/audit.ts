@@ -28,6 +28,9 @@ export const AuditAction = {
   MEDIA_UPLOAD: 'media.upload',
   MEDIA_DELETE: 'media.delete',
   SETTINGS_UPDATE: 'settings.update',
+  SOURCE_UPLOAD: 'source.upload',
+  SOURCE_DOWNLOAD: 'source.download',
+  SOURCE_DELETE: 'source.delete',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 export const AUDIT_ACTIONS = Object.values(AuditAction);
@@ -39,6 +42,7 @@ export const AuditTargetType = {
   LAYOUT: 'layout',
   MEDIA: 'media',
   SETTINGS: 'settings',
+  SOURCE: 'source',
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];
 export const AUDIT_TARGET_TYPES = Object.values(AuditTargetType);

@@ -1,5 +1,6 @@
 import { ALIGNMENTS, type Block } from '@strategos/shared';
 import { useTranslation } from 'react-i18next';
+import { CatalogEditor, TableEditor } from './DataBlockEditors';
 import { newId } from './defaults';
 import { LinkTargetEditor } from './LinkTargetEditor';
 import { MediaPicker } from './MediaPicker';
@@ -154,5 +155,9 @@ export function BlockEditor({ block, onChange }: Props<Block>) {
           onChange={(html) => onChange({ ...block, config: { html } })}
         />
       );
+    case 'table':
+      return <TableEditor block={block} onChange={onChange} />;
+    case 'catalog':
+      return <CatalogEditor block={block} onChange={onChange} />;
   }
 }

@@ -5,12 +5,15 @@ import {
   BLOCK_TYPES,
   type Block,
   type BlockType,
+  type CatalogBlockConfig,
+  COLUMN_PATTERN,
   ErrorCode,
   LAYOUT_FORBIDDEN_BLOCK_TYPES,
   type LayoutConfig,
   type PageConfig,
   ROW_LAYOUTS,
   type Row,
+  type TableBlockConfig,
 } from '@strategos/shared';
 import { BLOCK_CONFIG_SCHEMAS } from '@strategos/shared/validation';
 import { plainToInstance } from 'class-transformer';
@@ -18,6 +21,7 @@ import { isUUID, validateSync } from 'class-validator';
 import { AppException } from '../common/app-exception.js';
 import { sanitizeRichHtml } from '../common/html-sanitizer.js';
 import { toFieldErrors } from '../common/validation.pipe.js';
+import { inRange } from '../sources/data-range.js';
 
 const MAX_ROWS_PER_ZONE = 100;
 
@@ -121,9 +125,33 @@ class StructureValidator {
     const config = JSON.parse(JSON.stringify(instance)) as Block['config'];
     if (type === 'rich_content') {
       const rich = config as { html: string };
-      rich.html = sanitizeRichHtml(rich.html);
+      rich.html = sanitizeRichHtml(rich.html, { cellValues: true });
+    }
+    if ((type === 'table' || type === 'catalog') && !this.fields[`${path}.range`]) {
+      this.dataColumns(path, type, config as TableBlockConfig | CatalogBlockConfig);
     }
     return config;
+  }
+
+  /** Les colonnes affichées d'un Tableau ou d'un Catalogue sont dans sa plage. */
+  private dataColumns(
+    path: string,
+    type: 'table' | 'catalog',
+    config: TableBlockConfig | CatalogBlockConfig,
+  ) {
+    const check = (field: string, col: string | undefined) => {
+      if (col && COLUMN_PATTERN.test(col) && !inRange(config, col))
+        this.fail(`${path}.${field}`, 'outOfRange');
+    };
+    if (type === 'table') {
+      (config as TableBlockConfig).columns?.forEach((c, i) => check(`columns[${i}].col`, c.col));
+      return;
+    }
+    const catalog = config as CatalogBlockConfig;
+    check('imageCol', catalog.imageCol);
+    check('titleCol', catalog.titleCol);
+    check('subtitleCol', catalog.subtitleCol);
+    catalog.details?.forEach((d, i) => check(`details[${i}].col`, d.col));
   }
 
   throwIfInvalid(): void {

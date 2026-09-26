@@ -23,6 +23,8 @@ export const ErrorCode = {
   MEDIA_NAME_TAKEN: 'MEDIA_NAME_TAKEN',
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   UNSUPPORTED_FILE_TYPE: 'UNSUPPORTED_FILE_TYPE',
+  EXCEL_PARSE_FAILED: 'EXCEL_PARSE_FAILED',
+  SOURCE_NOT_UPLOAD: 'SOURCE_NOT_UPLOAD',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 
@@ -56,6 +58,7 @@ export function isApiError(value: unknown): value is ApiError {
  */
 export const WarningCode = {
   MEDIA_IN_USE: 'MEDIA_IN_USE',
+  SOURCE_IN_USE: 'SOURCE_IN_USE',
 } as const;
 export type WarningCode = (typeof WarningCode)[keyof typeof WarningCode];
 export const WARNING_CODES = Object.values(WarningCode);

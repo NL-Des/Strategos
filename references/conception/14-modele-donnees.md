@@ -274,7 +274,7 @@ Voir [08](08-sources-donnees.md).
 | `id` | uuid | | — | PK (`source_id` stable) |
 | `type` | enum `source_type` (`upload`, `gsheet`, `onedrive`) | | — | |
 | `name` | text | | — | Nom affiché (nom du fichier ou du Sheet) |
-| `connection_info` | jsonb | | — | `gsheet` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId` ; `upload` : `storagePath` |
+| `connection_info` | jsonb | | — | `gsheet` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId` ; `upload` : `storagePath` et `sheets` (feuilles, dans l'ordre du classeur) |
 | `status` | enum `source_status` (`ok`, `unavailable`, `auth_expired`) | | `ok` | Dernier état connu |
 | `last_read_at` | timestamptz | N | — | Dernière lecture réussie (sources connectées) |
 | `last_imported_at` | timestamptz | N | — | Dernier import ou réimport (upload) |

@@ -87,7 +87,7 @@ Colonne **Accès** : `public` (sans session), `connecté`, `lecture page`, `lect
 |---|---|---|---|---|
 | GET | `/layout` | connecté | Header et footer partagés **publiés**, assemblés et filtrés pour l'utilisateur : `{ header, footer }`, chacun `null` s'il n'a jamais été publié | — |
 | GET | `/pages/:id` | lecture page | **Page assemblée** : version publiée, modules et liens non autorisés retirés, valeurs résolues (voir [schéma](#page-assemblée)) | `404`, `SOURCE_UNAVAILABLE` (partiel, voir schéma) |
-| GET | `/blocks/:blockId/rows` | lecture page | Lignes d'un Tableau ou d'un Catalogue : `?page&pageSize&sort&q` ; pagination, tri et recherche côté serveur | `404`, `503 SOURCE_UNAVAILABLE` |
+| GET | `/blocks/:blockId/rows` | lecture page | Lignes d'un Tableau ou d'un Catalogue : `?page&pageSize&sort&q` ; pagination, tri et recherche côté serveur. `sort=<indice de colonne affichée>:asc\|desc` (jamais une lettre de colonne) ; sans `pageSize`, celui du module. Réponse `{ items, total, page, pageSize }` : `{ cells: [{ value, needsRecalc, href?, image? }] }` par ligne de Tableau, `{ image, title, subtitle, details }` par carte de Catalogue (`image: null` = image par défaut). Les lignes entièrement vides sont ignorées | `404`, `503 SOURCE_UNAVAILABLE` |
 
 La page d'arrivée et la page personnelle sont connues via `Me` (`landingPageId`, `personalPageId`) : il n'y a pas de route dédiée. Si l'utilisateur ne peut pas lire la page d'arrivée, `GET /pages/:id` renvoie `404` et le frontend affiche l'écran « Aucun espace ne vous est encore attribué ».
 
@@ -169,9 +169,9 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/sources` | Liste : type, état, dernière lecture ou import, usages | — |
 | GET | `/sources/service-account` | Adresse du compte de service Google, à afficher pour le partage | — |
 | POST | `/sources` | Ajouter un Google Sheet `{ type: "gsheet", url }` ou un fichier OneDrive `{ type: "onedrive", itemId }` ; teste l'accès | `SOURCE_UNAVAILABLE` (Sheet non partagé), `SOURCE_AUTH_EXPIRED` |
-| POST | `/sources/upload` | Uploader un Excel (`multipart`) → nouvelle source de type upload | `413`, `415`, `EXCEL_PARSE_FAILED` |
+| POST | `/sources/upload` | Uploader un Excel `.xlsx` (`multipart`, champ `file`, 20 Mo au plus) → nouvelle source de type upload. La liste renvoie aussi les feuilles (`sheets`) pour les sélecteurs du page builder | `413`, `415`, `422 EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/test` | Tester l'accès | `SOURCE_UNAVAILABLE` |
-| GET | `/sources/:id/download` | Télécharger la version de référence d'un Excel uploadé ; met à jour `last_downloaded_at` | `422` si ce n'est pas un upload |
+| GET | `/sources/:id/download` | Télécharger la version de référence d'un Excel uploadé ; met à jour `last_downloaded_at` et trace le téléchargement | `422 SOURCE_NOT_UPLOAD` si ce n'est pas un upload |
 | POST | `/sources/:id/reimport/preview` | Uploader le nouveau fichier ; renvoie un `reimportToken` et la liste des **validations qui seraient perdues** (voir [schéma](#aperçu-de-réimport)) | `415`, `EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/reimport/confirm` | `{ reimportToken, mode: "overwrite" \| "reapply" }` (annuler revient à ne pas confirmer ; le jeton expire) | `409 REIMPORT_TOKEN_EXPIRED`, `422` si une validation réappliquée échoue |
 | DELETE | `/sources/:id` | Retirer (avertissement si encore utilisée) | `409 CONFIRMATION_REQUIRED` |
@@ -193,7 +193,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`), `{ version, config: { rows } }` ; formulaires, espaces et chats refusés | `EDIT_CONFLICT`, `422 BLOCK_NOT_ALLOWED_IN_LAYOUT` (`details.blockIds`) |
 | GET | `/layout/:kind/preview?asGroup=` | Aperçu du header ou du footer, éventuellement avec les droits d'un groupe | — |
 | POST | `/layout/:kind/publish` | Publier le header ou le footer | — |
-| GET | `/blocks/:blockId/rows?preview=true` | Lignes d'un bloc de brouillon, pour l'aperçu | — |
+| GET | `/blocks/:blockId/rows?preview=true` | Lignes d'un bloc de brouillon (ou, à défaut, de la version publiée), pour l'aperçu ; même réponse que la route utilisateur. L'aperçu assemblé pointe vers cette route dans `rowsUrl` | `404`, `503 SOURCE_UNAVAILABLE` |
 | CRUD | `/themes`, `/themes/:id` | Thèmes ; supprimer le thème par défaut est refusé | `422 DEFAULT_THEME` |
 | GET / POST | `/media` | Liste paginée (`?q=` sur le nom), upload (`multipart` : `file`, `alt` facultatif) | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE`, `409 MEDIA_NAME_TAKEN` |
 | GET | `/media/:id/usages` | Pages et header/footer qui utilisent l'image (brouillon ou version publiée) | `404` |
@@ -263,7 +263,8 @@ Réponse de `GET /pages/:id` (et de `GET /admin/pages/:id/preview`) :
 - Les liens « Ma page personnelle » sont déjà résolus en identifiant de page.
 - Les valeurs insérées dans un Contenu libre sont **déjà résolues** (`{ "value": "4 250", "needsRecalc": false }`).
 - Les lignes des tableaux et catalogues ne sont pas incluses : elles sont chargées page par page via `rowsUrl`.
-- Si une source est injoignable, la page est tout de même renvoyée. Les blocs concernés portent `"error": "SOURCE_UNAVAILABLE"` et la source est listée dans `unavailableSources`.
+- Si une source est injoignable, la page est tout de même renvoyée. Les blocs concernés portent `"error": "SOURCE_UNAVAILABLE"`. `unavailableSources` (`[{ id, name }]`) n'est renseigné que pour l'admin (aperçu, ou lecture d'une page par l'admin) ; il reste vide pour les utilisateurs, qui ne voient jamais une source.
+- Contenu libre : chaque valeur insérée est remplacée dans le HTML par `<span data-value="i"></span>`, et `config.values[i] = { value, needsRecalc }`. Tableau et Catalogue ne portent ni source, ni feuille, ni plage : seulement les libellés, formats et réglages d'affichage, et `rowsUrl`.
 
 ### Formulaire côté utilisateur
 ```json

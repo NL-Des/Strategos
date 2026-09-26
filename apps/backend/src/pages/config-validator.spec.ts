@@ -73,14 +73,42 @@ describe('validatePageConfig', () => {
   });
 
   it('refuse un module pas encore disponible', () => {
-    const table = { id: id(2), type: 'table', config: {} };
+    const map = { id: id(2), type: 'clickable_map', config: {} };
+    const { body } = errorOf(() =>
+      validatePageConfig({
+        zones: { main: [{ id: id(1), columns: [{ width: '1/1', block: map }] }], sidebar: null },
+      }),
+    );
+    expect(body.details.fields).toEqual({
+      'config.zones.main[0].columns[0].block.type': ['notAvailable'],
+    });
+  });
+
+  it('refuse une colonne de tableau hors de la plage', () => {
+    const table = {
+      id: id(2),
+      type: 'table',
+      config: {
+        sourceId: id(9),
+        sheet: 'Stock',
+        range: { mode: 'extensible', columns: 'A:C', startRow: 1 },
+        headerRow: true,
+        columns: [
+          { col: 'B', visible: true, label: '', format: 'text' },
+          { col: 'E', visible: true, label: '', format: 'text' },
+        ],
+        pageSize: 25,
+        sortable: true,
+        searchable: true,
+      },
+    };
     const { body } = errorOf(() =>
       validatePageConfig({
         zones: { main: [{ id: id(1), columns: [{ width: '1/1', block: table }] }], sidebar: null },
       }),
     );
     expect(body.details.fields).toEqual({
-      'config.zones.main[0].columns[0].block.type': ['notAvailable'],
+      'config.zones.main[0].columns[0].block.config.columns[1].col': ['outOfRange'],
     });
   });
 

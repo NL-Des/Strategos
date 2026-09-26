@@ -9,7 +9,7 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 2 — Journal des modifications](#étape-2--journal-des-modifications)
 - [x] [Étape 3 — Pages minimales, header, footer et réglages](#étape-3--pages-minimales-header-footer-et-réglages)
 - [x] [Étape 4 — Groupes, droits et profil](#étape-4--groupes-droits-et-profil)
-- [ ] [Étape 5 — Excel uploadé, tableaux et catalogues](#étape-5--excel-uploadé-tableaux-et-catalogues)
+- [x] [Étape 5 — Excel uploadé, tableaux et catalogues](#étape-5--excel-uploadé-tableaux-et-catalogues)
 - [ ] [Étape 6 — Formulaires et soumissions](#étape-6--formulaires-et-soumissions)
 - [ ] [Étape 7 — Google Sheets et OneDrive](#étape-7--google-sheets-et-onedrive)
 - [ ] [Étape 8 — Espaces de discussion](#étape-8--espaces-de-discussion)
@@ -184,16 +184,16 @@ Placé tôt pour que chaque étape suivante trace ses actions dès sa création.
 L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les sources connectées réutiliseront la même interface de lecture et d'écriture.
 
 **Critères d'acceptation**
-- [ ] Aucune formule n'est évaluée : seules les valeurs stockées sont lues.
-- [ ] Liaisons inter-fichiers résolues par `cell_references` (source, feuille, plage), jamais par chemin.
-- [ ] Pagination, tri et recherche faits côté backend ; `pageSize` plafonné à 200.
-- [ ] Une plage extensible suit la dernière ligne remplie.
-- [ ] Image de catalogue introuvable → image par défaut.
-- [ ] Valeurs du Contenu libre résolues côté backend, avec `needsRecalc`.
-- [ ] Source injoignable → page renvoyée quand même, bloc en `SOURCE_UNAVAILABLE` et source listée dans `unavailableSources`.
-- [ ] Retirer une source utilisée → `409 CONFIRMATION_REQUIRED`.
-- [ ] Le téléchargement met à jour `last_downloaded_at` et est tracé au journal.
-- [ ] Aucune cellule, feuille ni source n'apparaît dans les réponses destinées aux utilisateurs.
+- [x] Aucune formule n'est évaluée : seules les valeurs stockées sont lues.
+- [x] Liaisons inter-fichiers résolues par `cell_references` (source, feuille, plage), jamais par chemin.
+- [x] Pagination, tri et recherche faits côté backend ; `pageSize` plafonné à 200.
+- [x] Une plage extensible suit la dernière ligne remplie.
+- [x] Image de catalogue introuvable → image par défaut.
+- [x] Valeurs du Contenu libre résolues côté backend, avec `needsRecalc`.
+- [x] Source injoignable → page renvoyée quand même, bloc en `SOURCE_UNAVAILABLE` et source listée dans `unavailableSources`.
+- [x] Retirer une source utilisée → `409 CONFIRMATION_REQUIRED`.
+- [x] Le téléchargement met à jour `last_downloaded_at` et est tracé au journal.
+- [x] Aucune cellule, feuille ni source n'apparaît dans les réponses destinées aux utilisateurs.
 
 **Démo** : un tableau et un catalogue affichent un `.xlsx` uploadé.
 

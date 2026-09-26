@@ -13,6 +13,7 @@
   "dependencies": {
     "@strategos/shared": "workspace:*",
     "@tanstack/react-query": "^5.104.0",
+    "@tiptap/core": "3.31.3",
     "@tiptap/extension-image": "^3.31.3",
     "@tiptap/extension-table": "^3.31.3",
     "@tiptap/pm": "^3.31.3",

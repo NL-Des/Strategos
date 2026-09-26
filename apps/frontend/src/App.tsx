@@ -26,6 +26,7 @@ const ResourceRightsPage = admin(
   'ResourceRightsPage',
 );
 const RightsPage = admin(() => import('./pages/admin/RightsPage'), 'RightsPage');
+const SourcesPage = admin(() => import('./pages/admin/SourcesPage'), 'SourcesPage');
 const SettingsPage = admin(() => import('./pages/admin/SettingsPage'), 'SettingsPage');
 const UserPage = admin(() => import('./pages/admin/UserPage'), 'UserPage');
 const UsersPage = admin(() => import('./pages/admin/UsersPage'), 'UsersPage');
@@ -64,6 +65,7 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/pages/:id', <PageEditorPage />],
   ['/admin/layout/:kind', <LayoutEditorPage />],
   ['/admin/media', <MediaPage />],
+  ['/admin/sources', <SourcesPage />],
   ['/admin/users', <UsersPage />],
   ['/admin/users/:id', <UserPage />],
   ['/admin/groups', <GroupsPage />],

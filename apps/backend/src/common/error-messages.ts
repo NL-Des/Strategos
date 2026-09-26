@@ -24,5 +24,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   MEDIA_NAME_TAKEN: 'Une image porte déjà ce nom.',
   FILE_TOO_LARGE: 'Le fichier est trop volumineux.',
   UNSUPPORTED_FILE_TYPE: 'Ce type de fichier n’est pas accepté.',
+  EXCEL_PARSE_FAILED: 'Ce fichier Excel n’a pas pu être lu.',
+  SOURCE_NOT_UPLOAD: 'Cette action ne concerne que les fichiers Excel uploadés.',
   INTERNAL_ERROR: 'Une erreur interne est survenue.',
 };
