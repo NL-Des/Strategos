@@ -17,7 +17,7 @@ const user: User = {
 
 describe('mappers de compte', () => {
   it('ne renvoient jamais le hash du mot de passe', () => {
-    for (const dto of [toMe(user), toUserDetail(user)]) {
+    for (const dto of [toMe(user, null), toUserDetail(user)]) {
       expect(JSON.stringify(dto)).not.toContain('argon2');
       expect(dto).not.toHaveProperty('passwordHash');
     }

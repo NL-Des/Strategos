@@ -60,7 +60,7 @@ Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, 
 | Installer pnpm (une fois) | `corepack enable pnpm` (ou `corepack enable --install-directory ~/.local/bin pnpm`) |
 | Installer les dépendances | `pnpm install` (compile `shared` et génère le client Prisma) |
 | Tout lancer (production locale, HTTPS) | `docker compose up --build` → `https://localhost` (réglages dans `.env`, voir `.env.example`) |
-| Base seule pour le dev | `pnpm db:up` (Postgres sur `127.0.0.1:5432`) |
+| Base seule pour le dev | `pnpm db:up` (Postgres sur `127.0.0.1:5432`). À relancer après un `docker compose up`, qui recrée la base sans exposer son port (`ECONNREFUSED 127.0.0.1:5432` dans les tests e2e) |
 | Dev avec rechargement | `cp apps/backend/.env.example apps/backend/.env` une fois, puis `pnpm dev` → `http://localhost:5173` |
 | **Tout vérifier (avant chaque commit ; pas de CI)** | `pnpm check` (base de test : `pnpm db:up`) |
 | Lint / format | `pnpm lint` · `pnpm format` · `pnpm format:check` |
@@ -77,4 +77,7 @@ Conventions du code :
 - Backend ESM : imports relatifs avec l'extension `.js`.
 - **Routes** : tout est protégé par défaut (guards globaux dans `apps/backend/src/auth/auth.module.ts`) ; `@Public()` pour une route sans session, `@AllowPendingCredentials()` pour une route permise avant le changement d'identifiants. Tout contrôleur sous `admin/` est réservé à l'admin.
 - **Journal** : toute modification tracée appelle `AuditService.record(tx, actor, …)` avec le client de **sa** transaction (le service refuse le client racine). Acteur : `@Actor()` dans un contrôleur, `SYSTEM_ACTOR` ou `CLI_ACTOR` sinon. Nouvelle action : `AuditAction` dans `packages/shared/src/audit.ts` et `audit.actions.<action>` dans `fr.json` (un test vérifie la traduction).
+- **`packages/shared`** : types et constantes, importables partout. Les schémas `class-validator` sont dans `@strategos/shared/validation`, pour le backend seulement (ils exigent `reflect-metadata`) ; chaque schéma `implements` son interface.
+- **Nouveau module de page** : interface de config et `AVAILABLE_BLOCK_TYPES` dans `packages/shared/src/pages/blocks.ts`, schéma dans `packages/shared/src/validation/blocks.schema.ts`, assemblage dans `apps/backend/src/pages/assembler.ts`, rendu dans `apps/frontend/src/render/blocks.tsx`, éditeur dans `apps/frontend/src/builder/BlockEditor.tsx`, traductions `builder.blockTypes`.
+- **Lecture d'une page** : toujours par `PageAccessService` (`apps/backend/src/pages/page-access.service.ts`) ; l'assemblage retire ce que le lecteur ne doit pas voir, le frontend affiche tel quel.
 - **Tests e2e** : `apps/backend/test/helpers.ts` fournit `TestClient` (cookies, `Origin`, CSRF, IP propre), `adminClient`, `resetDatabase`.

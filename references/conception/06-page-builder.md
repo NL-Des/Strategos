@@ -15,7 +15,7 @@ L'administrateur coche les zones présentes sur la page, puis y place ses module
 - **Responsive** : sur mobile, les colonnes d'une rangée s'empilent et la Sidebar passe sous le Main.
 
 ### Brouillon et publication
-- L'admin modifie toujours un **brouillon** et peut le voir en **aperçu**. Les utilisateurs continuent de voir la version publiée.
+- L'admin modifie toujours un **brouillon** et peut le voir en **aperçu**. Les utilisateurs continuent de voir la version publiée. Le thème de la page et l'affichage du header et du footer font partie du brouillon : ils ne changent pour les utilisateurs qu'à la publication.
 - Un bouton **Publier** remplace la version en ligne par le brouillon. La publication est tracée dans le [journal](04-administration.md#journal-des-modifications).
 - Même règle pour le header et le footer partagés.
 - **Les modules suivent la page** : la configuration des formulaires (champs, mappings, zone, clé), des espaces de discussion et des chats fait partie du brouillon. Elle ne prend effet qu'à la publication de la page. Un espace ou un chat ajouté au brouillon n'existe pour les utilisateurs qu'une fois la page publiée.
@@ -35,7 +35,7 @@ L'admin désigne un **thème par défaut** et peut attribuer un **thème à chaq
 La mise en forme des fichiers sources (gras, couleurs de cellules…) **n'est pas reproduite** : Strategos ne lit que des valeurs, et l'apparence vient du thème et des formats choisis par l'admin.
 
 ### Médiathèque
-L'admin dispose d'une **médiathèque** où il uploade ses images. Elle alimente les modules Image, Catalogue, Contenu libre et Carte cliquable. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages concernées. Les images de la médiathèque sont accessibles à **tout utilisateur connecté** ; elles ne doivent donc pas servir à stocker des documents confidentiels.
+L'admin dispose d'une **médiathèque** où il uploade ses images : JPEG, PNG, WebP ou GIF, 10 Mo au plus. Le type est vérifié sur le contenu du fichier ; le SVG est refusé, car il peut contenir du script. Elle alimente les modules Image, Catalogue, Contenu libre et Carte cliquable. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages concernées. Les images de la médiathèque sont accessibles à **tout utilisateur connecté** ; elles ne doivent donc pas servir à stocker des documents confidentiels.
 
 ### Menu de compte
 Seul élément qui n'est pas construit par l'admin : une **icône de compte**, fixe dans un coin de l'écran sur toutes les pages. Elle ouvre **Profil**, **Notes**, **Mes soumissions** et **Déconnexion** (voir [Profil utilisateur](05-profil-utilisateur.md)). Son style suit le thème de la page.
@@ -146,11 +146,12 @@ Un tableau ou un catalogue relié à une source affiche une plage qui peut être
 
 ## Points techniques
 - **PagesModule** : CRUD des pages, brouillon et publication, header/footer partagés, thèmes, médiathèque, soft-delete.
-- **Brouillon/publication** : `pages.draft_config` et `pages.published_config` (JSONB), `published_at`. La publication est **transactionnelle** : dans la même transaction, elle publie la page, publie les définitions de ses formulaires (nouvelle version, invalidation des soumissions en attente si la modification est structurelle) et crée les espaces et chats nouvellement ajoutés.
+- **Brouillon/publication** : `pages.draft_config` et `pages.published_config` (JSONB, `{ zones: { main, sidebar }, themeId, showHeader, showFooter }`, une zone non cochée valant `null`), `published_at`. La publication est **transactionnelle** : dans la même transaction, elle publie la page, publie les définitions de ses formulaires (nouvelle version, invalidation des soumissions en attente si la modification est structurelle) et crée les espaces et chats nouvellement ajoutés.
 - **Header et footer** : la validation du brouillon de `layout_parts` refuse les blocs de type `form`, `discussion_space` et `chat` (`422 BLOCK_NOT_ALLOWED_IN_LAYOUT`).
 - **Aperçu par groupe** : l'assemblage de la page accepte un « contexte de droits » (utilisateur réel, ou membre fictif d'un groupe donné) ; c'est la même fonction que pour l'affichage réel, pour que l'aperçu soit fidèle. Le header et le footer partagés sont stockés dans `layout_parts(kind[header|footer], draft_config, published_config, published_at)`. La page porte `show_header` et `show_footer`.
 - **Structure du JSON** d'une zone : `rows[] → { columns: [{ width, block }] }`, où `block = { id, type, config }`. Les `block.id` sont stables, parce que les formulaires, espaces de discussion et chats y sont rattachés (`page_block_id`).
-- **Registre des modules** : `BlockRenderer` avec un registre `{ blockType: Component }` : `image`, `buttons`, `clickable_map`, `table`, `catalog`, `rich_content`, `form`, `discussion_space`, `chat`. Chaque type a son schéma de `config`, validé par `class-validator` côté backend.
+- **Registre des modules** : `BlockRenderer` avec un registre `{ blockType: Component }` : `image`, `buttons`, `clickable_map`, `table`, `catalog`, `rich_content`, `form`, `discussion_space`, `chat`. Chaque type a son interface de `config` dans `packages/shared` et son schéma `class-validator` dans `packages/shared/validation` (backend seulement), qui implémente l'interface. Un type sans schéma est refusé à l'enregistrement.
+- **Rangées** : répartitions permises `1/1`, `1/2 + 1/2`, `1/3 + 2/3`, `2/3 + 1/3`, `1/3 × 3` ; une colonne vide est permise. Les `id` des rangées et des blocs sont des UUID uniques dans la page, générés par l'éditeur.
 - **Assemblage côté backend** : à la lecture d'une page publiée, le backend retire les modules non autorisés (espaces illisibles, formulaires non configurés, modules de données sans plage) et les liens vers des pages illisibles, puis résout les valeurs (cellules du contenu libre, plages). Le frontend ne reçoit jamais ce qu'il ne doit pas afficher.
 - **Tableaux et catalogues** : `range_mode[fixed|extensible]`. La pagination, le tri et la recherche sont faits **côté backend** sur les données du staging ou du cache (milliers de lignes), avec une requête par page affichée. En mode extensible, la dernière ligne remplie est calculée à la lecture.
 - **Médiathèque** : table `media` ([14](14-modele-donnees.md#media--médiathèque)), fichiers sur le volume `uploads`. Une image est référencée par son `filename` unique (catalogue) ou par son `id` (autres modules).

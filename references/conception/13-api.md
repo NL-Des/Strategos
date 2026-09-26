@@ -85,7 +85,7 @@ Colonne **Accès** : `public` (sans session), `connecté`, `lecture page`, `lect
 ### Navigation et pages — [06](06-page-builder.md)
 | Méthode | Chemin | Accès | Rôle | Erreurs |
 |---|---|---|---|---|
-| GET | `/layout` | connecté | Header et footer partagés **publiés**, assemblés et filtrés pour l'utilisateur | — |
+| GET | `/layout` | connecté | Header et footer partagés **publiés**, assemblés et filtrés pour l'utilisateur : `{ header, footer }`, chacun `null` s'il n'a jamais été publié | — |
 | GET | `/pages/:id` | lecture page | **Page assemblée** : version publiée, modules et liens non autorisés retirés, valeurs résolues (voir [schéma](#page-assemblée)) | `404`, `SOURCE_UNAVAILABLE` (partiel, voir schéma) |
 | GET | `/blocks/:blockId/rows` | lecture page | Lignes d'un Tableau ou d'un Catalogue : `?page&pageSize&sort&q` ; pagination, tri et recherche côté serveur | `404`, `503 SOURCE_UNAVAILABLE` |
 
@@ -183,18 +183,19 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 |---|---|---|---|
 | GET / POST | `/pages` | Lister (pour les sélecteurs de liens) ; créer une page (brouillon vide) | — |
 | GET | `/pages/:id` | Page avec son brouillon, sa version publiée et ses réglages (thème, header/footer affichés) | `404` |
-| PUT | `/pages/:id/draft` | Enregistrer le brouillon `{ version, config, themeId, showHeader, showFooter }`. Les avertissements (plage non couverte…) sont renvoyés | `VALIDATION_FAILED`, `EDIT_CONFLICT` |
+| PUT | `/pages/:id/draft` | Enregistrer le brouillon `{ version, name, config }`, où `config = { zones, themeId, showHeader, showFooter }` (le nom interne change tout de suite, le reste à la publication). Les avertissements (plage non couverte…) sont renvoyés | `VALIDATION_FAILED` (chemin du champ dans `details.fields`), `EDIT_CONFLICT` |
 | GET | `/pages/:id/preview?asGroup=` | Brouillon **assemblé** (valeurs résolues). Sans `asGroup` : vue administrateur complète. Avec `asGroup=<groupId>` : vue d'un membre de ce seul groupe (modules et liens filtrés) | `404` (groupe inconnu) |
 | GET | `/pages/:id/publish/preview` | Ce que la publication va changer : formulaires modifiés, **soumissions qui seraient invalidées**, espaces et chats créés ou retirés | — |
 | POST | `/pages/:id/publish` | Publier le brouillon, avec ses formulaires, espaces et chats, en une transaction ; confirmation requise si des soumissions seraient invalidées | `VALIDATION_FAILED` (bloc invalide), `409 CONFIRMATION_REQUIRED` |
 | DELETE | `/pages/:id` | Suppression douce | — |
-| GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`) ; formulaires, espaces et chats refusés | `EDIT_CONFLICT`, `422 BLOCK_NOT_ALLOWED_IN_LAYOUT` |
+| GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`), `{ version, config: { rows } }` ; formulaires, espaces et chats refusés | `EDIT_CONFLICT`, `422 BLOCK_NOT_ALLOWED_IN_LAYOUT` (`details.blockIds`) |
 | GET | `/layout/:kind/preview?asGroup=` | Aperçu du header ou du footer, éventuellement avec les droits d'un groupe | — |
 | POST | `/layout/:kind/publish` | Publier le header ou le footer | — |
 | GET | `/blocks/:blockId/rows?preview=true` | Lignes d'un bloc de brouillon, pour l'aperçu | — |
 | CRUD | `/themes`, `/themes/:id` | Thèmes ; supprimer le thème par défaut est refusé | `422 DEFAULT_THEME` |
-| GET / POST | `/media` | Liste paginée, upload (`multipart`) | `413`, `415`, `MEDIA_NAME_TAKEN` |
-| DELETE | `/media/:id` | Supprimer ; avertissement avec la liste des pages qui l'utilisent | `409 CONFIRMATION_REQUIRED` |
+| GET / POST | `/media` | Liste paginée (`?q=` sur le nom), upload (`multipart` : `file`, `alt` facultatif) | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE`, `409 MEDIA_NAME_TAKEN` |
+| GET | `/media/:id/usages` | Pages et header/footer qui utilisent l'image (brouillon ou version publiée) | `404` |
+| DELETE | `/media/:id` | Suppression douce, corps `{ confirm? }` ; avertissement `MEDIA_IN_USE` avec `pages` et `layouts` | `409 CONFIRMATION_REQUIRED` |
 
 ### Formulaires et soumissions — [09](09-formulaires-soumissions.md)
 | Méthode | Chemin | Rôle | Erreurs |

@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { hashPassword } from '../src/auth/password.js';
+import { Prisma } from '../src/generated/prisma/client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { configureApp } from '../src/setup.js';
 
@@ -23,7 +24,21 @@ export async function createTestApp(controllers: Type[] = []): Promise<NestExpre
 /** Base vide, sauf le compte `admin` / `admin` des données initiales. */
 export async function resetDatabase(app: NestExpressApplication): Promise<void> {
   const prisma = app.get(PrismaService);
-  await prisma.$executeRawUnsafe('TRUNCATE users, sessions, login_attempts, audit_log CASCADE');
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE users, sessions, login_attempts, audit_log, pages, media, settings CASCADE',
+  );
+  // Données initiales de la migration des pages : réglages, header et footer vides.
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO settings (id, default_theme_id) SELECT 1, id FROM themes WHERE name = 'Sobre'`,
+  );
+  await prisma.layoutPart.updateMany({
+    data: {
+      draftConfig: { rows: [] },
+      publishedConfig: Prisma.DbNull,
+      publishedAt: null,
+      version: 1,
+    },
+  });
   await prisma.user.create({
     data: {
       username: 'admin',
@@ -63,6 +78,19 @@ export class TestClient {
       .set('Origin', ORIGIN)
       .set('X-CSRF-Token', this.csrfToken);
     return body ? req.send(body) : req;
+  }
+
+  /** Envoi `multipart/form-data` d'un fichier (champ `file`), avec en-têtes CSRF. */
+  async upload(path: string, file: Buffer, filename: string, fields: Record<string, string> = {}) {
+    this.csrfToken ??= (await this.get('/auth/csrf').expect(200)).body.csrfToken as string;
+    let req = this.agent
+      .post(`/api/v1${path}`)
+      .set('X-Forwarded-For', this.ip)
+      .set('Origin', ORIGIN)
+      .set('X-CSRF-Token', this.csrfToken)
+      .attach('file', file, filename);
+    for (const [key, value] of Object.entries(fields)) req = req.field(key, value);
+    return req;
   }
 
   /** Connexion ; le jeton CSRF change avec la session. */
@@ -111,4 +139,36 @@ export function expectStatus(res: { status: number; body: unknown }, status: num
   if (res.status !== status) {
     throw new Error(`Statut ${res.status} au lieu de ${status} : ${JSON.stringify(res.body)}`);
   }
+}
+
+/** Image PNG de 1 × 1 pixel. */
+export const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+let counter = 0;
+/** UUID v7 de test, unique et stable dans un fichier de test. */
+export function uid(): string {
+  counter += 1;
+  return `0190f5c0-0000-7000-8000-${counter.toString(16).padStart(12, '0')}`;
+}
+
+/** Utilisateur ordinaire connecté, identifiants déjà changés. */
+export async function userClient(
+  app: NestExpressApplication,
+  admin: TestClient,
+  username: string,
+): Promise<TestClient> {
+  await createUser(admin, username, 'temporaire-utilisateur');
+  const client = new TestClient(app);
+  expectStatus(await client.login(username, 'temporaire-utilisateur'), 200);
+  expectStatus(
+    await client.send('post', '/auth/change-credentials', {
+      currentPassword: 'temporaire-utilisateur',
+      newPassword: 'mot-de-passe-utilisateur',
+    }),
+    200,
+  );
+  return client;
 }

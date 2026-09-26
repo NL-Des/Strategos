@@ -9,7 +9,8 @@
     "next": "Suivant",
     "pageOf": "Page {{page}} sur {{total}}",
     "yes": "Oui",
-    "no": "Non"
+    "no": "Non",
+    "cancel": "Annuler"
   },
   "account": {
     "menu": "Menu du compte",
@@ -26,8 +27,8 @@
     "mismatch": "Les deux mots de passe ne sont pas identiques."
   },
   "home": {
-    "welcome": "Bienvenue, {{username}}",
-    "placeholder": "La page d’accueil sera construite par l’administrateur."
+    "noLandingPage": "Aucune page d’accueil n’est encore définie.",
+    "configureLanding": "Choisir la page d’arrivée dans les réglages"
   },
   "admin": {
     "title": "Administration",
@@ -60,7 +61,12 @@
       "adminProtected": "Le compte administrateur ne peut être ni désactivé, ni supprimé, ni réinitialisé depuis le site. En cas de perte du mot de passe, utilisez la commande serveur."
     },
     "nav": {
+      "pages": "Pages",
+      "header": "Header",
+      "footer": "Footer",
+      "media": "Médiathèque",
       "users": "Comptes",
+      "settings": "Réglages",
       "audit": "Journal"
     }
   },
@@ -71,7 +77,23 @@
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
     "confirmation": "Confirmation du nouveau mot de passe",
-    "temporaryPassword": "Mot de passe temporaire"
+    "temporaryPassword": "Mot de passe temporaire",
+    "name": "Nom",
+    "alt": "Texte alternatif",
+    "mediaId": "Image",
+    "label": "Libellé",
+    "buttons": "Boutons",
+    "pageId": "Page",
+    "url": "Adresse",
+    "html": "Contenu",
+    "file": "Fichier",
+    "landingPageId": "Page d’arrivée",
+    "defaultThemeId": "Thème par défaut",
+    "backupRetentionDays": "Conservation des sauvegardes",
+    "themeId": "Thème",
+    "columns": "Colonnes",
+    "id": "Identifiant",
+    "type": "Type de module"
   },
   "hints": {
     "password": "Au moins {{min}} caractères. Une phrase facile à retenir fonctionne très bien.",
@@ -82,7 +104,26 @@
     "isLength": "longueur incorrecte",
     "matches": "caractères non autorisés",
     "notAllowed": "non autorisé",
-    "sameAsCurrent": "doit être différent de l’actuel"
+    "sameAsCurrent": "doit être différent de l’actuel",
+    "isUuid": "à choisir",
+    "isIn": "valeur non prévue",
+    "isUrl": "adresse invalide",
+    "rowLayout": "répartition de colonnes non prévue",
+    "duplicateId": "identifiant en double",
+    "notAvailable": "module pas encore disponible",
+    "arrayMinSize": "au moins un élément",
+    "whitelistValidation": "champ non prévu",
+    "notFound": "introuvable",
+    "isDefined": "obligatoire",
+    "minLength": "trop court",
+    "maxLength": "trop long",
+    "isObject": "invalide",
+    "isBoolean": "invalide",
+    "isArray": "invalide",
+    "isInt": "nombre entier attendu",
+    "min": "trop petit",
+    "max": "trop grand",
+    "filename": "nom de fichier invalide"
   },
   "errors": {
     "VALIDATION_FAILED": "Les données envoyées sont invalides.",
@@ -101,7 +142,11 @@
     "SOURCE_UNAVAILABLE": "Les données sont momentanément indisponibles.",
     "SOURCE_AUTH_EXPIRED": "La connexion à la source de données a expiré.",
     "INTERNAL_ERROR": "Une erreur interne est survenue.",
-    "NETWORK": "Impossible de joindre le serveur."
+    "NETWORK": "Impossible de joindre le serveur.",
+    "BLOCK_NOT_ALLOWED_IN_LAYOUT": "Les formulaires, espaces de discussion et chats ne peuvent pas être placés dans le header ou le footer.",
+    "MEDIA_NAME_TAKEN": "Une image porte déjà ce nom.",
+    "FILE_TOO_LARGE": "Le fichier est trop volumineux.",
+    "UNSUPPORTED_FILE_TYPE": "Ce type de fichier n’est pas accepté."
   },
   "audit": {
     "title": "Journal des modifications",
@@ -130,16 +175,168 @@
       "user.disable": "Désactivation du compte",
       "user.enable": "Réactivation du compte",
       "user.delete": "Suppression du compte",
-      "user.change_credentials": "Changement d’identifiants"
+      "user.change_credentials": "Changement d’identifiants",
+      "page.create": "Création de page",
+      "page.update": "Modification du brouillon",
+      "page.publish": "Publication de page",
+      "page.delete": "Suppression de page",
+      "layout.update": "Modification du brouillon",
+      "layout.publish": "Publication",
+      "media.upload": "Ajout d’une image",
+      "media.delete": "Suppression d’une image",
+      "settings.update": "Modification des réglages"
     },
     "targetTypes": {
-      "user": "Compte"
+      "user": "Compte",
+      "page": "Page",
+      "layout": "Header/footer",
+      "media": "Image",
+      "settings": "Réglages"
     },
     "fields": {
       "username": "Pseudo",
       "status": "Statut",
       "mustChangeCredentials": "Mot de passe temporaire",
-      "deleted": "Supprimé"
+      "deleted": "Supprimé",
+      "name": "Nom",
+      "published": "Publiée",
+      "themeId": "Thème",
+      "showHeader": "Header affiché",
+      "showFooter": "Footer affiché",
+      "blocks": "Modules",
+      "kind": "Emplacement",
+      "filename": "Fichier",
+      "mime": "Type",
+      "sizeBytes": "Taille (octets)",
+      "usedBy": "Utilisée par",
+      "landingPageId": "Page d’arrivée",
+      "defaultThemeId": "Thème par défaut",
+      "backupRetentionDays": "Conservation (jours)"
     }
+  },
+  "settings": {
+    "title": "Réglages de l’instance",
+    "landingPage": "Page d’arrivée",
+    "noLandingPage": "Aucune",
+    "landingPageHint": "La page affichée après la connexion. Elle doit être publiée pour être visible.",
+    "defaultTheme": "Thème par défaut",
+    "backupRetention": "Conservation des sauvegardes (jours)",
+    "saved": "Réglages enregistrés."
+  },
+  "builder": {
+    "saveDraft": "Enregistrer le brouillon",
+    "preview": "Aperçu",
+    "publish": "Publier",
+    "saved": "Brouillon enregistré.",
+    "published": "Publié : les utilisateurs voient maintenant cette version.",
+    "unsaved": "modifications non enregistrées",
+    "lastPublished": "Dernière publication : {{date}}",
+    "previewTitle": "Aperçu du brouillon (vue administrateur)",
+    "closePreview": "Fermer l’aperçu",
+    "layoutIntro": "Partagé par toutes les pages qui l’affichent.",
+    "theme": "Thème",
+    "defaultTheme": "Thème par défaut",
+    "zones": "Zones affichées",
+    "zoneNames": {
+      "header": "Header",
+      "main": "Main",
+      "sidebar": "Sidebar",
+      "footer": "Footer"
+    },
+    "row": "Rangée {{n}}",
+    "rowLabel": "rangée {{n}}",
+    "columnLabel": "colonne {{n}}",
+    "column": "Colonne {{n}} ({{width}})",
+    "columnsLayout": "Répartition des colonnes",
+    "addRow": "Ajouter une rangée",
+    "removeRow": "Supprimer la rangée",
+    "addBlock": "Ajouter un module…",
+    "removeBlock": "Retirer le module",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "remove": "Supprimer",
+    "blockTypes": {
+      "image": "Image",
+      "buttons": "Boutons",
+      "clickable_map": "Carte cliquable",
+      "table": "Tableau",
+      "catalog": "Catalogue",
+      "rich_content": "Contenu libre",
+      "form": "Formulaire",
+      "discussion_space": "Espace de discussion",
+      "chat": "Chat"
+    },
+    "align": {
+      "label": "Alignement",
+      "left": "Gauche",
+      "center": "Centre",
+      "right": "Droite"
+    },
+    "image": {
+      "alt": "Texte alternatif",
+      "size": "Taille",
+      "fit": "Largeur de la colonne",
+      "original": "Taille d’origine",
+      "link": "Lien (facultatif)"
+    },
+    "buttons": {
+      "button": "Bouton {{n}}",
+      "label": "Libellé",
+      "add": "Ajouter un bouton",
+      "orientation": "Orientation",
+      "horizontal": "Horizontale",
+      "vertical": "Verticale"
+    },
+    "link": {
+      "kind": "Destination",
+      "none": "Aucun lien",
+      "page": "Page interne",
+      "url": "Adresse externe",
+      "personalPage": "Ma page personnelle",
+      "choosePage": "Choisir une page…"
+    },
+    "rich": {
+      "toolbar": "Mise en forme",
+      "h2": "Titre",
+      "h3": "Sous-titre",
+      "bold": "Gras",
+      "italic": "Italique",
+      "bulletList": "Liste",
+      "orderedList": "Liste numérotée",
+      "link": "Lien",
+      "linkPrompt": "Adresse du lien",
+      "table": "Tableau",
+      "image": "Image"
+    },
+    "media": {
+      "title": "Médiathèque",
+      "intro": "Les images de la médiathèque sont visibles par tout utilisateur connecté : n’y mettez pas de document confidentiel.",
+      "upload": "Ajouter une image",
+      "file": "Fichier",
+      "limits": "JPEG, PNG, WebP ou GIF, {{mb}} Mo au maximum.",
+      "uploadSubmit": "Envoyer",
+      "search": "Rechercher une image",
+      "empty": "Aucune image.",
+      "deleteConfirm": "Supprimer l’image « {{filename}} » ?",
+      "deleteAnyway": "Supprimer quand même"
+    },
+    "pages": {
+      "title": "Pages",
+      "create": "Nouvelle page",
+      "createSubmit": "Créer la page",
+      "name": "Nom",
+      "status": "État",
+      "updatedAt": "Modifiée le",
+      "neverPublished": "jamais publiée",
+      "draftChanges": "Publiée, brouillon modifié",
+      "published": "Publiée",
+      "empty": "Aucune page.",
+      "untitled": "Page sans nom",
+      "delete": "Supprimer la page",
+      "deleteConfirm": "Supprimer la page « {{name}} » ? Les liens qui y mènent disparaîtront."
+    }
+  },
+  "warnings": {
+    "MEDIA_IN_USE": "L’image « {{filename}} » est encore utilisée ici. Si vous la supprimez, les modules qui l’affichent seront masqués :"
   }
 }

@@ -32,7 +32,8 @@ function getCsrfToken(): Promise<string> {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const isForm = body instanceof FormData;
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (MUTATING.has(method)) headers['X-CSRF-Token'] = await getCsrfToken();
 
   let response: Response;
@@ -41,7 +42,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       method,
       headers,
       credentials: 'same-origin',
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     });
   } catch {
     throw new ApiRequestError(0, { code: 'NETWORK', message: 'Network error', details: {} });

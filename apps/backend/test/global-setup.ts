@@ -1,4 +1,7 @@
 import { execSync } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import pg from 'pg';
 
 /**
@@ -10,6 +13,8 @@ export default async function setup(): Promise<void> {
     process.env.TEST_DATABASE_URL ??
     'postgresql://strategos:strategos@localhost:5432/strategos_test';
   process.env.DATABASE_URL = url;
+  // Fichiers envoyés pendant les tests : dossier temporaire, jamais le vrai volume.
+  process.env.UPLOADS_DIR = mkdtempSync(join(tmpdir(), 'strategos-uploads-'));
 
   const target = new URL(url);
   const database = target.pathname.slice(1);

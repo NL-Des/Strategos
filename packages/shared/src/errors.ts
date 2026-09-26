@@ -18,6 +18,10 @@ export const ErrorCode = {
   AUTH_TOO_MANY_ATTEMPTS: 'AUTH_TOO_MANY_ATTEMPTS',
   SOURCE_UNAVAILABLE: 'SOURCE_UNAVAILABLE',
   SOURCE_AUTH_EXPIRED: 'SOURCE_AUTH_EXPIRED',
+  BLOCK_NOT_ALLOWED_IN_LAYOUT: 'BLOCK_NOT_ALLOWED_IN_LAYOUT',
+  MEDIA_NAME_TAKEN: 'MEDIA_NAME_TAKEN',
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+  UNSUPPORTED_FILE_TYPE: 'UNSUPPORTED_FILE_TYPE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 
@@ -43,4 +47,20 @@ export function isApiError(value: unknown): value is ApiError {
     typeof v.details === 'object' &&
     v.details !== null
   );
+}
+
+/**
+ * Avertissements d'une action permise mais à confirmer (`409 CONFIRMATION_REQUIRED`,
+ * `details.warnings`) ; traduits par `warnings.<CODE>`.
+ */
+export const WarningCode = {
+  MEDIA_IN_USE: 'MEDIA_IN_USE',
+} as const;
+export type WarningCode = (typeof WarningCode)[keyof typeof WarningCode];
+export const WARNING_CODES = Object.values(WarningCode);
+
+export interface Warning {
+  code: WarningCode;
+  message: string;
+  [detail: string]: unknown;
 }

@@ -3,13 +3,13 @@ import type { User } from '../generated/prisma/client.js';
 
 // Mappers explicites : le hash du mot de passe ne sort jamais de l'API.
 
-export function toMe(user: User): Me {
+export function toMe(user: User, landingPageId: string | null): Me {
   return {
     id: user.id,
     username: user.username,
     isAdmin: user.isAdmin,
     mustChangeCredentials: user.mustChangeCredentials,
-    landingPageId: null,
+    landingPageId,
     personalPageId: user.personalPageId,
   };
 }

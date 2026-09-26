@@ -19,5 +19,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   AUTH_TOO_MANY_ATTEMPTS: 'Trop de tentatives. Réessayez plus tard.',
   SOURCE_UNAVAILABLE: 'La source de données est injoignable.',
   SOURCE_AUTH_EXPIRED: 'La connexion à la source de données a expiré.',
+  BLOCK_NOT_ALLOWED_IN_LAYOUT: 'Ce module n’est pas autorisé dans le header ou le footer.',
+  MEDIA_NAME_TAKEN: 'Une image porte déjà ce nom.',
+  FILE_TOO_LARGE: 'Le fichier est trop volumineux.',
+  UNSUPPORTED_FILE_TYPE: 'Ce type de fichier n’est pas accepté.',
   INTERNAL_ERROR: 'Une erreur interne est survenue.',
 };

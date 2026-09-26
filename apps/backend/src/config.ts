@@ -1,5 +1,11 @@
+import { resolve } from 'node:path';
+
 /** Réglages lus dans l'environnement (voir .env.example et docker-compose.yml). */
 export const config = {
+  /** Fichiers uploadés (images, Excel) : volume `uploads` en conteneur. */
+  get uploadsDir(): string {
+    return resolve(process.env.UPLOADS_DIR ?? '.data/uploads');
+  },
   get isProduction(): boolean {
     return process.env.NODE_ENV === 'production';
   },

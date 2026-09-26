@@ -11,6 +11,8 @@ function formatValue(t: TFunction, key: string, value: unknown): string {
   if (value === null || value === undefined) return '—';
   if (typeof value === 'boolean') return t(value ? 'common.yes' : 'common.no');
   if (key === 'status') return t(`admin.users.status_${String(value)}`);
+  if (key === 'kind') return t(`builder.zoneNames.${String(value)}`);
+  if (Array.isArray(value)) return value.join(', ') || '—';
   return String(value);
 }
 

@@ -12,12 +12,25 @@ export const AuditAction = {
   USER_ENABLE: 'user.enable',
   USER_DELETE: 'user.delete',
   USER_CHANGE_CREDENTIALS: 'user.change_credentials',
+  PAGE_CREATE: 'page.create',
+  PAGE_UPDATE: 'page.update',
+  PAGE_PUBLISH: 'page.publish',
+  PAGE_DELETE: 'page.delete',
+  LAYOUT_UPDATE: 'layout.update',
+  LAYOUT_PUBLISH: 'layout.publish',
+  MEDIA_UPLOAD: 'media.upload',
+  MEDIA_DELETE: 'media.delete',
+  SETTINGS_UPDATE: 'settings.update',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 export const AUDIT_ACTIONS = Object.values(AuditAction);
 
 export const AuditTargetType = {
   USER: 'user',
+  PAGE: 'page',
+  LAYOUT: 'layout',
+  MEDIA: 'media',
+  SETTINGS: 'settings',
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];
 export const AUDIT_TARGET_TYPES = Object.values(AuditTargetType);

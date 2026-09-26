@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@ne
 import type { Me } from '@strategos/shared';
 import type { CookieOptions, Request, Response } from 'express';
 import { config } from '../config.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { toMe } from '../users/user.mapper.js';
 import { PRESESSION_COOKIE, SESSION_COOKIE, SESSION_TTL_MS } from './auth.constants.js';
 import { ChangeCredentialsDto, LoginDto } from './auth.dto.js';
@@ -24,6 +25,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionService,
+    private readonly settings: SettingsService,
   ) {}
 
   /** Jeton CSRF de la session, ou d'une pré-session pour le formulaire de connexion. */
@@ -49,7 +51,7 @@ export class AuthController {
     const { user, token } = await this.auth.login(dto, clientMeta(req), req.auth?.sessionId);
     res.clearCookie(PRESESSION_COOKIE, cookieOptions());
     res.cookie(SESSION_COOKIE, token, { ...cookieOptions(), maxAge: SESSION_TTL_MS });
-    return toMe(user);
+    return toMe(user, await this.settings.landingPageId());
   }
 
   @AllowPendingCredentials()
@@ -65,8 +67,8 @@ export class AuthController {
 
   @AllowPendingCredentials()
   @Get('me')
-  me(@CurrentAuth() auth: AuthContext): Me {
-    return toMe(auth.user);
+  async me(@CurrentAuth() auth: AuthContext): Promise<Me> {
+    return toMe(auth.user, await this.settings.landingPageId());
   }
 
   @AllowPendingCredentials()
@@ -77,6 +79,7 @@ export class AuthController {
     @Body() dto: ChangeCredentialsDto,
     @Req() req: Request,
   ): Promise<Me> {
-    return toMe(await this.auth.changeCredentials(auth, dto, clientMeta(req)));
+    const user = await this.auth.changeCredentials(auth, dto, clientMeta(req));
+    return toMe(user, await this.settings.landingPageId());
   }
 }

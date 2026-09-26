@@ -1,0 +1,4 @@
+// Schémas class-validator des contrats partagés : réservés au backend (ils
+// nécessitent `reflect-metadata`). Le frontend importe `@strategos/shared`.
+export * from './blocks.schema.js';
+export * from './links.schema.js';

@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, Suspense, lazy } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { RequireAdmin, RequireAuth } from './auth/guards';
 import { AdminLayout } from './components/AdminNav';
@@ -6,17 +7,41 @@ import { AppLayout } from './components/AppLayout';
 import { ChangeCredentialsPage } from './pages/ChangeCredentialsPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
-import { AuditPage } from './pages/admin/AuditPage';
-import { UserPage } from './pages/admin/UserPage';
-import { UsersPage } from './pages/admin/UsersPage';
+import { PageRoute } from './pages/PageRoute';
 
-function Authenticated({ admin, children }: { admin?: boolean; children: ReactNode }) {
+// Espace d'administration chargé à part : les utilisateurs ne téléchargent pas
+// l'éditeur de pages (TipTap) ni les autres écrans admin.
+const admin = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] })));
+const AuditPage = admin(() => import('./pages/admin/AuditPage'), 'AuditPage');
+const LayoutEditorPage = admin(() => import('./pages/admin/LayoutEditorPage'), 'LayoutEditorPage');
+const MediaPage = admin(() => import('./pages/admin/MediaPage'), 'MediaPage');
+const PageEditorPage = admin(() => import('./pages/admin/PageEditorPage'), 'PageEditorPage');
+const PagesPage = admin(() => import('./pages/admin/PagesPage'), 'PagesPage');
+const SettingsPage = admin(() => import('./pages/admin/SettingsPage'), 'SettingsPage');
+const UserPage = admin(() => import('./pages/admin/UserPage'), 'UserPage');
+const UsersPage = admin(() => import('./pages/admin/UsersPage'), 'UsersPage');
+
+function Loading() {
+  const { t } = useTranslation();
+  return <p>{t('common.loading')}</p>;
+}
+
+/** Page construite par l'admin : sans cadre, le menu de compte est dans la page. */
+function Site({ children }: { children: ReactNode }) {
+  return <RequireAuth>{children}</RequireAuth>;
+}
+
+/** Écrans hors page builder, avec leur cadre ; `admin` ajoute la navigation d'administration. */
+function Framed({ admin, children }: { admin?: boolean; children: ReactNode }) {
   return (
     <RequireAuth>
       <AppLayout>
         {admin ? (
           <RequireAdmin>
-            <AdminLayout>{children}</AdminLayout>
+            <AdminLayout>
+              <Suspense fallback={<Loading />}>{children}</Suspense>
+            </AdminLayout>
           </RequireAdmin>
         ) : (
           children
@@ -26,6 +51,17 @@ function Authenticated({ admin, children }: { admin?: boolean; children: ReactNo
   );
 }
 
+const ADMIN_ROUTES: [string, ReactNode][] = [
+  ['/admin/pages', <PagesPage />],
+  ['/admin/pages/:id', <PageEditorPage />],
+  ['/admin/layout/:kind', <LayoutEditorPage />],
+  ['/admin/media', <MediaPage />],
+  ['/admin/users', <UsersPage />],
+  ['/admin/users/:id', <UserPage />],
+  ['/admin/settings', <SettingsPage />],
+  ['/admin/audit', <AuditPage />],
+];
+
 export function App() {
   return (
     <BrowserRouter>
@@ -34,43 +70,30 @@ export function App() {
         <Route
           path="/change-credentials"
           element={
-            <Authenticated>
+            <Framed>
               <ChangeCredentialsPage />
-            </Authenticated>
+            </Framed>
           }
         />
         <Route
           path="/"
           element={
-            <Authenticated>
+            <Site>
               <HomePage />
-            </Authenticated>
+            </Site>
           }
         />
         <Route
-          path="/admin/users"
+          path="/pages/:id"
           element={
-            <Authenticated admin>
-              <UsersPage />
-            </Authenticated>
+            <Site>
+              <PageRoute />
+            </Site>
           }
         />
-        <Route
-          path="/admin/users/:id"
-          element={
-            <Authenticated admin>
-              <UserPage />
-            </Authenticated>
-          }
-        />
-        <Route
-          path="/admin/audit"
-          element={
-            <Authenticated admin>
-              <AuditPage />
-            </Authenticated>
-          }
-        />
+        {ADMIN_ROUTES.map(([path, element]) => (
+          <Route key={path} path={path} element={<Framed admin>{element}</Framed>} />
+        ))}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -9,6 +9,15 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    rules: {
+      // `_x` : variable volontairement ignorée (ex. retirer un champ par déstructuration).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
+    },
+  },
+  {
     files: ['apps/backend/**/*.ts', 'packages/shared/**/*.ts', '*.mjs'],
     languageOptions: { globals: { ...globals.node } },
   },

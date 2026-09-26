@@ -164,8 +164,8 @@ Voir [06](06-page-builder.md).
 |---|---|---|---|---|
 | `id` | uuid | | — | PK |
 | `name` | text | | — | Nom interne (sélecteurs de liens, admin) |
-| `theme_id` | uuid | N | — | FK `themes`, `on delete set null` ; vide = thème par défaut |
-| `show_header`, `show_footer` | boolean | | `true` | |
+| `theme_id` | uuid | N | — | FK `themes`, `on delete set null` ; vide = thème par défaut. Reflète la version **publiée** (le brouillon porte son propre `themeId` dans `draft_config`) |
+| `show_header`, `show_footer` | boolean | | `true` | Reflètent la version publiée, comme `theme_id` |
 | `draft_config` | jsonb | | `'{}'` | Zones → rangées → colonnes → blocs (brouillon) |
 | `published_config` | jsonb | N | — | Dernière version publiée ; vide = jamais publiée |
 | `published_at` | timestamptz | N | — | |

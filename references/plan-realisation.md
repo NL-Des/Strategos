@@ -7,7 +7,7 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 0 — Socle](#étape-0--socle)
 - [x] [Étape 1 — Comptes et authentification](#étape-1--comptes-et-authentification)
 - [x] [Étape 2 — Journal des modifications](#étape-2--journal-des-modifications)
-- [ ] [Étape 3 — Pages minimales, header, footer et réglages](#étape-3--pages-minimales-header-footer-et-réglages)
+- [x] [Étape 3 — Pages minimales, header, footer et réglages](#étape-3--pages-minimales-header-footer-et-réglages)
 - [ ] [Étape 4 — Groupes, droits et profil](#étape-4--groupes-droits-et-profil)
 - [ ] [Étape 5 — Excel uploadé, tableaux et catalogues](#étape-5--excel-uploadé-tableaux-et-catalogues)
 - [ ] [Étape 6 — Formulaires et soumissions](#étape-6--formulaires-et-soumissions)
@@ -127,14 +127,14 @@ Placé tôt pour que chaque étape suivante trace ses actions dès sa création.
 - Écran Réglages de l'instance : page d'arrivée, thème par défaut.
 
 **Critères d'acceptation**
-- [ ] Un brouillon modifié reste invisible des utilisateurs jusqu'à la publication ; une page jamais publiée → `404` pour eux.
-- [ ] Mise à jour avec une `version` périmée → `409 EDIT_CONFLICT`.
-- [ ] La `config` de chaque bloc est validée par son schéma de `packages/shared` ; les `block.id` restent stables d'une publication à l'autre.
-- [ ] Header ou footer contenant un formulaire, un espace ou un chat → `422 BLOCK_NOT_ALLOWED_IN_LAYOUT`.
-- [ ] Supprimer une image utilisée → `409 CONFIRMATION_REQUIRED` avec les pages concernées ; `confirm: true` passe.
-- [ ] HTML du Contenu libre nettoyé côté backend (liste blanche).
-- [ ] Publications de pages, du header et du footer tracées au journal.
-- [ ] Menu de compte présent sur toutes les pages, indépendant de la configuration.
+- [x] Un brouillon modifié reste invisible des utilisateurs jusqu'à la publication ; une page jamais publiée → `404` pour eux.
+- [x] Mise à jour avec une `version` périmée → `409 EDIT_CONFLICT`.
+- [x] La `config` de chaque bloc est validée par son schéma de `packages/shared` ; les `block.id` restent stables d'une publication à l'autre.
+- [x] Header ou footer contenant un formulaire, un espace ou un chat → `422 BLOCK_NOT_ALLOWED_IN_LAYOUT`.
+- [x] Supprimer une image utilisée → `409 CONFIRMATION_REQUIRED` avec les pages concernées ; `confirm: true` passe.
+- [x] HTML du Contenu libre nettoyé côté backend (liste blanche).
+- [x] Publications de pages, du header et du footer tracées au journal.
+- [x] Menu de compte présent sur toutes les pages, indépendant de la configuration.
 
 **Démo** : Parcours A, étape 5 (sans restriction de droits).
 

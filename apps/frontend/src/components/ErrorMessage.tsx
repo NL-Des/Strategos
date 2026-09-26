@@ -1,5 +1,32 @@
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ApiRequestError } from '../api/client';
+
+/**
+ * Chemin d'erreur du page builder rendu lisible :
+ * `config.zones.main[0].columns[1].block.config.alt` → « Main, rangée 1, colonne 2 — Texte alternatif ».
+ */
+export function describeField(t: TFunction, path: string): string {
+  const match =
+    /^config\.(?:zones\.(main|sidebar)|rows)\[(\d+)\](?:\.columns(?:\[(\d+)\])?)?(?:\.block(?:\.config)?)?\.?(.*)$/.exec(
+      path,
+    );
+  if (!match) return t(`fields.${path}`, { defaultValue: path });
+  const [, zone, row, column, rest] = match;
+  const field = rest?.split(/[.[]/).find((part) => part && !/^\d+\]?$/.test(part));
+  return [
+    [
+      zone ? t(`builder.zoneNames.${zone}`) : null,
+      t('builder.rowLabel', { n: Number(row) + 1 }),
+      column !== undefined ? t('builder.columnLabel', { n: Number(column) + 1 }) : null,
+    ]
+      .filter(Boolean)
+      .join(', '),
+    field ? t(`fields.${field}`, { defaultValue: field }) : null,
+  ]
+    .filter(Boolean)
+    .join(' — ');
+}
 
 /** Message traduit d'une erreur d'API (`errors.<CODE>`), avec les détails utiles. */
 export function ErrorMessage({ error }: { error: unknown }) {
@@ -18,7 +45,7 @@ export function ErrorMessage({ error }: { error: unknown }) {
   const fields = (details.fields ?? {}) as Record<string, string[]>;
   const fieldMessages = Object.entries(fields).map(
     ([field, constraints]) =>
-      `${t(`fields.${field}`, { defaultValue: field })} : ${constraints
+      `${describeField(t, field)} : ${[...new Set(constraints)]
         .map((c) => t(`validation.${c}`, { defaultValue: t('validation.invalid') }))
         .join(', ')}`,
   );
