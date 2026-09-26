@@ -1,0 +1,53 @@
+# Strategos
+
+Site web construit par un administrateur au-dessus de fichiers Excel, Google Sheets et OneDrive : les utilisateurs lisent via des pages et écrivent via des formulaires, jamais dans le document lui-même. La conception complète est dans [references/](references/) ; le code n'existe pas encore.
+
+## Méthode de travail
+
+1. **Repérer l'étape** en cours dans [references/plan-realisation.md](references/plan-realisation.md) (première case non cochée de « Avancement »).
+2. **Lire toutes les sections de « À lire »** de l'étape avant d'écrire du code. Ne pas coder de mémoire une règle de conception.
+3. **Réaliser l'étape** en respectant les « Règles communes à toutes les étapes » du plan.
+4. **Vérifier chaque critère d'acceptation** de l'étape, puis rejouer sa démo.
+5. **Écart avec la conception** : s'arrêter et le signaler. S'il est validé, mettre à jour le fichier de conception concerné dans la même PR. La conception doit toujours décrire ce que fait le code.
+
+## Où trouver quoi
+
+| Sujet | Référence |
+|---|---|
+| Vue d'ensemble, modules NestJS, déploiement | [architecture.md](references/architecture.md) |
+| Principe fondateur, profils | [01 — Vision](references/conception/01-vision.md) |
+| Sessions, mots de passe, CSRF, compte admin | [02](references/conception/02-comptes-authentification.md) |
+| Groupes, droits, visibilité, résolution des droits | [03](references/conception/03-droits-groupes.md) |
+| Écrans admin, journal, corbeille, réglages | [04](references/conception/04-administration.md) |
+| Profil et notes | [05](references/conception/05-profil-utilisateur.md) |
+| Pages, brouillon, thèmes, médiathèque, modules | [06](references/conception/06-page-builder.md) |
+| Espaces de discussion, chat, modération | [07](references/conception/07-discussions.md) |
+| Sources, cache, staging, formules, réimport | [08](references/conception/08-sources-donnees.md) |
+| Formulaires, soumissions, validation | [09](references/conception/09-formulaires-soumissions.md) |
+| Modèles et duplication | [10](references/conception/10-modeles-duplication.md) |
+| Stack, suppression douce, sauvegardes, i18n | [11](references/conception/11-transverse.md) |
+| Scénarios de bout en bout (démos) | [12](references/conception/12-parcours.md) |
+| Routes, codes d'erreur, WebSocket, schémas JSON | [13 — API](references/conception/13-api.md) |
+| Tables, contraintes, ordre des migrations | [14 — Modèle de données](references/conception/14-modele-donnees.md) |
+
+## Règles faciles à rater
+
+- **Aucun accès direct au document** : l'utilisateur ne voit jamais une source, une feuille ou une cellule, ni dans l'interface ni dans les réponses de l'API ([01](references/conception/01-vision.md#principe-fondateur--aucun-accès-direct-aux-documents)).
+- **Ressource illisible → `404`**, jamais `403` ; le `403` est réservé à une ressource lisible dont l'action est interdite ([13](references/conception/13-api.md#codes-de-retour-et-erreurs)).
+- **Filtrage côté backend** : modules non autorisés, formulaires non configurés et liens vers des pages illisibles sont retirés du JSON, pas cachés par le frontend ([03](references/conception/03-droits-groupes.md#points-techniques)).
+- **Une seule fonction de résolution des droits**, utilisée par `PermissionsGuard` et par toutes les vues de droits ([03](references/conception/03-droits-groupes.md#calcul-des-droits-effectifs)).
+- **Pas de droit d'écriture** dans les groupes : modifier relève de l'auteur ou de l'admin, jamais de `PermissionsGuard`.
+- **Journal dans la même transaction** que la modification tracée ; `audit_log` est en ajout seul ([04](references/conception/04-administration.md#points-techniques)).
+- **Strategos ne calcule jamais de formule** : il écrit des valeurs brutes et pose `needs_recalc` sur les Excel uploadés ([08](references/conception/08-sources-donnees.md#formules--strategos-ne-calcule-jamais)).
+- **Ligne d'ajout calculée à la validation**, jamais à la soumission ; écritures sérialisées par `source_id` ([09](references/conception/09-formulaires-soumissions.md#points-techniques)).
+- **Formulaires, espaces et chats suivent la publication de la page** ; seuls les réglages opérationnels sont immédiats ([06](references/conception/06-page-builder.md#brouillon-et-publication)).
+- **Header et footer partagés** : formulaires, espaces et chats y sont refusés (`422 BLOCK_NOT_ALLOWED_IN_LAYOUT`).
+- **Suppression douce** (`deleted_at`) partout où [11](references/conception/11-transverse.md#suppression-de-contenu) la prévoit ; unicités partielles en base.
+- **Verrouillage optimiste** : tout objet édité par l'admin porte une `version` ; conflit → `409 EDIT_CONFLICT`.
+- **Avertissements** : `409 CONFIRMATION_REQUIRED`, puis le même appel avec `"confirm": true` ([13](references/conception/13-api.md#avertissements-à-confirmer)).
+- **Aucun texte d'interface en dur** : clés i18n `fr` ; le backend renvoie des codes d'erreur stables.
+- **Contrats partagés** : schémas de blocs, codes d'erreur, enums et DTO vivent dans `packages/shared`, jamais dupliqués entre backend et frontend.
+
+## Commandes
+
+_À compléter à l'étape 0 (installation, lancement, tests, lint, migrations)._
