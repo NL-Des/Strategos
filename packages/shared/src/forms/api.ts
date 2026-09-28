@@ -153,6 +153,11 @@ export interface PublishPreview {
     change: 'created' | 'updated' | 'structural' | 'deleted';
   }[];
   invalidatedSubmissions: number;
+  /** Espaces de discussion créés ou retirés par la publication (07). */
+  spaces: {
+    name: string;
+    change: 'created' | 'deleted';
+  }[];
 }
 
 /** Validation qu'un réimport ferait perdre. */

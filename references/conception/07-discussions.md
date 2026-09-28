@@ -26,7 +26,7 @@ Les deux moyens d'échange entre utilisateurs, intégrés aux pages comme module
 L'administrateur peut **masquer** n'importe quel message, dans les sujets comme dans le chat. Le message masqué disparaît pour les utilisateurs, reste archivé en base, et l'action est tracée dans le [journal](04-administration.md#journal-des-modifications).
 
 ## Points techniques
-- **TopicsModule** : espaces de discussion, sujets et messages, pièces jointes images. Tables `discussion_spaces`, `topics`, `topic_messages` ([14](14-modele-donnees.md#6-discussions)). Les droits sont vérifiés sur `space_id`.
+- **DiscussionsModule** : espaces de discussion, sujets et messages, pièces jointes images. Tables `discussion_spaces`, `topics`, `topic_messages`, `message_revisions`, `attachments` ([14](14-modele-donnees.md#6-discussions)). Les droits sont vérifiés sur `space_id` par `SpaceAccessService`, qui passe par la règle unique `RightsService`.
 - **Chat** : passerelle **WebSocket NestJS**, authentifiée par le cookie de session. À la connexion au canal d'un module chat, elle vérifie le droit de lecture sur la page qui le contient. Tables `chats` et `chat_messages`.
 - Historique des messages (sujets et chat) : table `message_revisions` (action `edit`, `delete`, `hide` ou `unhide`, contenu précédent, acteur). Une ligne est écrite avant chaque modification, suppression ou masquage, dans la même transaction.
 - Masquage : `hidden_at` sur les messages, et une route réservée au rôle admin.

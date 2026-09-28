@@ -1,25 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import {
-  type CellPosition,
-  CellType,
-  parseCellRef,
-  type Rect,
-  SourceType,
-} from '@strategos/shared';
+import { type CellPosition, CellType, parseCellRef, type Rect } from '@strategos/shared';
 import type { Prisma, Source } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Db } from '../prisma/prisma.types.js';
 import { EMPTY_CELL, type StoredCell } from './cell-format.js';
+import type { RemoteCell } from './connectors/cells.js';
+import { isConnected, SourceConnectors } from './connectors/source-connectors.service.js';
 import { pureExternalRef } from './excel-parser.js';
 
-/** La source n'existe plus, est retirée ou injoignable (`SOURCE_UNAVAILABLE`). */
-export class SourceUnavailableError extends Error {
-  constructor(readonly sourceId: string) {
-    super(`Source ${sourceId} indisponible`);
-  }
-}
+export {
+  SourceAuthExpiredError,
+  SourceUnavailableError,
+  sourceException,
+} from './source-errors.js';
+import { SourceUnavailableError } from './source-errors.js';
 
-export const positionKey = (row: number, col: number) => `${row}:${col}`;
+export { positionKey } from './cell-format.js';
+import { positionKey } from './cell-format.js';
 
 /** Une cellule demandée par l'assemblage d'une page (Contenu libre, en-têtes). */
 export interface CellNeed {
@@ -34,21 +31,43 @@ export const needKey = (n: CellNeed) => `${n.sourceId}|${n.sheet}|${n.row}|${n.c
 /** Profondeur maximale d'une chaîne de liaisons inter-fichiers (et garde contre les boucles). */
 const MAX_LINK_DEPTH = 5;
 
-/** Source lisible : non retirée, dans un état normal et d'un type déjà géré. */
+/**
+ * Source lisible : non retirée ; un Excel uploadé doit être en état normal. Une
+ * source connectée est toujours retentée : c'est la lecture qui dit si elle répond.
+ */
 function isUsable(source: Source): boolean {
-  // Google Sheets et OneDrive : adaptateurs de l'étape 7.
-  return source.deletedAt === null && source.status === 'ok' && source.type === SourceType.upload;
+  return source.deletedAt === null && (isConnected(source) || source.status === 'ok');
 }
+
+const inRect = (rect: Rect, row: number, col: number) =>
+  row >= rect.top && row <= rect.bottom && col >= rect.left && col <= rect.right;
 
 /**
  * Lecture des sources (08) : l'interface commune aux modules de page et aux
- * formulaires. Les Excel uploadés sont lus dans le staging ; les
- * Google Sheets et OneDrive s'y brancheront (étape 7) sans que les appelants
- * connaissent le type de source.
+ * formulaires. Les Excel uploadés sont lus dans le staging ; les Google Sheets
+ * et OneDrive, dans leur cache mémoire (08). Les appelants ne connaissent pas
+ * le type de source.
  */
 @Injectable()
 export class SourceDataService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly connectors: SourceConnectors,
+  ) {}
+
+  /** Cellules d'une feuille connectée qui vérifient `keep`. */
+  private async remote(
+    source: Source,
+    sheet: string,
+    keep: (row: number, col: number, cell: RemoteCell) => boolean,
+  ): Promise<Map<string, RemoteCell>> {
+    const cells = new Map<string, RemoteCell>();
+    for (const [key, cell] of await this.connectors.sheet(source, sheet)) {
+      const [row, col] = key.split(':').map(Number) as [number, number];
+      if (keep(row, col, cell)) cells.set(key, cell);
+    }
+    return cells;
+  }
 
   /**
    * Cellules non vides d'un rectangle, par `positionKey` ; les absentes sont vides.
@@ -60,7 +79,9 @@ export class SourceDataService {
     rect: Rect,
     db: Db = this.prisma,
   ): Promise<Map<string, StoredCell>> {
-    await this.usableSource(sourceId, db);
+    const source = await this.usableSource(sourceId, db);
+    if (isConnected(source))
+      return this.remote(source, sheet, (row, col) => inRect(rect, row, col));
     return this.readStaging(
       sourceId,
       sheet,
@@ -81,7 +102,19 @@ export class SourceDataService {
     rows: { top: number; bottom: number },
     db: Db = this.prisma,
   ): Promise<Set<number>> {
-    await this.usableSource(sourceId, db);
+    const source = await this.usableSource(sourceId, db);
+    if (isConnected(source)) {
+      const found = await this.remote(
+        source,
+        sheet,
+        (row, col, cell) =>
+          row >= rows.top &&
+          row <= rows.bottom &&
+          cols.includes(col) &&
+          (cell.type !== CellType.empty || cell.formula !== null),
+      );
+      return new Set([...found.keys()].map((key) => Number(key.split(':')[0])));
+    }
     const cells = await db.stagingCell.findMany({
       where: {
         sourceId,
@@ -104,7 +137,17 @@ export class SourceDataService {
     startRow: number,
     db: Db = this.prisma,
   ): Promise<number | null> {
-    await this.usableSource(sourceId, db);
+    const source = await this.usableSource(sourceId, db);
+    if (isConnected(source)) {
+      const found = await this.remote(
+        source,
+        sheet,
+        (row, col, cell) =>
+          row >= startRow && col >= cols.left && col <= cols.right && cell.type !== CellType.empty,
+      );
+      const rows = [...found.keys()].map((key) => Number(key.split(':')[0]));
+      return rows.length > 0 ? Math.max(...rows) : null;
+    }
     const { _max } = await db.stagingCell.aggregate({
       where: {
         sourceId,
@@ -135,8 +178,10 @@ export class SourceDataService {
     for (const group of groups.values()) {
       const { sourceId, sheet } = group[0]!;
       if (unavailable.has(sourceId)) continue;
+      let read: Map<string, StoredCell>;
       try {
-        await this.usableSource(sourceId);
+        const source = await this.usableSource(sourceId);
+        read = await this.readPositions(source, sheet, group, 0);
       } catch (error) {
         if (error instanceof SourceUnavailableError) {
           unavailable.add(sourceId);
@@ -144,7 +189,6 @@ export class SourceDataService {
         }
         throw error;
       }
-      const read = await this.readPositions(sourceId, sheet, group, 0);
       for (const need of group) {
         cells.set(needKey(need), read.get(positionKey(need.row, need.col)) ?? EMPTY_CELL);
       }
@@ -165,15 +209,68 @@ export class SourceDataService {
     return source;
   }
 
-  private async readPositions(
+  /**
+   * Cellules-formules parmi `cells` (une valeur écrite remplacerait la formule),
+   * ou, avec `area`, dans ces colonnes et lignes, au plus `limit`.
+   */
+  async formulaCells(
+    db: Db,
     sourceId: string,
+    sheet: string,
+    where: { cells: CellPosition[] } | { cols: number[]; rows: { top: number; bottom: number } },
+    limit = Number.MAX_SAFE_INTEGER,
+  ): Promise<CellPosition[]> {
+    const source = await this.usableSource(sourceId, db);
+    const wanted =
+      'cells' in where
+        ? (row: number, col: number) => where.cells.some((c) => c.row === row && c.col === col)
+        : (row: number, col: number) =>
+            where.cols.includes(col) && row >= where.rows.top && row <= where.rows.bottom;
+    if ('cells' in where && where.cells.length === 0) return [];
+    if (isConnected(source)) {
+      const found = await this.remote(
+        source,
+        sheet,
+        (row, col, cell) => cell.formula !== null && wanted(row, col),
+      );
+      return [...found.keys()]
+        .map((key) => key.split(':').map(Number) as [number, number])
+        .map(([row, col]) => ({ row, col }))
+        .sort((a, b) => a.row - b.row || a.col - b.col)
+        .slice(0, limit);
+    }
+    return db.stagingCell.findMany({
+      where: {
+        sourceId,
+        sheet,
+        formula: { not: null },
+        ...('cells' in where
+          ? { OR: where.cells.map(({ row, col }) => ({ row, col })) }
+          : {
+              col: { in: where.cols },
+              row: { gte: where.rows.top, lte: Math.min(where.rows.bottom, 2_147_483_647) },
+            }),
+      },
+      select: { row: true, col: true },
+      orderBy: [{ row: 'asc' }, { col: 'asc' }],
+      take: limit === Number.MAX_SAFE_INTEGER ? undefined : limit,
+    });
+  }
+
+  private async readPositions(
+    source: Source,
     sheet: string,
     positions: CellPosition[],
     depth: number,
     db: Db = this.prisma,
   ): Promise<Map<string, StoredCell>> {
+    if (isConnected(source)) {
+      return this.remote(source, sheet, (row, col) =>
+        positions.some((p) => p.row === row && p.col === col),
+      );
+    }
     return this.readStaging(
-      sourceId,
+      source.id,
       sheet,
       { OR: positions.map(({ row, col }) => ({ row, col })) },
       depth,
@@ -214,21 +311,16 @@ export class SourceDataService {
     for (const ref of references) {
       const target = parseCellRef(ref.referencedRange);
       if (!target) continue;
+      let value: StoredCell | undefined;
       try {
-        await this.usableSource(ref.referencedSourceId, db);
+        const linked = await this.usableSource(ref.referencedSourceId, db);
+        value = (
+          await this.readPositions(linked, ref.referencedSheet, [target], depth + 1, db)
+        ).get(positionKey(target.row, target.col));
       } catch (error) {
         if (error instanceof SourceUnavailableError) continue;
         throw error;
       }
-      const value = (
-        await this.readPositions(
-          ref.referencedSourceId,
-          ref.referencedSheet,
-          [target],
-          depth + 1,
-          db,
-        )
-      ).get(positionKey(target.row, target.col));
       const own = cells.get(positionKey(ref.row, ref.col))!;
       cells.set(positionKey(ref.row, ref.col), {
         ...(value ?? EMPTY_CELL),

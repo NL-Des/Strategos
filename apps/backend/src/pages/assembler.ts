@@ -8,12 +8,13 @@ import {
   type FormLinks,
   type FormMode,
   type LinkTarget,
+  parseRangeRef,
   type ResolvedLink,
   type Row,
   type RowFormLink,
 } from '@strategos/shared';
 import { formatText, type StoredCell } from '../sources/cell-format.js';
-import { headerRow } from '../sources/data-range.js';
+import { headerRow, rangeColumns } from '../sources/data-range.js';
 import type { CellNeed } from '../sources/source-data.service.js';
 import { replaceRichCells, richCells } from './rich-cells.js';
 
@@ -36,6 +37,15 @@ export interface ReaderContext {
   /** Formulaires de ligne reliés à un Tableau ou un Catalogue. */
   rowForms: (blockId: string) => RowFormLink[];
   formLinks: (formId: string) => FormLinks;
+  /** Espace de discussion d'un bloc : `null` si illisible ou pas encore publié. */
+  discussionSpace: (blockId: string) => SpaceInfo | null;
+}
+
+/** Espace de discussion résolu pour un lecteur : son id et ses droits. */
+export interface SpaceInfo {
+  spaceId: string;
+  canCreateTopic: boolean;
+  canPost: boolean;
 }
 
 export interface FormInfo {
@@ -151,6 +161,19 @@ function assembleBlock(block: Block, ctx: ReaderContext): AssembledBlock | null 
       }
       return { id: block.id, type: 'form', config: { formId, ...ctx.formLinks(formId) } };
     }
+    // Espace de discussion : invisible si le lecteur ne peut pas le lire, ou s'il
+    // n'a pas encore été créé (publication de la page).
+    case 'discussion_space': {
+      const info = ctx.discussionSpace(block.id);
+      if (!info) return null;
+      const { name, sortMode } = block.config;
+      return {
+        id: block.id,
+        type: 'discussion_space',
+        config: { name, sortMode, canCreateTopic: info.canCreateTopic, canPost: info.canPost },
+        topicsUrl: `/api/v1/spaces/${info.spaceId}/topics`,
+      };
+    }
   }
 }
 
@@ -173,6 +196,18 @@ export interface References {
   cells: CellNeed[];
   /** Blocs `form` : formulaire → bloc. */
   forms: Map<string, string>;
+  /** Id des blocs `discussion_space` de la structure. */
+  spaceBlockIds: Set<string>;
+}
+
+/** Première cellule de la plage d'un module. */
+function rangeProbe(ref: DataSourceRef): { row: number; col: number } | null {
+  const cols = rangeColumns(ref);
+  const top =
+    ref.range.mode === 'fixed'
+      ? parseRangeRef(ref.range.ref ?? '')?.top
+      : (ref.range.startRow ?? 1);
+  return cols && top ? { row: top, col: cols.left } : null;
 }
 
 export function collectReferences(rows: Row[]): References {
@@ -181,8 +216,13 @@ export function collectReferences(rows: Row[]): References {
   const sourceIds = new Set<string>();
   const cells: CellNeed[] = [];
   const forms = new Map<string, string>();
+  const spaceBlockIds = new Set<string>();
   const headers = (ref: DataSourceRef, columns: { col: string; label: string }[]) => {
     sourceIds.add(ref.sourceId);
+    // Sonde : une cellule de la plage est lue, pour savoir si la source répond
+    // (une source connectée injoignable marque alors le module indisponible).
+    const probe = rangeProbe(ref);
+    if (probe) cells.push({ sourceId: ref.sourceId, sheet: ref.sheet, ...probe });
     const row = headerRow(ref);
     if (row === null) return;
     for (const { col, label } of columns) {
@@ -214,6 +254,7 @@ export function collectReferences(rows: Row[]): References {
     }
     if (block?.type === 'catalog') headers(block.config, block.config.details);
     if (block?.type === 'form') forms.set(block.config.formId, block.id);
+    if (block?.type === 'discussion_space') spaceBlockIds.add(block.id);
   }
-  return { pageIds, mediaIds, sourceIds, cells, forms };
+  return { pageIds, mediaIds, sourceIds, cells, forms, spaceBlockIds };
 }

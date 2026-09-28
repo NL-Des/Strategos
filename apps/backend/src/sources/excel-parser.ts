@@ -31,7 +31,7 @@ export function excelSerial(date: Date): number {
 }
 
 /** Date lisible et triable : « 2026-09-26 », ou « 2026-09-26T14:30 » avec une heure. */
-function dateText(date: Date): string {
+export function dateText(date: Date): string {
   const iso = date.toISOString();
   return iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 16);
 }

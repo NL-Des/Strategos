@@ -30,7 +30,7 @@ Toute erreur a le même format :
 |---|---|
 | `400` | Données invalides (`VALIDATION_FAILED`, avec `details.fields` par champ) |
 | `401` | Non connecté ou session expirée (`UNAUTHENTICATED`) |
-| `403` | La ressource est **lisible**, mais l'action n'est pas permise (ex. poster sans le droit « poster », modifier le message d'un autre) ; ou changement d'identifiants requis (`CREDENTIALS_CHANGE_REQUIRED`) ; ou jeton CSRF ou `Origin` invalide (`CSRF_INVALID`) |
+| `403` | La ressource est **lisible**, mais l'action n'est pas permise : ouvrir un sujet ou poster sans le droit (`FORBIDDEN`), modifier ou supprimer le message d'un autre (`NOT_AUTHOR`) ; ou changement d'identifiants requis (`CREDENTIALS_CHANGE_REQUIRED`) ; ou jeton CSRF ou `Origin` invalide (`CSRF_INVALID`) |
 | `404` | `NOT_FOUND` : la ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
 | `409` | Conflit d'état : modification concurrente, soumission déjà traitée, confirmation d'avertissement requise, élément encore utilisé |
 | `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé…) |
@@ -103,10 +103,10 @@ La page d'arrivée et la page personnelle sont connues via `Me` (`landingPageId`
 | Méthode | Chemin | Accès | Rôle | Erreurs |
 |---|---|---|---|---|
 | GET | `/spaces/:id/topics` | lecture espace | Sujets (épinglés en tête, puis selon le tri de l'espace), paginés | `404` |
-| POST | `/spaces/:id/topics` | ouvrir sujet | Ouvrir `{ title, firstMessage }` | `403`, `VALIDATION_FAILED` |
-| GET | `/topics/:id` | lecture espace | Sujet et messages (paginés) ; les messages masqués ou supprimés sont exclus | `404` |
+| POST | `/spaces/:id/topics` | ouvrir sujet | Ouvrir `{ title, firstMessage, attachmentIds? }` | `403 FORBIDDEN`, `VALIDATION_FAILED` |
+| GET | `/topics/:id` | lecture espace | Sujet et messages (paginés) ; les messages supprimés sont toujours exclus, les messages masqués le sont pour les utilisateurs mais restent visibles pour l'admin (marqués `hidden`, pour pouvoir les rétablir) | `404` |
 | PATCH | `/topics/:id` | auteur ou admin | Renommer `{ title }` ou clore `{ closed: true }` | `403 NOT_AUTHOR` |
-| POST | `/topics/:id/messages` | poster | Poster `{ content, attachmentIds? }` | `403`, `422 TOPIC_CLOSED` |
+| POST | `/topics/:id/messages` | poster | Poster `{ content, attachmentIds? }` | `403 FORBIDDEN`, `422 TOPIC_CLOSED` |
 | PUT | `/messages/:id` | auteur | Modifier (l'ancienne version est archivée) | `403 NOT_AUTHOR`, `422 TOPIC_CLOSED` |
 | DELETE | `/messages/:id` | auteur | Supprimer (archivé) | `403 NOT_AUTHOR` |
 | POST | `/attachments` | connecté | Upload d'une image jointe (`multipart`), à rattacher ensuite à un message : JPEG, PNG, WebP ou GIF, 5 Mo au maximum, 4 par message au plus | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE`, `422 TOO_MANY_ATTACHMENTS` |
@@ -170,13 +170,14 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/sources/service-account` | Adresse du compte de service Google, à afficher pour le partage | — |
 | POST | `/sources` | Ajouter un Google Sheet `{ type: "gsheet", url }` ou un fichier OneDrive `{ type: "onedrive", itemId }` ; teste l'accès | `SOURCE_UNAVAILABLE` (Sheet non partagé), `SOURCE_AUTH_EXPIRED` |
 | POST | `/sources/upload` | Uploader un Excel `.xlsx` (`multipart`, champ `file`, 20 Mo au plus) → nouvelle source de type upload. La liste renvoie aussi les feuilles (`sheets`) pour les sélecteurs du page builder | `413`, `415`, `422 EXCEL_PARSE_FAILED` |
-| POST | `/sources/:id/test` | Tester l'accès | `SOURCE_UNAVAILABLE` |
+| POST | `/sources/:id/test` | Tester l'accès ; renvoie la source avec son état et ses feuilles relues | `SOURCE_UNAVAILABLE`, `SOURCE_AUTH_EXPIRED` |
 | GET | `/sources/:id/download` | Télécharger la version de référence d'un Excel uploadé ; met à jour `last_downloaded_at` et trace le téléchargement | `422 SOURCE_NOT_UPLOAD` si ce n'est pas un upload |
 | POST | `/sources/:id/reimport/preview` | Uploader le nouveau fichier ; renvoie un `reimportToken` et la liste des **validations qui seraient perdues** (voir [schéma](#aperçu-de-réimport)) | `415`, `EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/reimport/confirm` | `{ reimportToken, mode: "overwrite" \| "reapply" }` (annuler revient à ne pas confirmer ; le jeton expire) | `409 REIMPORT_TOKEN_EXPIRED`, `422` si une validation réappliquée échoue |
 | DELETE | `/sources/:id` | Retirer (avertissement si encore utilisée) | `409 CONFIRMATION_REQUIRED` |
 | GET | `/onedrive/connect` | Démarre la connexion Microsoft (redirection) | — |
-| GET | `/onedrive/callback` | Retour de Microsoft : vérifie le paramètre `state` (qui remplace le CSRF pour cette redirection) et stocke le jeton chiffré | `SOURCE_AUTH_FAILED` |
+| GET | `/onedrive/status` | État de la connexion : `{ configured, connected, accountLabel, expired }` (jamais le jeton) | — |
+| GET | `/api/v1/onedrive/callback` (**hors** `/admin`, publique) | Retour de Microsoft : vérifie le paramètre `state` (qui remplace le CSRF et la session, dont le cookie `SameSite=Strict` n'est pas envoyé), stocke le jeton chiffré, puis redirige vers `/admin/sources?onedrive=connected` ou `failed` | `SOURCE_AUTH_FAILED` |
 | GET | `/onedrive/browse?path=` | Parcourir le OneDrive connecté pour choisir un fichier | `SOURCE_AUTH_EXPIRED` |
 
 ### Page builder — [06](06-page-builder.md)
@@ -330,7 +331,7 @@ Pour `deleted` et `hidden`, seul `message.id` est envoyé.
 ## 6. Qui protège quoi
 | Protection | Portée |
 |---|---|
-| `AuthGuard` (global) | Toutes les routes sauf `auth/csrf` et `auth/login` |
+| `AuthGuard` (global) | Toutes les routes sauf `auth/csrf`, `auth/login` et `onedrive/callback` (protégée par `state`) |
 | Guard « identifiants à changer » (global) | Tout sauf `auth/me`, `auth/change-credentials`, `auth/logout` et les routes publiques |
 | Guard CSRF (global) | Toutes les méthodes qui modifient des données, sauf le retour OAuth (protégé par `state`) |
 | Guard admin | Tout `/api/v1/admin/**` (un non-admin reçoit `404`, l'espace admin n'est pas révélé), et la passerelle pour les événements de modération |

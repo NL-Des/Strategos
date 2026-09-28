@@ -31,6 +31,7 @@ import {
   positionKey,
   SourceDataService,
   SourceUnavailableError,
+  sourceException,
 } from '../sources/source-data.service.js';
 import { sheetsOf } from '../sources/sources.service.js';
 import { PageAccessService, readerOf } from './page-access.service.js';
@@ -217,7 +218,7 @@ export class DataBlocksService {
       );
     } catch (error) {
       if (error instanceof SourceUnavailableError) {
-        throw new AppException(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.SOURCE_UNAVAILABLE);
+        throw sourceException(error);
       }
       throw error;
     }

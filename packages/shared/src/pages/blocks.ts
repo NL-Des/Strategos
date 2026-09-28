@@ -1,3 +1,4 @@
+import type { TopicSort } from '../enums.js';
 import type { LinkTarget } from './links.js';
 
 /** Types de modules (06 — Registre des modules). */
@@ -146,6 +147,17 @@ export interface FormBlockConfig {
   formId: string;
 }
 
+/**
+ * Espace de discussion (06 — Espace de discussion, 07). L'espace lui-même
+ * (`discussion_spaces`) est créé à la publication de la page ; ses réglages
+ * (nom, tri des sujets) suivent le brouillon. C'est une ressource du modèle de
+ * droits : lecture, ouverture de sujets, publication de messages.
+ */
+export interface DiscussionSpaceBlockConfig {
+  name: string;
+  sortMode: TopicSort;
+}
+
 export interface BlockConfigs {
   image: ImageBlockConfig;
   buttons: ButtonsBlockConfig;
@@ -153,7 +165,10 @@ export interface BlockConfigs {
   table: TableBlockConfig;
   catalog: CatalogBlockConfig;
   form: FormBlockConfig;
+  discussion_space: DiscussionSpaceBlockConfig;
 }
+
+export const DISCUSSION_SPACE_NAME_MAX_LENGTH = 100;
 
 export type AvailableBlockType = keyof BlockConfigs;
 
@@ -165,4 +180,5 @@ export const AVAILABLE_BLOCK_TYPES: readonly AvailableBlockType[] = [
   'table',
   'catalog',
   'form',
+  'discussion_space',
 ];

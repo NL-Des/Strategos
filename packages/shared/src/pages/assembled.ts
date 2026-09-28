@@ -1,3 +1,4 @@
+import type { TopicSort } from '../enums.js';
 import type { Alignment, CatalogLayout, CellFormat } from './blocks.js';
 import type { ResolvedLink } from './links.js';
 import type { ColumnWidth } from './structure.js';
@@ -108,13 +109,31 @@ export interface AssembledFormBlock {
   config: FormLinks & { formId: string };
 }
 
+/**
+ * Espace de discussion visible par le lecteur (07). Absent du JSON si le lecteur
+ * ne peut pas le lire. Les sujets et messages se chargent par `topicsUrl` ;
+ * `canCreateTopic` et `canPost` reflètent les droits du lecteur sur l'espace.
+ */
+export interface AssembledDiscussionSpaceBlock {
+  id: string;
+  type: 'discussion_space';
+  config: {
+    name: string;
+    sortMode: TopicSort;
+    canCreateTopic: boolean;
+    canPost: boolean;
+  };
+  topicsUrl: string;
+}
+
 export type AssembledBlock =
   | AssembledImageBlock
   | AssembledButtonsBlock
   | AssembledRichContentBlock
   | AssembledTableBlock
   | AssembledCatalogBlock
-  | AssembledFormBlock;
+  | AssembledFormBlock
+  | AssembledDiscussionSpaceBlock;
 
 /** Cellule d'une ligne de Tableau ou d'une carte, déjà formatée. */
 export interface RowCell extends CellValue {

@@ -8,6 +8,9 @@ export interface StoredCell {
   needsRecalc: boolean;
 }
 
+/** Clé d'une cellule dans une feuille lue : « ligne:colonne ». */
+export const positionKey = (row: number, col: number) => `${row}:${col}`;
+
 export const EMPTY_CELL: StoredCell = {
   type: CellType.empty,
   text: null,
@@ -25,7 +28,7 @@ const dateTimeFormat = new Intl.DateTimeFormat('fr-FR', {
 });
 
 /** Numéro de série Excel → date (UTC). */
-function fromSerial(serial: number): Date {
+export function fromSerial(serial: number): Date {
   return new Date(Math.round((serial - 25_569) * 86_400_000));
 }
 

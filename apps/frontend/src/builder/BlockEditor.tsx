@@ -1,4 +1,4 @@
-import { ALIGNMENTS, type Block } from '@strategos/shared';
+import { ALIGNMENTS, type Block, TOPIC_SORTS } from '@strategos/shared';
 import { useTranslation } from 'react-i18next';
 import { CatalogEditor, TableEditor } from './DataBlockEditors';
 import { newId } from './defaults';
@@ -142,6 +142,38 @@ function ButtonsEditor({ block, onChange }: Props<Extract<Block, { type: 'button
   );
 }
 
+function DiscussionSpaceEditor({
+  block,
+  onChange,
+}: Props<Extract<Block, { type: 'discussion_space' }>>) {
+  const { t } = useTranslation();
+  const config = block.config;
+  const set = (patch: Partial<typeof config>) =>
+    onChange({ ...block, config: { ...config, ...patch } });
+  return (
+    <div className="form">
+      <p className="hint">{t('builder.discussionSpace.hint')}</p>
+      <label>
+        {t('builder.discussionSpace.name')}
+        <input value={config.name} onChange={(e) => set({ name: e.target.value })} />
+      </label>
+      <label>
+        {t('builder.discussionSpace.sortMode')}
+        <select
+          value={config.sortMode}
+          onChange={(e) => set({ sortMode: e.target.value as (typeof TOPIC_SORTS)[number] })}
+        >
+          {TOPIC_SORTS.map((mode) => (
+            <option key={mode} value={mode}>
+              {t(`builder.discussionSpace.sort.${mode}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 /** Réglages d'un module, selon son type. */
 export function BlockEditor({ block, onChange }: Props<Block>) {
   switch (block.type) {
@@ -162,5 +194,7 @@ export function BlockEditor({ block, onChange }: Props<Block>) {
       return <CatalogEditor block={block} onChange={onChange} />;
     case 'form':
       return <FormEditor block={block} onChange={onChange} />;
+    case 'discussion_space':
+      return <DiscussionSpaceEditor block={block} onChange={onChange} />;
   }
 }

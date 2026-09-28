@@ -11,8 +11,15 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../../api/client';
 import { confirmReimport, previewReimport } from '../../api/forms';
-import { deleteSource, listSources, sourceDownloadUrl, uploadSource } from '../../api/sources';
+import {
+  deleteSource,
+  listSources,
+  sourceDownloadUrl,
+  testSource,
+  uploadSource,
+} from '../../api/sources';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { GoogleSheetForm, OneDrivePanel } from './ConnectedSources';
 
 interface InUse {
   source: SourceSummary;
@@ -24,7 +31,7 @@ const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString('fr-FR'
 
 /**
  * Admin › Sources (04) : Excel uploadés, avec leur état, leurs dates et les
- * pages qui les utilisent. Google Sheets et OneDrive arrivent à l'étape 7.
+ * pages qui les utilisent : Excel uploadés, Google Sheets et fichiers OneDrive.
  */
 export function SourcesPage() {
   const { t } = useTranslation();
@@ -72,6 +79,10 @@ export function SourcesPage() {
       void refresh();
     },
   });
+  const test = useMutation({
+    mutationFn: (source: SourceSummary) => testSource(source.id),
+    onSettled: () => void refresh(),
+  });
   const removeError =
     remove.error instanceof ApiRequestError && remove.error.code === 'CONFIRMATION_REQUIRED'
       ? null
@@ -100,6 +111,8 @@ export function SourcesPage() {
           {t('sources.uploadSubmit')}
         </button>
       </form>
+      <GoogleSheetForm />
+      <OneDrivePanel />
 
       {inUse && (
         <div className="card warning" role="alertdialog" aria-labelledby="source-in-use">
@@ -184,7 +197,7 @@ export function SourcesPage() {
         </div>
       )}
 
-      <ErrorMessage error={sources.error ?? removeError ?? reimportPreview.error} />
+      <ErrorMessage error={sources.error ?? removeError ?? reimportPreview.error ?? test.error} />
       <div className="table-wrap">
         <table>
           <thead>
@@ -208,7 +221,9 @@ export function SourcesPage() {
                 </td>
                 <td>{t(`sources.types.${source.type}`)}</td>
                 <td>{t(`sources.statuses.${source.status}`)}</td>
-                <td>{date(source.lastImportedAt)}</td>
+                <td>
+                  {date(source.type === 'upload' ? source.lastImportedAt : source.lastReadAt)}
+                </td>
                 <td>{date(source.lastDownloadedAt)}</td>
                 <td>
                   {source.usages.pages.map((p) => (
@@ -248,6 +263,16 @@ export function SourcesPage() {
                           }}
                         />
                       </label>
+                    )}
+                    {source.type !== 'upload' && (
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={test.isPending}
+                        onClick={() => test.mutate(source)}
+                      >
+                        {t('sources.test')}
+                      </button>
                     )}
                     <button
                       type="button"

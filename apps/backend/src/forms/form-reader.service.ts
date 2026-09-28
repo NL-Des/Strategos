@@ -13,7 +13,7 @@ import { AppException } from '../common/app-exception.js';
 import type { Prisma, User } from '../generated/prisma/client.js';
 import { PageAccessService, readerOf } from '../pages/page-access.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { SourceUnavailableError } from '../sources/source-data.service.js';
+import { SourceUnavailableError, sourceException } from '../sources/source-data.service.js';
 import { FormDataService, pageBlocks } from './form-data.service.js';
 import { autoValue, conflictKeys, isConfigured, validateValues } from './form-definition.js';
 import type { SubmitFormDto } from './forms.dto.js';
@@ -29,7 +29,7 @@ async function withSource<T>(read: () => Promise<T>): Promise<T> {
     return await read();
   } catch (error) {
     if (error instanceof SourceUnavailableError) {
-      throw new AppException(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.SOURCE_UNAVAILABLE);
+      throw sourceException(error);
     }
     throw error;
   }

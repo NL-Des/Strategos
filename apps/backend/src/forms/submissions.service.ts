@@ -19,6 +19,7 @@ import {
   positionKey,
   SourceDataService,
   SourceUnavailableError,
+  sourceException,
 } from '../sources/source-data.service.js';
 import { type CellAddress, SourceWriteService } from '../sources/source-write.service.js';
 import { FormDataService } from './form-data.service.js';
@@ -191,7 +192,7 @@ export class SubmissionsService {
       }
     } catch (e) {
       if (!(e instanceof SourceUnavailableError)) throw e;
-      error = ErrorCode.SOURCE_UNAVAILABLE;
+      error = sourceException(e).getBody().code;
     }
     const known = form.mode === 'modification' || row !== undefined;
     const fields = def.fields.filter((f) => (values[f.key] ?? null) !== null);
@@ -220,7 +221,7 @@ export class SubmissionsService {
         );
       } catch (e) {
         if (!(e instanceof SourceUnavailableError)) throw e;
-        error = ErrorCode.SOURCE_UNAVAILABLE;
+        error = sourceException(e).getBody().code;
       }
     }
     return {

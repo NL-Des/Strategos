@@ -25,6 +25,7 @@ export const TopicSort = {
   created: 'created',
 } as const;
 export type TopicSort = (typeof TopicSort)[keyof typeof TopicSort];
+export const TOPIC_SORTS = Object.values(TopicSort);
 
 /** `revision_action` */
 export const RevisionAction = {

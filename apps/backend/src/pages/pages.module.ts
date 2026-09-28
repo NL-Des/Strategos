@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DiscussionsModule } from '../discussions/discussions.module.js';
 import { FormsModule } from '../forms/forms.module.js';
 import { PermissionsModule } from '../permissions/permissions.module.js';
 import { SourcesModule } from '../sources/sources.module.js';
@@ -14,7 +15,14 @@ import { PagesService } from './pages.service.js';
 import { ReaderContextService } from './reader-context.service.js';
 
 @Module({
-  imports: [ThemesModule, PermissionsModule, PageAccessModule, SourcesModule, FormsModule],
+  imports: [
+    ThemesModule,
+    PermissionsModule,
+    PageAccessModule,
+    SourcesModule,
+    FormsModule,
+    DiscussionsModule,
+  ],
   controllers: [
     AdminPagesController,
     AdminLayoutController,

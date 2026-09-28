@@ -25,3 +25,30 @@ export interface SourceSummary {
   usages: SourceUsages;
   version: number;
 }
+
+/** `POST /admin/sources` : un Google Sheet par son lien, ou un fichier du OneDrive connecté. */
+export type AddSourceInput = { type: 'gsheet'; url: string } | { type: 'onedrive'; itemId: string };
+
+/** Adresse du compte de service avec laquelle partager les Sheets ; `null` s'il n'est pas configuré. */
+export interface ServiceAccountInfo {
+  email: string | null;
+}
+
+/** Connexion OneDrive de l'admin (accès délégué). */
+export interface OneDriveStatus {
+  /** L'application Azure est configurée au déploiement. */
+  configured: boolean;
+  connected: boolean;
+  accountLabel: string | null;
+  /** La connexion a expiré : l'admin doit se reconnecter. */
+  expired: boolean;
+}
+
+/** Élément du OneDrive connecté, pour choisir un fichier. */
+export interface OneDriveItem {
+  id: string;
+  name: string;
+  folder: boolean;
+  /** Chemin à passer à `browse` pour ouvrir un dossier. */
+  path: string;
+}

@@ -134,6 +134,11 @@ model User {
   formVersions   FormVersion[]
   submissions    Submission[]      @relation("SubmissionAuthor")
   decisions      Submission[]      @relation("SubmissionDecider")
+  topics         Topic[]
+  messages       TopicMessage[]    @relation("MessageAuthor")
+  hiddenMessages TopicMessage[]    @relation("MessageHider")
+  revisions      MessageRevision[]
+  attachments    Attachment[]
 
   @@map("users")
 }
@@ -329,11 +334,95 @@ model DiscussionSpace {
 
   page        Page              @relation(fields: [pageId], references: [id], onDelete: Restrict)
   permissions GroupPermission[]
+  topics      Topic[]
 
   @@map("discussion_spaces")
 }
 
-// 7. Sources de données (14 §7). `onedrive_credentials` arrive à l'étape 7.
+model Topic {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  spaceId        String    @map("space_id") @db.Uuid
+  authorId       String    @map("author_id") @db.Uuid
+  title          String
+  closedAt       DateTime? @map("closed_at") @db.Timestamptz
+  pinnedAt       DateTime? @map("pinned_at") @db.Timestamptz
+  /// Mis à jour à chaque message (tri « activité »).
+  lastActivityAt DateTime  @default(now()) @map("last_activity_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
+
+  space    DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Restrict)
+  author   User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  messages TopicMessage[]
+
+  // Index partiel (épinglés puis activité récente) complété en SQL.
+  @@map("topics")
+}
+
+model TopicMessage {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  topicId   String    @map("topic_id") @db.Uuid
+  authorId  String    @map("author_id") @db.Uuid
+  /// Texte nettoyé (liste blanche).
+  content   String
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  editedAt  DateTime? @map("edited_at") @db.Timestamptz
+  hiddenAt  DateTime? @map("hidden_at") @db.Timestamptz
+  hiddenBy  String?   @map("hidden_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  topic       Topic             @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  author      User              @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  hider       User?             @relation("MessageHider", fields: [hiddenBy], references: [id], onDelete: SetNull)
+  revisions   MessageRevision[]
+  attachments Attachment[]
+
+  @@index([topicId, id])
+  @@map("topic_messages")
+}
+
+/// Archive des versions précédentes et des masquages (07 — Points techniques).
+/// `chatMessageId` est créée à l'étape 8 sans relation ; sa FK et les tables chat
+/// arrivent à l'étape 9. `CHECK (num_nonnulls(...) = 1)` complété en SQL.
+model MessageRevision {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  topicMessageId  String?        @map("topic_message_id") @db.Uuid
+  chatMessageId   String?        @map("chat_message_id") @db.Uuid
+  action          RevisionAction
+  /// Contenu avant l'action.
+  previousContent String         @map("previous_content")
+  actorId         String         @map("actor_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  topicMessage TopicMessage? @relation(fields: [topicMessageId], references: [id], onDelete: Cascade)
+  actor        User          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([topicMessageId])
+  @@index([chatMessageId])
+  @@map("message_revisions")
+}
+
+/// Pièces jointes images (07). `chatMessageId` sans relation jusqu'à l'étape 9.
+/// `CHECK (num_nonnulls(...) <= 1)` et `CHECK (size_bytes <= 5242880)` en SQL.
+model Attachment {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  uploaderId     String   @map("uploader_id") @db.Uuid
+  topicMessageId String?  @map("topic_message_id") @db.Uuid
+  chatMessageId  String?  @map("chat_message_id") @db.Uuid
+  storagePath    String   @map("storage_path")
+  mime           String
+  sizeBytes      Int      @map("size_bytes")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  uploader     User          @relation(fields: [uploaderId], references: [id], onDelete: Restrict)
+  topicMessage TopicMessage? @relation(fields: [topicMessageId], references: [id], onDelete: Cascade)
+
+  @@index([topicMessageId])
+  @@map("attachments")
+}
+
+// 7. Sources de données (14 §7).
 
 model Source {
   id               String       @id @default(uuid(7)) @db.Uuid
@@ -396,6 +485,21 @@ model CellReference {
   @@index([sourceId, sheet, row, col])
   @@index([referencedSourceId, referencedSheet])
   @@map("cell_references")
+}
+
+/// Connexion OneDrive de l'admin (accès délégué) : une seule ligne, `id = 1`
+/// (`CHECK` ajouté dans la migration). Le refresh token est chiffré (AES-256-GCM).
+model OnedriveCredential {
+  id                    Int       @id @default(1)
+  /// Compte Microsoft connecté, affiché dans l'espace admin.
+  accountLabel          String    @map("account_label")
+  refreshTokenEncrypted Bytes     @map("refresh_token_encrypted")
+  accessExpiresAt       DateTime? @map("access_expires_at") @db.Timestamptz
+  /// Rafraîchissement refusé par Microsoft : l'admin doit se reconnecter.
+  expiredAt             DateTime? @map("expired_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("onedrive_credentials")
 }
 
 model ReimportPreview {
@@ -491,6 +595,8 @@ model Submission {
 
   @@index([status, createdAt])
   @@index([formId, status])
+  /// « Mes soumissions ».
+  @@index([userId, createdAt(sort: Desc)], map: "submissions_user_id_created_at_idx")
   @@map("submissions")
 }
 

@@ -53,7 +53,7 @@ Sont tracées (action, cible, état avant/après, date) :
 Le journal est consultable et filtrable par l'administrateur, et non modifiable. Pas de purge automatique définie pour l'instant (point à retravailler plus tard, comme le backup).
 
 ## Points techniques
-- **AuditModule** : écriture et consultation du journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, TopicsModule, ExcelSyncModule et TemplatesModule. PermissionsModule ne fait que vérifier les droits et n'écrit rien.
+- **AuditModule** : écriture et consultation du journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, DiscussionsModule, ExcelSyncModule et TemplatesModule. PermissionsModule ne fait que vérifier les droits et n'écrit rien.
 - Les vues de droits s'appuient sur la fonction de résolution unique (voir [Calcul des droits effectifs](03-droits-groupes.md#calcul-des-droits-effectifs)).
 - Routes d'administration (comptes, groupes, droits, journal) protégées par un guard de rôle admin.
 - Chaque entrée du journal d'audit est écrite dans la **même transaction** que la modification qu'elle trace ; aucune route de modification ou de suppression du journal n'est exposée.

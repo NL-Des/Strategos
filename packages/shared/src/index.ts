@@ -1,5 +1,6 @@
 export * from './accounts.js';
 export * from './audit.js';
+export * from './discussions/index.js';
 export * from './enums.js';
 export * from './errors.js';
 export * from './forms/index.js';

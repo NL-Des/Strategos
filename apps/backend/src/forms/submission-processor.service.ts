@@ -21,6 +21,7 @@ import {
   positionKey,
   SourceDataService,
   SourceUnavailableError,
+  sourceException,
 } from '../sources/source-data.service.js';
 import { type CellWrite, SourceWriteService } from '../sources/source-write.service.js';
 import { FormDataService } from './form-data.service.js';
@@ -185,7 +186,7 @@ export class SubmissionProcessor {
       });
     } catch (error) {
       if (error instanceof SourceUnavailableError) {
-        throw new AppException(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.SOURCE_UNAVAILABLE);
+        throw sourceException(error);
       }
       throw error;
     }

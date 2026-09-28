@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { DiscussionsModule } from './discussions/discussions.module.js';
 import { FormsModule } from './forms/forms.module.js';
 import { GroupsModule } from './groups/groups.module.js';
 import { HealthController } from './health/health.controller.js';
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module.js';
     ThemesModule,
     SourcesModule,
     FormsModule,
+    DiscussionsModule,
     PagesModule,
     MediaModule,
   ],

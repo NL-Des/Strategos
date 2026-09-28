@@ -244,7 +244,7 @@ Archive des versions précédentes et des masquages.
 |---|---|---|---|---|
 | `id` | uuid | | — | PK |
 | `topic_message_id` | uuid | N | — | FK `topic_messages` |
-| `chat_message_id` | uuid | N | — | FK `chat_messages` |
+| `chat_message_id` | uuid | N | — | FK `chat_messages` (colonne créée sans FK à l'étape 8 ; la FK et `chat_messages` arrivent à l'étape 9) |
 | `action` | enum `revision_action` (`edit`, `delete`, `hide`, `unhide`) | | — | |
 | `previous_content` | text | | — | Contenu **avant** l'action |
 | `actor_id` | uuid | | — | FK `users` (l'auteur ou l'admin) |
@@ -258,7 +258,7 @@ Archive des versions précédentes et des masquages.
 | `id` | uuid | | — | PK |
 | `uploader_id` | uuid | | — | FK `users` |
 | `topic_message_id` | uuid | N | — | FK `topic_messages` |
-| `chat_message_id` | uuid | N | — | FK `chat_messages` |
+| `chat_message_id` | uuid | N | — | FK `chat_messages` (colonne créée sans FK à l'étape 8 ; la FK et `chat_messages` arrivent à l'étape 9) |
 | `storage_path`, `mime` | text | | — | JPEG, PNG, WebP ou GIF |
 | `size_bytes` | int | | — | `check (size_bytes <= 5242880)` |
 | `created_at` | timestamptz | | `now()` | |
@@ -311,7 +311,7 @@ La PK `(source_id, sheet, row, col)` sert aussi d'index pour lire une plage (lig
 Index : `(source_id, sheet, row, col)` et `(referenced_source_id, referenced_sheet)`, qui permet de retrouver les dépendants d'une cellule écrite pour `needs_recalc`.
 
 ### `onedrive_credentials`
-Table à **une seule ligne** (`id = 1`) : `account_label` (compte Microsoft connecté), `refresh_token_encrypted` (bytea, chiffré avec une clé fournie au déploiement), `access_expires_at`, `updated_at`.
+Table à **une seule ligne** (`id = 1`, `CHECK`) : `account_label` (compte Microsoft connecté), `refresh_token_encrypted` (bytea, chiffré avec une clé fournie au déploiement), `access_expires_at`, `expired_at` (rafraîchissement refusé : l'admin doit se reconnecter), `updated_at`.
 
 ### `reimport_previews`
 | Colonne | Type | N | Défaut | Contrainte / rôle |
@@ -471,7 +471,7 @@ Les références d'un formulaire ou d'un bloc vers une source (`sourceId` dans l
 3. `themes`, `pages` (sans la FK `users.personal_page_id`, ajoutée ensuite), `layout_parts`, `settings`.
 4. FK `users.personal_page_id`, `pages.published_by`.
 5. `groups`, `user_groups`.
-6. `discussion_spaces` (créée dès l'étape 4, avec les groupes, pour que `group_permissions` puisse la viser), `topics`, `topic_messages`, `chats`, `chat_messages`, `message_revisions`, `attachments`.
+6. `discussion_spaces` (créée dès l'étape 4, avec les groupes, pour que `group_permissions` puisse la viser) ; puis, à l'étape 8, `topics`, `topic_messages`, `message_revisions`, `attachments` (les colonnes `chat_message_id` de ces deux dernières sont créées sans FK) ; enfin, à l'étape 9, `chats`, `chat_messages` et les FK `chat_message_id`.
 7. `group_permissions` (après pages et espaces).
 8. `sources`, `staging_cells`, `cell_references`, `onedrive_credentials`, `reimport_previews`.
 9. `forms`, `form_versions`, puis la FK composite `forms → form_versions`, puis `submissions`.

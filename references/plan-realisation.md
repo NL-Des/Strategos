@@ -10,9 +10,9 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 3 — Pages minimales, header, footer et réglages](#étape-3--pages-minimales-header-footer-et-réglages)
 - [x] [Étape 4 — Groupes, droits et profil](#étape-4--groupes-droits-et-profil)
 - [x] [Étape 5 — Excel uploadé, tableaux et catalogues](#étape-5--excel-uploadé-tableaux-et-catalogues)
-- [ ] [Étape 6 — Formulaires et soumissions](#étape-6--formulaires-et-soumissions)
-- [ ] [Étape 7 — Google Sheets et OneDrive](#étape-7--google-sheets-et-onedrive)
-- [ ] [Étape 8 — Espaces de discussion](#étape-8--espaces-de-discussion)
+- [x] [Étape 6 — Formulaires et soumissions](#étape-6--formulaires-et-soumissions)
+- [x] [Étape 7 — Google Sheets et OneDrive](#étape-7--google-sheets-et-onedrive)
+- [x] [Étape 8 — Espaces de discussion](#étape-8--espaces-de-discussion)
 - [ ] [Étape 9 — Chat temps réel](#étape-9--chat-temps-réel)
 - [ ] [Étape 10 — Carte cliquable](#étape-10--carte-cliquable)
 - [ ] [Étape 11 — Thèmes complets et notes](#étape-11--thèmes-complets-et-notes)
@@ -245,12 +245,12 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 - OneDrive : accès délégué, table `onedrive_credentials` (jeton chiffré), reconnexion signalée dans l'espace admin.
 
 **Critères d'acceptation**
-- [ ] Les modules de page et les formulaires ne connaissent pas le type de source (même interface que l'Excel uploadé).
-- [ ] Cache mémoire de 30 à 60 secondes, invalidé par `source_id` après chaque écriture ; aucune copie en base.
-- [ ] Sheet non partagé avec le compte de service → `SOURCE_UNAVAILABLE` au test d'accès.
-- [ ] Jeton OneDrive chiffré en base, jamais renvoyé par l'API ; le callback vérifie `state`.
-- [ ] Connexion OneDrive expirée → `SOURCE_AUTH_EXPIRED` et signalement dans l'espace admin.
-- [ ] La clé Google n'est ni en base ni dans une image Docker.
+- [x] Les modules de page et les formulaires ne connaissent pas le type de source (même interface que l'Excel uploadé).
+- [x] Cache mémoire de 30 à 60 secondes, invalidé par `source_id` après chaque écriture ; aucune copie en base.
+- [x] Sheet non partagé avec le compte de service → `SOURCE_UNAVAILABLE` au test d'accès.
+- [x] Jeton OneDrive chiffré en base, jamais renvoyé par l'API ; le callback vérifie `state`.
+- [x] Connexion OneDrive expirée → `SOURCE_AUTH_EXPIRED` et signalement dans l'espace admin.
+- [x] La clé Google n'est ni en base ni dans une image Docker.
 
 **Démo** : Parcours B sur un vrai Google Sheet, Parcours C sur OneDrive.
 
@@ -268,13 +268,13 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 - Modération : masquage par l'admin, tracé dans le journal.
 
 **Critères d'acceptation**
-- [ ] Espaces créés à la publication de la page, pas avant.
-- [ ] Espace illisible → module absent de la page et `404` sur ses routes.
-- [ ] Lire sans le droit de poster → `403` ; sujet clos → `422 TOPIC_CLOSED`.
-- [ ] Modifier ou supprimer le message d'un autre → `403 NOT_AUTHOR` ; renommer et clore réservés à l'auteur du sujet ou à l'admin ; épingler réservé à l'admin.
-- [ ] `message_revisions` écrit avant chaque modification, suppression ou masquage, dans la même transaction.
-- [ ] Messages masqués ou supprimés exclus des réponses utilisateurs ; masquage tracé au journal.
-- [ ] Pièces jointes : JPEG, PNG, WebP ou GIF, 5 Mo, 4 par message (`413`, `415`, `422 TOO_MANY_ATTACHMENTS`) ; lisibles par les lecteurs de l'espace seulement.
+- [x] Espaces créés à la publication de la page, pas avant.
+- [x] Espace illisible → module absent de la page et `404` sur ses routes.
+- [x] Lire sans le droit de poster → `403` ; sujet clos → `422 TOPIC_CLOSED`.
+- [x] Modifier ou supprimer le message d'un autre → `403 NOT_AUTHOR` ; renommer et clore réservés à l'auteur du sujet ou à l'admin ; épingler réservé à l'admin.
+- [x] `message_revisions` écrit avant chaque modification, suppression ou masquage, dans la même transaction.
+- [x] Messages masqués ou supprimés exclus des réponses utilisateurs ; masquage tracé au journal.
+- [x] Pièces jointes : JPEG, PNG, WebP ou GIF, 5 Mo, 4 par message (`413`, `415`, `422 TOO_MANY_ATTACHMENTS`) ; lisibles par les lecteurs de l'espace seulement.
 
 **Démo** : l'exemple « Taverne » de [07](conception/07-discussions.md#espaces-de-discussion).
 

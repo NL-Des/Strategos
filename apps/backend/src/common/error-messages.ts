@@ -25,6 +25,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   FILE_TOO_LARGE: 'Le fichier est trop volumineux.',
   UNSUPPORTED_FILE_TYPE: 'Ce type de fichier n’est pas accepté.',
   EXCEL_PARSE_FAILED: 'Ce fichier Excel n’a pas pu être lu.',
+  SOURCE_AUTH_FAILED: 'La connexion au compte Microsoft a échoué.',
   SOURCE_NOT_UPLOAD: 'Cette action ne concerne que les fichiers Excel uploadés.',
   FORM_CLOSED: 'Ce formulaire est fermé.',
   FORM_FULL: 'Ce formulaire est complet.',
@@ -35,5 +36,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     'La valeur actuelle n’est pas un nombre : le mouvement ne peut pas être appliqué.',
   SUBMISSION_NOT_PENDING: 'Cette soumission a déjà été traitée.',
   REIMPORT_TOKEN_EXPIRED: 'Cet aperçu de réimport a expiré : recommencez.',
+  FORBIDDEN: 'Action non autorisée.',
+  TOPIC_CLOSED: 'Ce sujet est clos : aucun nouveau message.',
+  NOT_AUTHOR: "Vous n'êtes pas l'auteur de ce contenu.",
+  TOO_MANY_ATTACHMENTS: 'Un message accepte au plus 4 pièces jointes.',
   INTERNAL_ERROR: 'Une erreur interne est survenue.',
 };

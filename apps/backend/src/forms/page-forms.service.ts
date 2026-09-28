@@ -72,7 +72,11 @@ export class PageFormsService {
     return changes;
   }
 
-  async preview(db: Db, pageId: string, draft: PageConfig): Promise<PublishPreview> {
+  async preview(
+    db: Db,
+    pageId: string,
+    draft: PageConfig,
+  ): Promise<Omit<PublishPreview, 'spaces'>> {
     const changes = await this.changes(db, pageId, draft);
     return {
       forms: changes.map(({ form, change }) => ({

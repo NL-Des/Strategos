@@ -1,13 +1,28 @@
 import { Module } from '@nestjs/common';
 import { AdminSourcesController } from './admin-sources.controller.js';
+import { GoogleAuthService } from './connectors/google-auth.service.js';
+import { GsheetConnector } from './connectors/gsheet.connector.js';
+import { OneDriveAuthService } from './connectors/onedrive-auth.service.js';
+import { OneDriveConnector } from './connectors/onedrive.connector.js';
+import { SourceConnectors } from './connectors/source-connectors.service.js';
+import { OneDriveController } from './onedrive.controller.js';
 import { SourceDataService } from './source-data.service.js';
 import { SourceWriteService } from './source-write.service.js';
 import { SourcesService } from './sources.service.js';
 
 /** ExcelSyncModule de l'architecture : sources, staging, liaisons et lecture (08). */
 @Module({
-  controllers: [AdminSourcesController],
-  providers: [SourcesService, SourceDataService, SourceWriteService],
+  controllers: [AdminSourcesController, OneDriveController],
+  providers: [
+    SourcesService,
+    SourceDataService,
+    SourceWriteService,
+    SourceConnectors,
+    GoogleAuthService,
+    GsheetConnector,
+    OneDriveAuthService,
+    OneDriveConnector,
+  ],
   exports: [SourcesService, SourceDataService, SourceWriteService],
 })
 export class SourcesModule {}

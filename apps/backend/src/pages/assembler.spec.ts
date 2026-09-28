@@ -24,6 +24,12 @@ const ctx = (personalPageId: string | null = null): ReaderContext => ({
     formUrl: `/api/v1/forms/${id}`,
     submitUrl: `/api/v1/forms/${id}/submissions`,
   }),
+  discussionSpace: (id) =>
+    id === 'space'
+      ? { spaceId: 's1', canCreateTopic: true, canPost: true }
+      : id === 'space-read'
+        ? { spaceId: 's2', canCreateTopic: false, canPost: false }
+        : null,
 });
 
 const row = (block: Row['columns'][number]['block']): Row[] => [
@@ -116,5 +122,28 @@ describe('assemblage', () => {
     expect(blocks('inconnu', 'f4')).toBeNull();
     // Bloc copié d'une autre page : le formulaire appartient à un autre bloc.
     expect(blocks('ok', 'f9')).toBeNull();
+  });
+
+  it('rend un espace lisible avec ses droits, retire un espace illisible ou pas encore publié', () => {
+    const space = (id: string) =>
+      row({
+        id,
+        type: 'discussion_space' as const,
+        config: { name: 'Taverne', sortMode: 'activity' as const },
+      });
+    expect(assembleRows(space('space'), ctx())[0]!.columns[0]!.block).toEqual({
+      id: 'space',
+      type: 'discussion_space',
+      config: { name: 'Taverne', sortMode: 'activity', canCreateTopic: true, canPost: true },
+      topicsUrl: '/api/v1/spaces/s1/topics',
+    });
+    // Lecture seule : le module reste, sans droit d'ouvrir ni de poster.
+    const readOnly = assembleRows(space('space-read'), ctx())[0]!.columns[0]!.block;
+    expect(readOnly?.type === 'discussion_space' && readOnly.config).toMatchObject({
+      canCreateTopic: false,
+      canPost: false,
+    });
+    // Illisible ou pas encore créé : module absent.
+    expect(assembleRows(space('autre'), ctx())[0]!.columns[0]!.block).toBeNull();
   });
 });

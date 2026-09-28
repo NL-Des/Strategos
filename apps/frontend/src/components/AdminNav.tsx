@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 import { pendingCount } from '../api/forms';
+import { getOneDriveStatus } from '../api/sources';
 
 const LINKS = [
   ['/admin/submissions', 'submissions'],
@@ -30,6 +31,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     refetchInterval: PENDING_REFRESH_MS,
   });
   const count = pending.data?.count ?? 0;
+  // Connexion OneDrive expirée : signalée partout dans l'espace admin (08).
+  const onedrive = useQuery({ queryKey: ['admin', 'onedrive'], queryFn: getOneDriveStatus });
   return (
     <>
       <nav className="admin-nav" aria-label={t('admin.title')}>
@@ -44,6 +47,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </NavLink>
         ))}
       </nav>
+      {onedrive.data?.expired && (
+        <p className="notice warning" role="alert">
+          {t('sources.onedrive.expired')}{' '}
+          <NavLink to="/admin/sources">{t('sources.onedrive.reconnect')}</NavLink>
+        </p>
+      )}
       {children}
     </>
   );

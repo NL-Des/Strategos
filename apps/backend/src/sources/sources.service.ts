@@ -3,6 +3,7 @@ import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  type AddSourceInput,
   AuditAction,
   AuditTargetType,
   CellType,
@@ -20,6 +21,11 @@ import { config } from '../config.js';
 import type { Prisma, Source } from '../generated/prisma/client.js';
 import { cleanFilename } from '../media/media.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { spreadsheetIdOf } from './connectors/cells.js';
+import { GoogleAuthService } from './connectors/google-auth.service.js';
+import { OneDriveConnector } from './connectors/onedrive.connector.js';
+import { isConnected, SourceConnectors } from './connectors/source-connectors.service.js';
+import { SourceUnavailableError, sourceException } from './source-errors.js';
 import {
   ExcelParseError,
   externalRefs,
@@ -55,7 +61,91 @@ export class SourcesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly connectors: SourceConnectors,
+    private readonly google: GoogleAuthService,
+    private readonly onedrive: OneDriveConnector,
   ) {}
+
+  /** Adresse du compte de service avec laquelle l'admin partage ses Sheets. */
+  serviceAccount(): { email: string | null } {
+    return { email: this.google.email() };
+  }
+
+  /**
+   * Ajoute un Google Sheet (par son lien) ou un fichier du OneDrive connecté,
+   * après un test d'accès : un Sheet non partagé avec le compte de service est
+   * refusé (`SOURCE_UNAVAILABLE`). Le nom et les feuilles viennent du document.
+   */
+  async add(input: AddSourceInput, actor: AuditActor & { kind: 'user' }): Promise<SourceSummary> {
+    let connectionInfo: Record<string, string>;
+    if (input.type === SourceType.gsheet) {
+      const spreadsheetId = spreadsheetIdOf(input.url);
+      if (!spreadsheetId) {
+        throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
+          fields: { url: ['invalid'] },
+        });
+      }
+      connectionInfo = { spreadsheetId };
+    } else {
+      const { driveId, itemId } = await this.remote(() => this.onedrive.locate(input.itemId));
+      connectionInfo = { driveId, itemId };
+    }
+    const meta = await this.remote(() =>
+      this.connectors.for(input.type).metadata({ id: 'new', connectionInfo }),
+    );
+    const source = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.source.create({
+        data: {
+          type: input.type,
+          name: meta.name,
+          connectionInfo: { ...connectionInfo, sheets: meta.sheets } as Prisma.InputJsonValue,
+          lastReadAt: new Date(),
+          createdBy: actor.userId,
+        },
+      });
+      await this.audit.record(tx, actor, {
+        action: AuditAction.SOURCE_ADD,
+        targetType: AuditTargetType.SOURCE,
+        targetId: created.id,
+        after: { type: input.type, name: meta.name, sheets: meta.sheets },
+      });
+      return created;
+    });
+    return this.summary(source);
+  }
+
+  /**
+   * Test d'accès : l'état de la source est mis à jour ; injoignable →
+   * `SOURCE_UNAVAILABLE` (ou `SOURCE_AUTH_EXPIRED`). Les feuilles sont relues.
+   */
+  async test(id: string): Promise<SourceSummary> {
+    const source = await this.get(id);
+    if (!isConnected(source)) return this.summary(source);
+    const meta = await this.remote(() =>
+      this.connectors.track(source, () => this.connectors.for(source.type).metadata(source)),
+    );
+    this.connectors.invalidate(id);
+    const updated = await this.prisma.source.update({
+      where: { id },
+      data: {
+        connectionInfo: {
+          ...(source.connectionInfo as object),
+          sheets: meta.sheets,
+        } as Prisma.InputJsonValue,
+      },
+    });
+    return this.summary(updated);
+  }
+
+  /** Appel à une source connectée ; injoignable → `503` avec son code. */
+  private async remote<T>(call: () => Promise<T>): Promise<T> {
+    try {
+      return await call();
+    } catch (error) {
+      if (error instanceof SourceUnavailableError) throw sourceException(error);
+      throw error;
+    }
+  }
 
   async list(): Promise<SourceSummary[]> {
     const sources = await this.prisma.source.findMany({

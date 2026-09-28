@@ -13,11 +13,19 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { EXCEL_MAX_BYTES, EXCEL_MIME, ErrorCode, type SourceSummary } from '@strategos/shared';
+import {
+  type AddSourceInput,
+  EXCEL_MAX_BYTES,
+  EXCEL_MIME,
+  ErrorCode,
+  type ServiceAccountInfo,
+  type SourceSummary,
+} from '@strategos/shared';
 import type { Response } from 'express';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { AppException } from '../common/app-exception.js';
 import { ConfirmDto } from '../common/confirm.dto.js';
+import { AddSourceDto } from './sources.dto.js';
 import { SourcesService } from './sources.service.js';
 
 /** Sources de données, côté admin (13 — Sources). Protégé globalement par `AdminGuard`. */
@@ -28,6 +36,24 @@ export class AdminSourcesController {
   @Get()
   list(): Promise<SourceSummary[]> {
     return this.sources.list();
+  }
+
+  /** Adresse du compte de service Google, à afficher pour le partage des Sheets. */
+  @Get('service-account')
+  serviceAccount(): ServiceAccountInfo {
+    return this.sources.serviceAccount();
+  }
+
+  /** Ajouter un Google Sheet `{ type: "gsheet", url }` ou un fichier OneDrive `{ type: "onedrive", itemId }`. */
+  @Post()
+  add(@Body() dto: AddSourceDto, @Actor() actor: AuditActor): Promise<SourceSummary> {
+    return this.sources.add(dto as AddSourceInput, actor as AuditActor & { kind: 'user' });
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/test')
+  test(@Param('id', ParseUUIDPipe) id: string): Promise<SourceSummary> {
+    return this.sources.test(id);
   }
 
   /** Upload `multipart/form-data` d'un `.xlsx` (champ `file`) → nouvelle source. */

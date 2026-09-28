@@ -14,6 +14,7 @@ import {
 import type { AuditActor } from '../audit/audit-actor.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
+import { PageSpacesService } from '../discussions/page-spaces.service.js';
 import { FormsService } from '../forms/forms.service.js';
 import { PageFormsService } from '../forms/page-forms.service.js';
 import type { Page, Prisma, User } from '../generated/prisma/client.js';
@@ -75,6 +76,7 @@ export class PagesService {
     private readonly dataBlocks: DataBlocksService,
     private readonly forms: FormsService,
     private readonly pageForms: PageFormsService,
+    private readonly pageSpaces: PageSpacesService,
   ) {}
 
   async list(): Promise<AdminPageSummary[]> {
@@ -155,10 +157,12 @@ export class PagesService {
     return { ...page, warnings: await this.pageForms.draftWarnings(this.prisma, page, config) };
   }
 
-  /** Ce que la publication changera : formulaires, soumissions invalidées. */
+  /** Ce que la publication changera : formulaires, soumissions invalidées, espaces. */
   async publishPreview(id: string): Promise<PublishPreview> {
     const page = await this.getIn(this.prisma, id);
-    return this.pageForms.preview(this.prisma, id, validatePageConfig(page.draftConfig));
+    const config = validatePageConfig(page.draftConfig);
+    const preview = await this.pageForms.preview(this.prisma, id, config);
+    return { ...preview, spaces: await this.pageSpaces.preview(this.prisma, id, config) };
   }
 
   /**
@@ -171,6 +175,7 @@ export class PagesService {
       const before = await this.getIn(tx, id);
       const config = validatePageConfig(before.draftConfig);
       await this.pageForms.publish(tx, id, config, admin, actor, confirm);
+      await this.pageSpaces.publish(tx, id, config);
       const themeId =
         config.themeId && (await tx.theme.count({ where: { id: config.themeId } }))
           ? config.themeId

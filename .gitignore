@@ -6,3 +6,4 @@ coverage/
 apps/backend/src/generated/
 .vitest/
 .data/
+secrets/

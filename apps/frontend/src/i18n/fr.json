@@ -12,7 +12,9 @@
     "no": "Non",
     "cancel": "Annuler",
     "close": "Fermer",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "edit": "Modifier",
+    "delete": "Supprimer"
   },
   "account": {
     "menu": "Menu du compte",
@@ -205,7 +207,12 @@
     "ROW_KEY_DUPLICATE": "Plusieurs lignes portent cette clé : corrigez le document avant de valider.",
     "MOVEMENT_NOT_NUMERIC": "La valeur actuelle n’est pas un nombre : le mouvement ne peut pas être appliqué.",
     "SUBMISSION_NOT_PENDING": "Cette soumission a déjà été traitée.",
-    "REIMPORT_TOKEN_EXPIRED": "Cet aperçu de réimport a expiré : recommencez."
+    "REIMPORT_TOKEN_EXPIRED": "Cet aperçu de réimport a expiré : recommencez.",
+    "SOURCE_AUTH_FAILED": "La connexion au compte Microsoft a échoué. Réessayez.",
+    "FORBIDDEN": "Action non autorisée.",
+    "TOPIC_CLOSED": "Ce sujet est clos : aucun nouveau message.",
+    "NOT_AUTHOR": "Vous n’êtes pas l’auteur de ce contenu.",
+    "TOO_MANY_ATTACHMENTS": "Un message accepte au plus 4 pièces jointes."
   },
   "audit": {
     "title": "Journal des modifications",
@@ -263,7 +270,11 @@
       "submission.validate": "Validation de la soumission",
       "submission.modify": "Validation avec modification",
       "submission.reject": "Refus de la soumission",
-      "submission.invalidate": "Invalidation des soumissions en attente"
+      "submission.invalidate": "Invalidation des soumissions en attente",
+      "source.add": "Ajout d’une source",
+      "onedrive.connect": "Connexion OneDrive",
+      "message.hide": "Masquage d’un message",
+      "message.unhide": "Rétablissement d’un message"
     },
     "targetTypes": {
       "user": "Compte",
@@ -274,7 +285,9 @@
       "settings": "Réglages",
       "source": "Source",
       "form": "Formulaire",
-      "submission": "Soumission"
+      "submission": "Soumission",
+      "onedrive": "OneDrive",
+      "message": "Message"
     },
     "fields": {
       "username": "Pseudo",
@@ -483,6 +496,15 @@
     },
     "publishInvalidates_one": "La publication invalidera 1 soumission en attente. Publier quand même ?",
     "publishInvalidates_other": "La publication invalidera {{count}} soumissions en attente. Publier quand même ?",
+    "discussionSpace": {
+      "hint": "L’espace est créé à la publication de la page. Les droits (lire, ouvrir un sujet, poster) s’attribuent ensuite par groupe.",
+      "name": "Nom de l’espace",
+      "sortMode": "Tri des sujets",
+      "sort": {
+        "activity": "Activité récente",
+        "created": "Date de création"
+      }
+    },
     "form": {
       "mode": "Type de formulaire",
       "modes": {
@@ -611,14 +633,14 @@
   },
   "sources": {
     "title": "Sources",
-    "intro": "Les fichiers dont les pages lisent les données. Les utilisateurs ne voient jamais ces fichiers : seulement les valeurs affichées par les modules.",
+    "intro": "Les documents dont les pages lisent les données : Excel uploadés, Google Sheets et fichiers OneDrive. Les utilisateurs ne voient jamais ces documents : seulement les valeurs affichées par les modules.",
     "upload": "Ajouter un fichier Excel",
     "uploadSubmit": "Importer",
     "limits": "Classeur .xlsx, {{mb}} Mo au plus. La copie importée devient la version de référence.",
     "name": "Nom",
     "type": "Type",
     "status": "État",
-    "lastImportedAt": "Dernier import",
+    "lastImportedAt": "Dernier import ou lecture",
     "lastDownloadedAt": "Dernier téléchargement",
     "usages": "Utilisée par",
     "sheets": "Feuilles : {{sheets}}",
@@ -647,6 +669,29 @@
       "reapply": "Réappliquer les validations",
       "overwrite": "Écraser (les validations sont perdues)",
       "confirm": "Réimporter"
+    },
+    "test": "Tester",
+    "gsheet": {
+      "title": "Ajouter un Google Sheet",
+      "share": "Partagez d’abord le Sheet (en modification) avec l’adresse du compte de service :",
+      "url": "Lien du Google Sheet",
+      "add": "Tester et ajouter",
+      "notConfigured": "Le compte de service Google n’est pas configuré sur cette instance (clé à fournir au déploiement)."
+    },
+    "onedrive": {
+      "title": "OneDrive / SharePoint",
+      "notConfigured": "L’application Azure n’est pas configurée sur cette instance (identifiants à fournir au déploiement).",
+      "connected": "Connecté au compte {{account}}.",
+      "notConnected": "Aucun compte Microsoft connecté.",
+      "expired": "La connexion OneDrive a expiré : reconnectez-vous pour que les fichiers OneDrive restent lisibles.",
+      "connect": "Connecter mon compte Microsoft",
+      "reconnect": "Reconnecter",
+      "connectedNow": "Compte Microsoft connecté.",
+      "browse": "Choisir un fichier",
+      "root": "Mon OneDrive",
+      "up": "↑ Dossier parent",
+      "add": "Ajouter",
+      "emptyFolder": "Aucun fichier Excel dans ce dossier."
     }
   },
   "render": {
@@ -655,7 +700,28 @@
     "needsRecalc": "À recalculer : cette valeur dépend d’une donnée modifiée depuis le dernier import.",
     "search": "Rechercher",
     "noRows": "Aucune ligne.",
-    "image": "Image"
+    "image": "Image",
+    "discussion": {
+      "noTopics": "Aucun sujet pour le moment.",
+      "newTopic": "Ouvrir un sujet",
+      "openTopic": "Publier le sujet",
+      "topicTitle": "Titre du sujet",
+      "message": "Message",
+      "addImages": "Ajouter des images (4 au plus)",
+      "reply": "Répondre",
+      "backToTopics": "← Retour aux sujets",
+      "close": "Clore le sujet",
+      "closed": "Clos",
+      "closedNotice": "Ce sujet est clos : l’historique reste lisible.",
+      "edited": "modifié",
+      "confirmDelete": "Supprimer ce message ?",
+      "readOnly": "Vous pouvez lire cet espace sans y écrire.",
+      "hidden": "Masqué",
+      "hide": "Masquer",
+      "unhide": "Rétablir",
+      "pin": "Épingler",
+      "unpin": "Désépingler"
+    }
   },
   "forms": {
     "state": {

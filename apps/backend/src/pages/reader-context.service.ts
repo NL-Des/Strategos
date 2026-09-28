@@ -95,7 +95,10 @@ export class ReaderContextService {
   private async prepare(rows: Row[], options: Options): Promise<PreparedContext> {
     const refs = collectReferences(rows);
     if (options.personalPageId) refs.pageIds.add(options.personalPageId);
-    const [readable, media, values, sources, forms] = await Promise.all([
+    // L'aperçu admin (`draftsToo`) voit tout : mêmes droits qu'un admin.
+    const spaceReader: PageReader =
+      'draftsToo' in options.reader ? { admin: true } : options.reader;
+    const [readable, media, values, sources, forms, spaces] = await Promise.all([
       'draftsToo' in options.reader
         ? this.existingPages(refs.pageIds)
         : this.access.readablePageIds(options.reader, refs.pageIds),
@@ -103,6 +106,7 @@ export class ReaderContextService {
       this.data.readCells(refs.cells),
       this.data.describe([...refs.sourceIds]),
       this.forms(refs.forms, options.preview),
+      this.access.readableSpaces(spaceReader, refs.spaceBlockIds),
     ]);
     const available = (id: string) =>
       (sources.get(id)?.available ?? false) && !values.unavailable.has(id);
@@ -124,6 +128,7 @@ export class ReaderContextService {
       form: (formId) => forms.info.get(formId) ?? null,
       rowForms: (blockId) => forms.rowForms.get(blockId) ?? [],
       formLinks: (formId) => formLinks(formId, options.preview),
+      discussionSpace: (blockId) => spaces.get(blockId) ?? null,
       unavailableSources,
     };
   }

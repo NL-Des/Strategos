@@ -60,6 +60,9 @@ export function newBlock(type: AvailableBlockType): Block {
     case 'form':
       // Le formulaire est créé côté serveur quand l'admin choisit son type.
       return { id: newId(), type, config: { formId: '' } };
+    case 'discussion_space':
+      // L'espace est créé côté serveur à la publication de la page.
+      return { id: newId(), type, config: { name: '', sortMode: 'activity' } };
   }
 }
 

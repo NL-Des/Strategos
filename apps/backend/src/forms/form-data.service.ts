@@ -150,18 +150,15 @@ export class FormDataService {
       mode === 'ajout'
         ? addZone(def)
         : { top: def.rowStart ?? 1, bottom: def.rowEnd ?? Number.MAX_SAFE_INTEGER };
-    return this.prisma.stagingCell.findMany({
-      where: {
-        sourceId: def.sourceId,
-        sheet: def.sheet,
-        formula: { not: null },
-        col: { in: cols },
-        row: { gte: rows.top, lte: Math.min(rows.bottom, 2_147_483_647) },
-      },
-      select: { sheet: true, row: true, col: true },
-      orderBy: [{ row: 'asc' }, { col: 'asc' }],
-      take: MAX_WARNING_CELLS,
-    });
+    const sheet = def.sheet;
+    const cells = await this.data.formulaCells(
+      this.prisma,
+      def.sourceId,
+      sheet,
+      { cols, rows },
+      MAX_WARNING_CELLS,
+    );
+    return cells.map((c) => ({ sheet, ...c }));
   }
 
   formulaWarning(cells: CellAddress[]): Warning[] {

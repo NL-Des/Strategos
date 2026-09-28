@@ -30,6 +30,8 @@ import {
   CELL_FORMATS,
   type CellFormat,
   type DataRange,
+  DISCUSSION_SPACE_NAME_MAX_LENGTH,
+  type DiscussionSpaceBlockConfig,
   type FormBlockConfig,
   type ImageBlockConfig,
   type RichContentBlockConfig,
@@ -43,6 +45,7 @@ import {
   MAX_ROW,
   RANGE_REF_PATTERN,
 } from '../sources/refs.js';
+import { type TopicSort, TOPIC_SORTS } from '../enums.js';
 import { LinkTargetSchema } from './links.schema.js';
 
 // Schémas de `config` par type de module, validés par le backend (class-validator).
@@ -236,6 +239,16 @@ export class FormBlockConfigSchema implements FormBlockConfig {
   formId: string;
 }
 
+export class DiscussionSpaceBlockConfigSchema implements DiscussionSpaceBlockConfig {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(DISCUSSION_SPACE_NAME_MAX_LENGTH)
+  name: string;
+
+  @IsIn(TOPIC_SORTS)
+  sortMode: TopicSort;
+}
+
 /** Un schéma par module disponible ; le typage impose d'en avoir un pour chacun. */
 export const BLOCK_CONFIG_SCHEMAS: { [K in AvailableBlockType]: new () => BlockConfigs[K] } = {
   image: ImageBlockConfigSchema,
@@ -244,4 +257,5 @@ export const BLOCK_CONFIG_SCHEMAS: { [K in AvailableBlockType]: new () => BlockC
   table: TableBlockConfigSchema,
   catalog: CatalogBlockConfigSchema,
   form: FormBlockConfigSchema,
+  discussion_space: DiscussionSpaceBlockConfigSchema,
 };

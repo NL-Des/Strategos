@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { type CellType, parseRangeRef, SourceType } from '@strategos/shared';
+import { type CellType, parseRangeRef } from '@strategos/shared';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { Db } from '../prisma/prisma.types.js';
 import { type FormulaRef, formulaRefs, rectContains } from './formula-deps.js';
-import { SourceDataService, SourceUnavailableError } from './source-data.service.js';
+import { isConnected, SourceConnectors } from './connectors/source-connectors.service.js';
+import { SourceDataService } from './source-data.service.js';
 
 /** Valeur brute écrite dans une cellule : Strategos n'écrit jamais de formule. */
 export interface StoredValue {
@@ -35,12 +36,15 @@ interface FormulaCell extends CellAddress {
 /**
  * Écriture dans les sources (08 — Points techniques) : l'unique chemin des
  * validations de soumissions. Les appelants ne savent pas de quel type est la
- * source ; à l'étape 6, seuls les Excel uploadés (staging) sont écrits, les
- * sources connectées s'y brancheront à l'étape 7.
+ * source : staging et `needs_recalc` pour un Excel uploadé, API pour une
+ * source connectée (cache vidé après l'écriture).
  */
 @Injectable()
 export class SourceWriteService {
-  constructor(private readonly data: SourceDataService) {}
+  constructor(
+    private readonly data: SourceDataService,
+    private readonly connectors: SourceConnectors,
+  ) {}
 
   /**
    * Sérialise les écritures d'une même source jusqu'à la fin de la transaction
@@ -49,20 +53,20 @@ export class SourceWriteService {
    */
   async lock(tx: Prisma.TransactionClient, sourceId: string): Promise<void> {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${sourceId}, 0))`;
+    // Source connectée : la ligne vide et la valeur de départ se lisent dans le
+    // document lui-même, pas dans une copie du cache (09 — Points techniques).
+    this.connectors.invalidate(sourceId);
   }
 
   /** Parmi `cells`, celles qui contiennent une formule (elle serait écrasée). */
   async formulaCells(db: Db, sourceId: string, cells: CellAddress[]): Promise<CellAddress[]> {
-    if (cells.length === 0) return [];
-    return db.stagingCell.findMany({
-      where: {
-        sourceId,
-        formula: { not: null },
-        OR: cells.map(({ sheet, row, col }) => ({ sheet, row, col })),
-      },
-      select: { sheet: true, row: true, col: true },
-      orderBy: [{ sheet: 'asc' }, { row: 'asc' }, { col: 'asc' }],
-    });
+    const found: CellAddress[] = [];
+    for (const sheet of [...new Set(cells.map((c) => c.sheet))]) {
+      const inSheet = cells.filter((c) => c.sheet === sheet);
+      const formulas = await this.data.formulaCells(db, sourceId, sheet, { cells: inSheet });
+      found.push(...formulas.map((c) => ({ sheet, ...c })));
+    }
+    return found;
   }
 
   /**
@@ -75,8 +79,19 @@ export class SourceWriteService {
     sourceId: string,
     writes: CellWrite[],
   ): Promise<void> {
+    if (writes.length === 0) return;
     const source = await this.data.usableSource(sourceId, tx);
-    if (source.type !== SourceType.upload) throw new SourceUnavailableError(sourceId);
+    if (isConnected(source)) {
+      // Le document en ligne fait foi : Google ou Microsoft recalculent eux-mêmes.
+      try {
+        await this.connectors.track(source, () =>
+          this.connectors.for(source.type).write(source, writes),
+        );
+      } finally {
+        this.connectors.invalidate(sourceId);
+      }
+      return;
+    }
     for (const w of writes) {
       const value = {
         valueType: w.value.type,

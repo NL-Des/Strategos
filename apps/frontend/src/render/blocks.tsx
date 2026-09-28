@@ -7,6 +7,7 @@ import type {
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogBlock, SourceUnavailable, TableBlock } from './DataBlocks';
+import { DiscussionSpaceBlock } from './DiscussionSpaceBlock';
 import { FormBlock } from './FormBlock';
 import { LinkTo } from './LinkTo';
 
@@ -72,6 +73,7 @@ const REGISTRY: {
   table: TableBlock,
   catalog: CatalogBlock,
   form: FormBlock,
+  discussion_space: DiscussionSpaceBlock,
 };
 
 export function BlockRenderer({ block }: { block: AssembledBlock }) {

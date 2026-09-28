@@ -687,6 +687,7 @@ describe('Formulaires et soumissions (e2e)', () => {
       expect(preview).toEqual({
         forms: [{ id, title: 'Trésor de guilde', change: 'updated' }],
         invalidatedSubmissions: 0,
+        spaces: [],
       });
       expectStatus(await admin.send('post', `/admin/pages/${pageId}/publish`, {}), 200);
       expect(((await kira.get(`/forms/${id}`)).body as UserForm).title).toBe('Trésor de guilde');
