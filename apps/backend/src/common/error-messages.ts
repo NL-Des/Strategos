@@ -26,5 +26,14 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   UNSUPPORTED_FILE_TYPE: 'Ce type de fichier n’est pas accepté.',
   EXCEL_PARSE_FAILED: 'Ce fichier Excel n’a pas pu être lu.',
   SOURCE_NOT_UPLOAD: 'Cette action ne concerne que les fichiers Excel uploadés.',
+  FORM_CLOSED: 'Ce formulaire est fermé.',
+  FORM_FULL: 'Ce formulaire est complet.',
+  ADD_ZONE_FULL: 'La zone d’ajout est pleine : cette soumission ne peut plus être validée.',
+  ROW_KEY_NOT_FOUND: 'La ligne visée est introuvable.',
+  ROW_KEY_DUPLICATE: 'Plusieurs lignes portent cette clé.',
+  MOVEMENT_NOT_NUMERIC:
+    'La valeur actuelle n’est pas un nombre : le mouvement ne peut pas être appliqué.',
+  SUBMISSION_NOT_PENDING: 'Cette soumission a déjà été traitée.',
+  REIMPORT_TOKEN_EXPIRED: 'Cet aperçu de réimport a expiré : recommencez.',
   INTERNAL_ERROR: 'Une erreur interne est survenue.',
 };

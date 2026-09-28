@@ -1,6 +1,13 @@
-import type { AdminPage, AssembledLayout, AssembledPage, PageConfig, Row } from '@strategos/shared';
+import type {
+  AdminPage,
+  AssembledLayout,
+  AssembledPage,
+  PageConfig,
+  Row,
+  Warning,
+} from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
@@ -11,7 +18,10 @@ import {
   publishPage,
   savePageDraft,
 } from '../../api/pages';
+import { getPublishPreview } from '../../api/forms';
 import { listThemes } from '../../api/settings';
+import { Warnings } from '../../builder/FormEditor';
+import { blocksOf, PageEditorContext } from '../../builder/PageEditorContext';
 import { RowsEditor } from '../../builder/RowsEditor';
 import { PreviewGroupSelect } from '../../builder/PreviewGroupSelect';
 import { ErrorMessage } from '../../components/ErrorMessage';
@@ -41,7 +51,12 @@ function Editor({ initial }: { initial: AdminPage }) {
   } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [previewGroup, setPreviewGroup] = useState('');
+  const [warnings, setWarnings] = useState<Warning[]>([]);
   const themes = useQuery({ queryKey: ['admin', 'themes'], queryFn: listThemes });
+  const context = useMemo(
+    () => ({ pageId: saved.id, blocks: blocksOf([draft.zones.main, draft.zones.sidebar]) }),
+    [saved.id, draft],
+  );
 
   const edit = (patch: Partial<PageConfig>) => {
     setDraft({ ...draft, ...patch });
@@ -59,8 +74,13 @@ function Editor({ initial }: { initial: AdminPage }) {
     void queryClient.invalidateQueries({ queryKey: ['admin', 'pages'] });
   };
   const save = async () => {
-    const page = await savePageDraft(saved.id, { name, config: draft, version: saved.version });
+    const { warnings: found, ...page } = await savePageDraft(saved.id, {
+      name,
+      config: draft,
+      version: saved.version,
+    });
     onSaved(page);
+    setWarnings(found);
     return page;
   };
 
@@ -83,10 +103,15 @@ function Editor({ initial }: { initial: AdminPage }) {
   const publishMutation = useMutation({
     mutationFn: async () => {
       if (dirty) await save();
-      return publishPage(saved.id);
+      // Les soumissions en attente que la publication invaliderait sont annoncées avant.
+      const { invalidatedSubmissions: count } = await getPublishPreview(saved.id);
+      if (count > 0 && !window.confirm(t('builder.publishInvalidates', { count }))) return null;
+      return publishPage(saved.id, count > 0);
     },
     onSuccess: (page) => {
+      if (!page) return;
       onSaved(page);
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'submissions'] });
       void queryClient.invalidateQueries({ queryKey: ['page', page.id] });
       setNotice(t('builder.published'));
     },
@@ -149,6 +174,7 @@ function Editor({ initial }: { initial: AdminPage }) {
           </p>
         )}
         <ErrorMessage error={error} />
+        <Warnings warnings={warnings} />
       </div>
 
       {preview && (
@@ -238,15 +264,17 @@ function Editor({ initial }: { initial: AdminPage }) {
         </fieldset>
       </div>
 
-      {(['main', 'sidebar'] as const).map(
-        (zone) =>
-          draft.zones[zone] && (
-            <div key={zone} className="zone-editor">
-              <h2>{t(`builder.zoneNames.${zone}`)}</h2>
-              <RowsEditor rows={draft.zones[zone]} onChange={(rows) => setZone(zone, rows)} />
-            </div>
-          ),
-      )}
+      <PageEditorContext.Provider value={context}>
+        {(['main', 'sidebar'] as const).map(
+          (zone) =>
+            draft.zones[zone] && (
+              <div key={zone} className="zone-editor">
+                <h2>{t(`builder.zoneNames.${zone}`)}</h2>
+                <RowsEditor rows={draft.zones[zone]} onChange={(rows) => setZone(zone, rows)} />
+              </div>
+            ),
+        )}
+      </PageEditorContext.Provider>
     </section>
   );
 }

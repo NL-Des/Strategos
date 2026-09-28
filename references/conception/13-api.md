@@ -188,7 +188,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/pages/:id/preview?asGroup=` | Brouillon **assemblé** (valeurs résolues). Sans `asGroup` : vue administrateur complète. Avec `asGroup=<groupId>` : vue d'un membre de ce seul groupe (modules et liens filtrés) | `404` (groupe inconnu) |
 | GET | `/pages/preview/layout?asGroup=` | Header et footer **publiés** qui encadrent l'aperçu d'une page, assemblés pour l'admin ou pour un membre de ce seul groupe (même forme que `GET /layout`) | `404` (groupe inconnu) |
 | GET | `/pages/:id/publish/preview` | Ce que la publication va changer : formulaires modifiés, **soumissions qui seraient invalidées**, espaces et chats créés ou retirés | — |
-| POST | `/pages/:id/publish` | Publier le brouillon, avec ses formulaires, espaces et chats, en une transaction ; confirmation requise si des soumissions seraient invalidées | `VALIDATION_FAILED` (bloc invalide), `409 CONFIRMATION_REQUIRED` |
+| POST | `/pages/:id/publish` | Publier le brouillon, avec ses formulaires, espaces et chats, en une transaction ; `{ confirm: true }` requis si des soumissions seraient invalidées (avertissement `SUBMISSIONS_INVALIDATED`, avec `count`) | `VALIDATION_FAILED` (bloc invalide), `409 CONFIRMATION_REQUIRED` |
 | DELETE | `/pages/:id` | Suppression douce | — |
 | GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`), `{ version, config: { rows } }` ; formulaires, espaces et chats refusés | `EDIT_CONFLICT`, `422 BLOCK_NOT_ALLOWED_IN_LAYOUT` (`details.blockIds`) |
 | GET | `/layout/:kind/preview?asGroup=` | Aperçu du header ou du footer, éventuellement avec les droits d'un groupe | — |
@@ -204,6 +204,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 |---|---|---|---|
 | POST | `/forms` | Créer un formulaire rattaché à un bloc du brouillon `{ pageBlockId, mode, … }` | `VALIDATION_FAILED` |
 | GET | `/forms/:id` | Définition en brouillon, définition publiée et réglages opérationnels | `404` |
+| GET | `/forms/:id/preview` · `/forms/:id/preview/prefill?rowKey=` | Brouillon vu comme l'utilisateur le verra (même réponse que la route utilisateur) ; l'aperçu de page y pointe par `formUrl` | `404` (non configuré) |
 | PUT | `/forms/:id/draft` | Modifier la définition **en brouillon** (champs, mappings, zone, clé). Rien ne change pour les utilisateurs avant la publication de la page. La réponse indique les `warnings` et les soumissions **qui seraient invalidées** à la publication | `VALIDATION_FAILED`, `EDIT_CONFLICT` |
 | DELETE | `/forms/:id` | Supprimer (en retirant le bloc du brouillon ; effectif à la publication) | — |
 | POST | `/forms/:id/open` · `/close` | Ouvrir, fermer (**immédiat**) | — |
@@ -265,6 +266,7 @@ Réponse de `GET /pages/:id` (et de `GET /admin/pages/:id/preview`) :
 - Les lignes des tableaux et catalogues ne sont pas incluses : elles sont chargées page par page via `rowsUrl`.
 - Si une source est injoignable, la page est tout de même renvoyée. Les blocs concernés portent `"error": "SOURCE_UNAVAILABLE"`. `unavailableSources` (`[{ id, name }]`) n'est renseigné que pour l'admin (aperçu, ou lecture d'une page par l'admin) ; il reste vide pour les utilisateurs, qui ne voient jamais une source.
 - Contenu libre : chaque valeur insérée est remplacée dans le HTML par `<span data-value="i"></span>`, et `config.values[i] = { value, needsRecalc }`. Tableau et Catalogue ne portent ni source, ni feuille, ni plage : seulement les libellés, formats et réglages d'affichage, et `rowsUrl`.
+- Formulaire : `config = { formId, formUrl, submitUrl }` (`formUrl` : `GET /forms/:id`, ou la route d'aperçu admin ; `submitUrl` : `null` en aperçu). Un formulaire de ligne n'est pas rendu seul : le Tableau ou le Catalogue relié porte `rowForms: [{ formId, title, formUrl, submitUrl }]`, et chaque ligne ou carte de `rowsUrl` porte `rowKeys: { [formId]: valeurDeClé }`.
 
 ### Formulaire côté utilisateur
 ```json

@@ -3,3 +3,4 @@
 export * from './blocks.schema.js';
 export * from './links.schema.js';
 export * from './groups.schema.js';
+export * from './forms.schema.js';

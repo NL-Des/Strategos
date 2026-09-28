@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
   AuditAction,
   AuditTargetType,
+  CellType,
   ErrorCode,
   SourceType,
   type SourceSummary,
@@ -22,9 +23,12 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import {
   ExcelParseError,
   externalRefs,
+  type ParsedCell,
   type ParsedWorkbook,
   parseWorkbook,
 } from './excel-parser.js';
+import type { CellWrite } from './source-write.service.js';
+import { patchWorkbook } from './xlsx-patch.js';
 
 const notFound = () => new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
 
@@ -75,25 +79,10 @@ export class SourcesService {
     file: { buffer: Buffer; originalname: string },
     actor: AuditActor & { kind: 'user' },
   ): Promise<SourceSummary> {
-    const detected = await fileTypeFromBuffer(file.buffer);
-    if (detected?.ext !== 'xlsx') {
-      throw new AppException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorCode.UNSUPPORTED_FILE_TYPE);
-    }
-    let workbook: ParsedWorkbook;
-    try {
-      workbook = await parseWorkbook(file.buffer);
-    } catch (error) {
-      if (error instanceof ExcelParseError) {
-        throw new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.EXCEL_PARSE_FAILED);
-      }
-      throw error;
-    }
+    const workbook = await this.readWorkbook(file.buffer);
     const name = cleanFilename(file.originalname) || 'classeur.xlsx';
-
-    const storagePath = join('sources', `${randomUUID()}.xlsx`);
+    const storagePath = await this.storeFile(file.buffer);
     const absolute = join(config.uploadsDir, storagePath);
-    await mkdir(join(config.uploadsDir, 'sources'), { recursive: true });
-    await writeFile(absolute, file.buffer);
     try {
       const source = await this.prisma.$transaction(
         async (tx) => {
@@ -126,15 +115,87 @@ export class SourcesService {
     }
   }
 
+  /** Classeur `.xlsx` uploadé : `415` si ce n'en est pas un, `422 EXCEL_PARSE_FAILED` s'il est illisible. */
+  async readWorkbook(buffer: Buffer): Promise<ParsedWorkbook> {
+    const detected = await fileTypeFromBuffer(buffer);
+    if (detected?.ext !== 'xlsx') {
+      throw new AppException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorCode.UNSUPPORTED_FILE_TYPE);
+    }
+    try {
+      return await parseWorkbook(buffer);
+    } catch (error) {
+      if (error instanceof ExcelParseError) {
+        throw new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.EXCEL_PARSE_FAILED);
+      }
+      throw error;
+    }
+  }
+
+  /** Fichier d'un Excel uploadé sur le volume `uploads` ; renvoie son chemin relatif. */
+  async storeFile(buffer: Buffer): Promise<string> {
+    const storagePath = join('sources', `${randomUUID()}.xlsx`);
+    await mkdir(join(config.uploadsDir, 'sources'), { recursive: true });
+    await writeFile(join(config.uploadsDir, storagePath), buffer);
+    return storagePath;
+  }
+
   /**
-   * Version de référence d'un Excel uploadé. Met à jour `last_downloaded_at`
-   * (base de l'avertissement de réimport) et trace le téléchargement.
+   * Réimport (08) : le staging et les liaisons de la source sont remplacés par
+   * ceux du nouveau fichier, dans la transaction de l'appelant. Renvoie le
+   * chemin de l'ancien fichier, à supprimer après la validation de la transaction.
    */
-  async download(id: string, actor: AuditActor): Promise<{ path: string; name: string }> {
+  async restage(
+    tx: Prisma.TransactionClient,
+    source: Source,
+    workbook: ParsedWorkbook,
+    storagePath: string,
+  ): Promise<{ oldPath: string; cells: number; links: number }> {
+    const old = source.connectionInfo as unknown as UploadInfo;
+    await tx.stagingCell.deleteMany({ where: { sourceId: source.id } });
+    await tx.cellReference.deleteMany({ where: { sourceId: source.id } });
+    const cells = await this.stage(tx, source.id, workbook);
+    const links = await this.link(tx, source.id, workbook);
+    const info: UploadInfo = { storagePath, sheets: workbook.sheets.map((s) => s.name) };
+    await tx.source.update({
+      where: { id: source.id },
+      data: {
+        connectionInfo: info as unknown as Prisma.InputJsonValue,
+        lastImportedAt: new Date(),
+        version: { increment: 1 },
+      },
+    });
+    return { oldPath: old.storagePath, cells, links };
+  }
+
+  /**
+   * Version de référence d'un Excel uploadé : le fichier importé, où sont
+   * reportées les valeurs écrites depuis (validations). Met à jour
+   * `last_downloaded_at` (base de l'avertissement de réimport) et trace le
+   * téléchargement.
+   */
+  async download(id: string, actor: AuditActor): Promise<{ content: Buffer; name: string }> {
     const source = await this.get(id);
     if (source.type !== SourceType.upload) {
       throw new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.SOURCE_NOT_UPLOAD);
     }
+    const info = source.connectionInfo as unknown as UploadInfo;
+    const original = await readFile(join(config.uploadsDir, info.storagePath));
+    const book = await parseWorkbook(original);
+    const written = await this.writtenSinceImport(id, book);
+    const formulas = new Map(
+      book.sheets.flatMap((sheet) =>
+        sheet.cells.map((c) => [`${sheet.name}|${c.row}|${c.col}`, c.formula] as const),
+      ),
+    );
+    // Rien d'écrit depuis l'import : le fichier est rendu tel quel.
+    const content =
+      written.length === 0
+        ? original
+        : patchWorkbook(
+            original,
+            written,
+            (sheet, row, col) => formulas.get(`${sheet}|${row}|${col}`) ?? undefined,
+          );
     const downloadedAt = new Date();
     await this.prisma.$transaction(async (tx) => {
       await tx.source.update({ where: { id }, data: { lastDownloadedAt: downloadedAt } });
@@ -149,8 +210,39 @@ export class SourcesService {
         after: { name: source.name, lastDownloadedAt: downloadedAt.toISOString() },
       });
     });
-    const info = source.connectionInfo as unknown as UploadInfo;
-    return { path: join(config.uploadsDir, info.storagePath), name: source.name };
+    return { content, name: source.name };
+  }
+
+  /**
+   * Cellules du staging qui diffèrent du fichier importé : valeurs écrites par
+   * Strategos (sans formule), à reporter dans la version téléchargée.
+   */
+  private async writtenSinceImport(sourceId: string, book: ParsedWorkbook): Promise<CellWrite[]> {
+    const inFile = new Map<string, ParsedCell>();
+    for (const sheet of book.sheets) {
+      for (const c of sheet.cells) inFile.set(`${sheet.name}|${c.row}|${c.col}`, c);
+    }
+    const staged = await this.prisma.stagingCell.findMany({ where: { sourceId, formula: null } });
+    return staged.flatMap((c) => {
+      const f = inFile.get(`${c.sheet}|${c.row}|${c.col}`);
+      const number = c.valueNumber === null ? null : Number(c.valueNumber);
+      const same = f
+        ? f.formula === null &&
+          f.type === c.valueType &&
+          f.text === c.valueText &&
+          f.number === number
+        : c.valueType === CellType.empty;
+      return same
+        ? []
+        : [
+            {
+              sheet: c.sheet,
+              row: c.row,
+              col: c.col,
+              value: { type: c.valueType, text: c.valueText, number },
+            },
+          ];
+    });
   }
 
   /**

@@ -10,6 +10,20 @@ const ctx = (personalPageId: string | null = null): ReaderContext => ({
   cell: () => EMPTY_CELL,
   sourceAvailable: () => true,
   rowsUrl: (id) => `/api/v1/blocks/${id}/rows`,
+  form: (id) =>
+    ({
+      ok: { blockId: 'f1', mode: 'ajout' as const, configured: true },
+      brut: { blockId: 'f2', mode: 'ajout' as const, configured: false },
+      ligne: { blockId: 'f3', mode: 'ligne' as const, configured: true },
+    })[id] ?? null,
+  rowForms: (id) =>
+    id === 't'
+      ? [{ formId: 'ligne', title: 'Stock', formUrl: '/api/v1/forms/ligne', submitUrl: null }]
+      : [],
+  formLinks: (id) => ({
+    formUrl: `/api/v1/forms/${id}`,
+    submitUrl: `/api/v1/forms/${id}/submissions`,
+  }),
 });
 
 const row = (block: Row['columns'][number]['block']): Row[] => [
@@ -78,5 +92,29 @@ describe('assemblage', () => {
       config: { src: '/api/v1/media/img', link: null },
     });
     expect(assembleRows(image('supprimee'), ctx())[0]!.columns[0]!.block).toBeNull();
+  });
+
+  it('retire les formulaires non configurés et les formulaires de ligne', () => {
+    const form = (id: string, formId: string) => ({
+      id,
+      type: 'form' as const,
+      config: { formId },
+    });
+    const blocks = (formId: string, id: string) =>
+      assembleRows(row(form(id, formId)), ctx())[0]!.columns[0]!.block;
+    expect(blocks('ok', 'f1')).toEqual({
+      id: 'f1',
+      type: 'form',
+      config: {
+        formId: 'ok',
+        formUrl: '/api/v1/forms/ok',
+        submitUrl: '/api/v1/forms/ok/submissions',
+      },
+    });
+    expect(blocks('brut', 'f2')).toBeNull();
+    expect(blocks('ligne', 'f3')).toBeNull();
+    expect(blocks('inconnu', 'f4')).toBeNull();
+    // Bloc copié d'une autre page : le formulaire appartient à un autre bloc.
+    expect(blocks('ok', 'f9')).toBeNull();
   });
 });

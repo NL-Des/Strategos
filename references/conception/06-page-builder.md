@@ -117,7 +117,7 @@ Image sur laquelle l'administrateur dessine des zones ; un clic sur une zone mè
 - Ce module remplace l'ancien module « Page » et le module « Vue de données ».
 
 ### Formulaire
-Formulaire de modification, de ligne ou d'ajout de l'excel ou du google sheet (détails dans [Formulaires et soumissions](09-formulaires-soumissions.md#formulaires)). Un formulaire de ligne n'est pas placé seul sur la page : il s'ouvre depuis le Tableau ou le Catalogue auquel il est relié.
+Formulaire de modification, de ligne ou d'ajout de l'excel ou du google sheet (détails dans [Formulaires et soumissions](09-formulaires-soumissions.md#formulaires)). Un formulaire de ligne n'est pas affiché seul sur la page : son bloc est placé dans la grille du brouillon (où l'admin le configure), mais il s'ouvre depuis le Tableau ou le Catalogue auquel il est relié.
 - **Réglages** : titre, texte d'introduction, message affiché après l'envoi, puis les champs et leurs mappings (détaillés dans [Formulaires et soumissions](09-formulaires-soumissions.md)).
 - **Rendu** : le formulaire ; « complet » pour un formulaire d'ajout dont la zone est pleine, « fermé » s'il a été fermé par l'admin ou si sa date limite est passée ; masqué tant qu'il n'est pas configuré.
 - **Accès** : quiconque peut lire la page peut soumettre.

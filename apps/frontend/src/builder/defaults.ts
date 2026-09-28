@@ -57,6 +57,9 @@ export function newBlock(type: AvailableBlockType): Block {
           searchable: true,
         },
       };
+    case 'form':
+      // Le formulaire est créé côté serveur quand l'admin choisit son type.
+      return { id: newId(), type, config: { formId: '' } };
   }
 }
 

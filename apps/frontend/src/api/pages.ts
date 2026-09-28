@@ -9,6 +9,7 @@ import type {
   LayoutKind,
   PageConfig,
   Paginated,
+  SavePageDraftResult,
 } from '@strategos/shared';
 import { apiFetch } from './client';
 
@@ -24,7 +25,7 @@ export const getAdminPage = (id: string) => apiFetch<AdminPage>(`/admin/pages/${
 export const savePageDraft = (
   id: string,
   body: { name: string; config: PageConfig; version: number },
-) => apiFetch<AdminPage>(`/admin/pages/${id}/draft`, { method: 'PUT', body });
+) => apiFetch<SavePageDraftResult>(`/admin/pages/${id}/draft`, { method: 'PUT', body });
 /** Aperçu du brouillon ; avec `asGroup`, vu par un membre de ce seul groupe. */
 const previewQuery = (asGroup?: string) => (asGroup ? `?asGroup=${asGroup}` : '');
 export const previewPage = (id: string, asGroup?: string) =>
@@ -32,8 +33,9 @@ export const previewPage = (id: string, asGroup?: string) =>
 /** Header et footer publiés qui encadrent l'aperçu d'une page, vus par l'admin ou par un groupe. */
 export const previewPageLayout = (asGroup?: string) =>
   apiFetch<AssembledLayout>(`/admin/pages/preview/layout${previewQuery(asGroup)}`);
-export const publishPage = (id: string) =>
-  apiFetch<AdminPage>(`/admin/pages/${id}/publish`, { method: 'POST' });
+/** Des soumissions en attente seraient invalidées : `409 CONFIRMATION_REQUIRED` sans `confirm`. */
+export const publishPage = (id: string, confirm = false) =>
+  apiFetch<AdminPage>(`/admin/pages/${id}/publish`, { method: 'POST', body: { confirm } });
 export const deletePage = (id: string) =>
   apiFetch<void>(`/admin/pages/${id}`, { method: 'DELETE' });
 

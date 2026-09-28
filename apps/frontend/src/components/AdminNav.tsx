@@ -1,8 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
+import { pendingCount } from '../api/forms';
 
 const LINKS = [
+  ['/admin/submissions', 'submissions'],
   ['/admin/pages', 'pages'],
   ['/admin/layout/header', 'header'],
   ['/admin/layout/footer', 'footer'],
@@ -15,15 +18,29 @@ const LINKS = [
   ['/admin/audit', 'audit'],
 ] as const;
 
+/** Soumissions en attente : compteur visible en permanence (04 — Tableau de bord). */
+const PENDING_REFRESH_MS = 30_000;
+
 /** Navigation de l'espace d'administration. */
 export function AdminLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
+  const pending = useQuery({
+    queryKey: ['admin', 'submissions', 'count'],
+    queryFn: pendingCount,
+    refetchInterval: PENDING_REFRESH_MS,
+  });
+  const count = pending.data?.count ?? 0;
   return (
     <>
       <nav className="admin-nav" aria-label={t('admin.title')}>
         {LINKS.map(([to, key]) => (
           <NavLink key={to} to={to}>
             {t(`admin.nav.${key}`)}
+            {key === 'submissions' && count > 0 && (
+              <span className="badge" aria-label={t('submissions.admin.pendingCount', { count })}>
+                {count}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

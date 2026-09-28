@@ -2,6 +2,7 @@ import { ALIGNMENTS, type Block } from '@strategos/shared';
 import { useTranslation } from 'react-i18next';
 import { CatalogEditor, TableEditor } from './DataBlockEditors';
 import { newId } from './defaults';
+import { FormEditor } from './FormEditor';
 import { LinkTargetEditor } from './LinkTargetEditor';
 import { MediaPicker } from './MediaPicker';
 import { RichTextEditor } from './RichTextEditor';
@@ -159,5 +160,7 @@ export function BlockEditor({ block, onChange }: Props<Block>) {
       return <TableEditor block={block} onChange={onChange} />;
     case 'catalog':
       return <CatalogEditor block={block} onChange={onChange} />;
+    case 'form':
+      return <FormEditor block={block} onChange={onChange} />;
   }
 }

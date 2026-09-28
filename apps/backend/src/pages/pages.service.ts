@@ -8,10 +8,14 @@ import {
   EMPTY_PAGE_CONFIG,
   ErrorCode,
   type PageConfig,
+  type PublishPreview,
+  type SavePageDraftResult,
 } from '@strategos/shared';
 import type { AuditActor } from '../audit/audit-actor.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
+import { FormsService } from '../forms/forms.service.js';
+import { PageFormsService } from '../forms/page-forms.service.js';
 import type { Page, Prisma, User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Db } from '../prisma/prisma.types.js';
@@ -69,6 +73,8 @@ export class PagesService {
     private readonly themes: ThemesService,
     private readonly readers: ReaderContextService,
     private readonly dataBlocks: DataBlocksService,
+    private readonly forms: FormsService,
+    private readonly pageForms: PageFormsService,
   ) {}
 
   async list(): Promise<AdminPageSummary[]> {
@@ -107,16 +113,25 @@ export class PagesService {
     });
   }
 
-  /** Enregistre le brouillon ; les utilisateurs continuent de voir la version publiée. */
-  async saveDraft(id: string, dto: SavePageDraftDto, actor: AuditActor): Promise<AdminPage> {
+  /**
+   * Enregistre le brouillon ; les utilisateurs continuent de voir la version
+   * publiée. Les avertissements (plage fixe qui ne couvre pas une zone d'ajout)
+   * sont renvoyés sans bloquer.
+   */
+  async saveDraft(
+    id: string,
+    dto: SavePageDraftDto,
+    actor: AuditActor,
+  ): Promise<SavePageDraftResult> {
     const config = validatePageConfig(dto.config);
     await this.dataBlocks.checkReferences({ ...config.zones }, 'config.zones');
+    await this.forms.checkFormBlocks(id, config, 'config.zones');
     if (config.themeId && !(await this.themes.exists(config.themeId))) {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
         fields: { 'config.themeId': ['notFound'] },
       });
     }
-    return this.prisma.$transaction(async (tx) => {
+    const page = await this.prisma.$transaction(async (tx) => {
       const before = await this.getIn(tx, id);
       const { count } = await tx.page.updateMany({
         where: { id, deletedAt: null, version: dto.version },
@@ -137,16 +152,25 @@ export class PagesService {
       });
       return toAdminPage(after);
     });
+    return { ...page, warnings: await this.pageForms.draftWarnings(this.prisma, page, config) };
+  }
+
+  /** Ce que la publication changera : formulaires, soumissions invalidées. */
+  async publishPreview(id: string): Promise<PublishPreview> {
+    const page = await this.getIn(this.prisma, id);
+    return this.pageForms.preview(this.prisma, id, validatePageConfig(page.draftConfig));
   }
 
   /**
-   * Publie le brouillon en une transaction : version en ligne, thème et affichage
-   * du header et du footer. Les formulaires, espaces et chats s'y ajouteront.
+   * Publie le brouillon en une transaction : version en ligne, thème, affichage
+   * du header et du footer, et formulaires de la page. Des soumissions en
+   * attente seraient invalidées → `409 CONFIRMATION_REQUIRED`, sauf `confirm`.
    */
-  async publish(id: string, admin: User, actor: AuditActor): Promise<AdminPage> {
+  async publish(id: string, admin: User, actor: AuditActor, confirm = false): Promise<AdminPage> {
     return this.prisma.$transaction(async (tx) => {
       const before = await this.getIn(tx, id);
       const config = validatePageConfig(before.draftConfig);
+      await this.pageForms.publish(tx, id, config, admin, actor, confirm);
       const themeId =
         config.themeId && (await tx.theme.count({ where: { id: config.themeId } }))
           ? config.themeId

@@ -136,12 +136,23 @@ export interface CatalogBlockConfig extends DataSourceRef {
   searchable: boolean;
 }
 
+/**
+ * Formulaire (06 — Formulaire, 09). Sa définition vit dans `forms`, créée par
+ * `POST /admin/forms` à l'ajout du bloc ; elle suit le brouillon de la page.
+ * Un formulaire de ligne n'est pas rendu seul : il s'ouvre depuis son Tableau
+ * ou son Catalogue.
+ */
+export interface FormBlockConfig {
+  formId: string;
+}
+
 export interface BlockConfigs {
   image: ImageBlockConfig;
   buttons: ButtonsBlockConfig;
   rich_content: RichContentBlockConfig;
   table: TableBlockConfig;
   catalog: CatalogBlockConfig;
+  form: FormBlockConfig;
 }
 
 export type AvailableBlockType = keyof BlockConfigs;
@@ -153,4 +164,5 @@ export const AVAILABLE_BLOCK_TYPES: readonly AvailableBlockType[] = [
   'rich_content',
   'table',
   'catalog',
+  'form',
 ];

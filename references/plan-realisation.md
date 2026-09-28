@@ -216,18 +216,18 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 - Réimport d'un Excel uploadé (annuler, écraser, réappliquer).
 
 **Critères d'acceptation**
-- [ ] Champs automatiques remplis par le serveur ; une valeur envoyée pour eux est ignorée.
-- [ ] La ligne d'ajout est calculée à la validation (première ligne vide de la zone) ; une ligne remplie à la main n'est jamais écrasée.
-- [ ] Zone pleine → `422 ADD_ZONE_FULL`, la soumission reste `pending` et refusable.
-- [ ] Clé absente ou en double → `ROW_KEY_NOT_FOUND` / `ROW_KEY_DUPLICATE` ; mouvement sur une valeur non numérique → `MOVEMENT_NOT_NUMERIC`.
-- [ ] Deux validations simultanées sur une même source ne prennent pas la même ligne ni la même valeur de départ (test de concurrence).
-- [ ] Aucune écriture hors des cellules, colonnes ou zone du formulaire (vérifié côté backend).
-- [ ] Seules les modifications structurelles invalident les soumissions en attente, à la publication, avec leur nombre affiché avant.
-- [ ] Validation automatique : même chemin de code ; un échec remet la soumission en `pending` ; le journal indique « système » comme valideur.
-- [ ] Cellule-formule ciblée → `409 CONFIRMATION_REQUIRED` à la validation ; `needs_recalc` posé transitivement.
-- [ ] Journal : valeur écrite (avant/après pour un mouvement), cellule et source.
-- [ ] Formulaire non configuré → `404` côté utilisateur.
-- [ ] Réimport : `lostValidations` listées ; `overwrite` et `reapply` (dans l'ordre de validation) fonctionnent ; jeton expiré → `409 REIMPORT_TOKEN_EXPIRED` ; choix tracé.
+- [x] Champs automatiques remplis par le serveur ; une valeur envoyée pour eux est ignorée.
+- [x] La ligne d'ajout est calculée à la validation (première ligne vide de la zone) ; une ligne remplie à la main n'est jamais écrasée.
+- [x] Zone pleine → `422 ADD_ZONE_FULL`, la soumission reste `pending` et refusable.
+- [x] Clé absente ou en double → `ROW_KEY_NOT_FOUND` / `ROW_KEY_DUPLICATE` ; mouvement sur une valeur non numérique → `MOVEMENT_NOT_NUMERIC`.
+- [x] Deux validations simultanées sur une même source ne prennent pas la même ligne ni la même valeur de départ (test de concurrence).
+- [x] Aucune écriture hors des cellules, colonnes ou zone du formulaire (vérifié côté backend).
+- [x] Seules les modifications structurelles invalident les soumissions en attente, à la publication, avec leur nombre affiché avant.
+- [x] Validation automatique : même chemin de code ; un échec remet la soumission en `pending` ; le journal indique « système » comme valideur.
+- [x] Cellule-formule ciblée → `409 CONFIRMATION_REQUIRED` à la validation ; `needs_recalc` posé transitivement.
+- [x] Journal : valeur écrite (avant/après pour un mouvement), cellule et source.
+- [x] Formulaire non configuré → `404` côté utilisateur.
+- [x] Réimport : `lostValidations` listées ; `overwrite` et `reapply` (dans l'ordre de validation) fonctionnent ; jeton expiré → `409 REIMPORT_TOKEN_EXPIRED` ; choix tracé.
 
 **Démo** : [Parcours B](conception/12-parcours.md#parcours-b--tournoi-de-guilde-google-sheets-formulaire-dajout) et [Parcours C](conception/12-parcours.md#parcours-c--gestion-de-stock-entreprise-onedrive) rejoués sur un Excel uploadé.
 

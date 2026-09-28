@@ -870,3 +870,106 @@ a.usage {
     linear-gradient(135deg, transparent 45%, var(--t-border, #d9dde5) 45% 55%, transparent 55%),
     var(--t-bg, #f6f7f9);
 }
+
+/* Formulaires (09) */
+.block-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-field.inline {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.field-error {
+  color: var(--danger);
+}
+
+.row-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.row-form-panel {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  background: var(--surface);
+  min-width: min(20rem, 80vw);
+}
+
+.form-editor .field-editor {
+  border-left: 3px solid var(--border);
+}
+
+.admin-nav .badge {
+  margin-left: 0.35rem;
+}
+
+/* Soumissions (04 — Tableau de bord) */
+.submission-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.submission-item.conflict {
+  border-left: 4px solid var(--danger);
+}
+
+.submission-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+}
+
+.status {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-pending {
+  color: var(--accent);
+}
+
+.status-validated,
+.status-modified {
+  color: var(--ok);
+}
+
+.status-rejected,
+.status-invalidated {
+  color: var(--danger);
+}
+
+.submission-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+.submission-values dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.submission-values dd {
+  margin: 0;
+}
+
+/* Bouton qui ouvre un sélecteur de fichier (réimport). */
+.file-button input[type='file'] {
+  display: none;
+}

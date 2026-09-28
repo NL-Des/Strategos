@@ -16,9 +16,12 @@ import type {
   AdminPageSummary,
   AssembledLayout,
   AssembledPage,
+  PublishPreview,
+  SavePageDraftResult,
 } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth } from '../auth/decorators.js';
+import { ConfirmDto } from '../common/confirm.dto.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { CreatePageDto, PreviewQueryDto, SavePageDraftDto } from './pages.dto.js';
 import { LayoutService } from './layout.service.js';
@@ -52,7 +55,7 @@ export class AdminPagesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SavePageDraftDto,
     @Actor() actor: AuditActor,
-  ): Promise<AdminPage> {
+  ): Promise<SavePageDraftResult> {
     return this.pages.saveDraft(id, dto, actor);
   }
 
@@ -74,14 +77,21 @@ export class AdminPagesController {
     return this.pages.preview(id, auth.user, query.asGroup);
   }
 
+  /** Formulaires modifiés et soumissions qui seraient invalidées, avant de publier. */
+  @Get(':id/publish/preview')
+  publishPreview(@Param('id', ParseUUIDPipe) id: string): Promise<PublishPreview> {
+    return this.pages.publishPreview(id);
+  }
+
   @HttpCode(HttpStatus.OK)
   @Post(':id/publish')
   publish(
     @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfirmDto,
     @CurrentAuth() auth: AuthContext,
     @Actor() actor: AuditActor,
   ): Promise<AdminPage> {
-    return this.pages.publish(id, auth.user, actor);
+    return this.pages.publish(id, auth.user, actor, dto.confirm === true);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

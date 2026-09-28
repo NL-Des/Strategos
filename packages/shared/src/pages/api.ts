@@ -1,4 +1,5 @@
 import type { LayoutKind } from '../enums.js';
+import type { Warning } from '../errors.js';
 import type { LayoutConfig, PageConfig } from './structure.js';
 
 /** Ligne de la liste des pages (admin), qui alimente aussi les sélecteurs de liens. */
@@ -20,6 +21,11 @@ export interface AdminPage {
   publishedAt: string | null;
   updatedAt: string;
   version: number;
+}
+
+/** Réponse de `PUT /admin/pages/:id/draft` : avertissements non bloquants en plus. */
+export interface SavePageDraftResult extends AdminPage {
+  warnings: Warning[];
 }
 
 export interface AdminLayoutPart {

@@ -48,6 +48,25 @@ export interface AssembledRichContentBlock {
   error?: BlockError;
 }
 
+/**
+ * Formulaire de ligne relié à un Tableau ou un Catalogue : chaque ligne ou carte
+ * porte sa clé (`rowKeys[formId]`) et affiche « Proposer une modification ».
+ */
+export interface RowFormLink extends FormLinks {
+  formId: string;
+  title: string;
+}
+
+/**
+ * Adresses d'un formulaire : sa définition côté utilisateur (`formUrl`, suivie
+ * de `/prefill?rowKey=` pour un formulaire de ligne) et l'envoi (`submitUrl`,
+ * `null` en aperçu : le brouillon ne reçoit pas de soumissions).
+ */
+export interface FormLinks {
+  formUrl: string;
+  submitUrl: string | null;
+}
+
 /** Tableau : ni source, ni feuille, ni plage ; les lignes se chargent par `rowsUrl`. */
 export interface AssembledTableBlock {
   id: string;
@@ -59,6 +78,7 @@ export interface AssembledTableBlock {
     searchable: boolean;
   };
   rowsUrl: string;
+  rowForms: RowFormLink[];
   error?: BlockError;
 }
 
@@ -74,7 +94,18 @@ export interface AssembledCatalogBlock {
     searchable: boolean;
   };
   rowsUrl: string;
+  rowForms: RowFormLink[];
   error?: BlockError;
+}
+
+/**
+ * Formulaire publié et configuré (hors formulaire de ligne) ; sa définition côté
+ * utilisateur se lit par `GET /forms/:formId`.
+ */
+export interface AssembledFormBlock {
+  id: string;
+  type: 'form';
+  config: FormLinks & { formId: string };
 }
 
 export type AssembledBlock =
@@ -82,7 +113,8 @@ export type AssembledBlock =
   | AssembledButtonsBlock
   | AssembledRichContentBlock
   | AssembledTableBlock
-  | AssembledCatalogBlock;
+  | AssembledCatalogBlock
+  | AssembledFormBlock;
 
 /** Cellule d'une ligne de Tableau ou d'une carte, déjà formatée. */
 export interface RowCell extends CellValue {
@@ -95,6 +127,8 @@ export interface RowCell extends CellValue {
 /** Ligne d'un Tableau (`GET /blocks/:blockId/rows`), colonnes dans l'ordre affiché. */
 export interface TableRow {
   cells: RowCell[];
+  /** Clé de la ligne pour chaque formulaire de ligne relié (`formId` → valeur). */
+  rowKeys?: Record<string, string>;
 }
 
 /** Carte d'un Catalogue ; `image: null` = image par défaut. */
@@ -103,6 +137,7 @@ export interface CatalogCard {
   title: RowCell | null;
   subtitle: RowCell | null;
   details: RowCell[];
+  rowKeys?: Record<string, string>;
 }
 
 export interface AssembledColumn {

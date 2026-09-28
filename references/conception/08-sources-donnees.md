@@ -28,7 +28,7 @@ Strategos lit des valeurs et en écrit, mais **n'exécute aucune formule**.
 
 ### Excel uploadé : version de référence et réimport
 - Une fois uploadé, la **copie dans Strategos est la version de référence** : c'est elle qui reçoit les validations.
-- L'administrateur **télécharge** la version à jour depuis Strategos avant de retravailler le fichier sur son poste.
+- L'administrateur **télécharge** la version à jour depuis Strategos avant de retravailler le fichier sur son poste. C'est le fichier importé, dont les cellules écrites depuis par Strategos sont remplacées directement dans le XML des feuilles (le reste du classeur est gardé tel quel) ; il est marqué pour être entièrement recalculé à l'ouverture dans Excel.
 - **Réimport** : s'il y a eu des validations depuis le dernier téléchargement, Strategos liste ce qui serait perdu et propose :
   - **annuler** ;
   - **écraser** (les validations listées sont perdues) ;
@@ -44,7 +44,7 @@ Moteur Excel/Sheets (**ExcelSyncModule**) :
 - À la lecture d'une page, le backend **suit** ces références via la table pour lire les valeurs, sans reparser ni calculer les formules.
 - **Cache mémoire** (30-60s) pour les sources connectées, invalidé par `source_id`, en particulier après chaque écriture. Il n'y a aucune copie en base pour ces sources.
 - **Staging en base** (`staging_cells`, lignes et colonnes stockées en entiers), réservé aux Excel uploadés. Il conserve la valeur, la formule et un drapeau `needs_recalc`. Après une écriture, `needs_recalc` est posé sur les cellules dont la formule référence, directement ou transitivement, la cellule écrite, y compris via `cell_references`.
-- Réimport : `sources.last_downloaded_at`, et `reimport_previews` pour l'aperçu en deux temps. Les validations postérieures sont retrouvées dans `submissions` ; l'option « réappliquer » les réécrit dans l'ordre de validation.
+- Réimport : `sources.last_downloaded_at`, et `reimport_previews` pour l'aperçu en deux temps. Une validation est « perdue » si elle est postérieure au dernier téléchargement, que sa valeur est encore dans la version de référence et que le nouveau fichier en porte une autre. L'option « réappliquer » les rejoue dans l'ordre de validation, par le même chemin qu'une validation (clé retrouvée, première ligne vide, mouvement appliqué à la nouvelle valeur) ; un échec annule le réimport.
 - À la validation d'une soumission, le backend écrit la valeur brute sur la cellule cible (API Sheets, API Graph ou réécriture de la copie Excel), sans se préoccuper des formules amont — cohérent avec l'écrasement de formule spécifié dans [Formulaires et soumissions](09-formulaires-soumissions.md).
 - OneDrive : enregistrement d'une application Azure (identifiants fournis au déploiement) ; le refresh token de l'admin est stocké **chiffré** en base, rafraîchi automatiquement, et son expiration est signalée dans l'espace admin.
 - La clé du compte de service Google est fournie au déploiement sous forme de fichier secret monté dans le conteneur backend.

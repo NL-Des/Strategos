@@ -31,6 +31,16 @@ export const AuditAction = {
   SOURCE_UPLOAD: 'source.upload',
   SOURCE_DOWNLOAD: 'source.download',
   SOURCE_DELETE: 'source.delete',
+  SOURCE_REIMPORT: 'source.reimport',
+  FORM_CREATE: 'form.create',
+  FORM_UPDATE: 'form.update',
+  FORM_PUBLISH: 'form.publish',
+  FORM_DELETE: 'form.delete',
+  FORM_SETTINGS: 'form.settings',
+  SUBMISSION_VALIDATE: 'submission.validate',
+  SUBMISSION_MODIFY: 'submission.modify',
+  SUBMISSION_REJECT: 'submission.reject',
+  SUBMISSION_INVALIDATE: 'submission.invalidate',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 export const AUDIT_ACTIONS = Object.values(AuditAction);
@@ -43,6 +53,8 @@ export const AuditTargetType = {
   MEDIA: 'media',
   SETTINGS: 'settings',
   SOURCE: 'source',
+  FORM: 'form',
+  SUBMISSION: 'submission',
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];
 export const AUDIT_TARGET_TYPES = Object.values(AuditTargetType);

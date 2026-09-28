@@ -30,6 +30,7 @@ import {
   CELL_FORMATS,
   type CellFormat,
   type DataRange,
+  type FormBlockConfig,
   type ImageBlockConfig,
   type RichContentBlockConfig,
   TABLE_PAGE_SIZES,
@@ -230,6 +231,11 @@ export class CatalogBlockConfigSchema implements CatalogBlockConfig {
   searchable: boolean;
 }
 
+export class FormBlockConfigSchema implements FormBlockConfig {
+  @IsUUID()
+  formId: string;
+}
+
 /** Un schéma par module disponible ; le typage impose d'en avoir un pour chacun. */
 export const BLOCK_CONFIG_SCHEMAS: { [K in AvailableBlockType]: new () => BlockConfigs[K] } = {
   image: ImageBlockConfigSchema,
@@ -237,4 +243,5 @@ export const BLOCK_CONFIG_SCHEMAS: { [K in AvailableBlockType]: new () => BlockC
   rich_content: RichContentBlockConfigSchema,
   table: TableBlockConfigSchema,
   catalog: CatalogBlockConfigSchema,
+  form: FormBlockConfigSchema,
 };

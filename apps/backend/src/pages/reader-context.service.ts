@@ -1,12 +1,20 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ErrorCode, type Row } from '@strategos/shared';
+import { ErrorCode, type FormDefinition, type Row, type RowFormLink } from '@strategos/shared';
+import { isConfigured } from '../forms/form-definition.js';
 import { AppException } from '../common/app-exception.js';
 import type { User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EMPTY_CELL } from '../sources/cell-format.js';
 import { needKey, SourceDataService } from '../sources/source-data.service.js';
-import { collectReferences, type ReaderContext } from './assembler.js';
+import { collectReferences, type FormInfo, type ReaderContext } from './assembler.js';
 import { PageAccessService, type PageReader, readerOf } from './page-access.service.js';
+
+/** Adresses d'un formulaire : en aperçu, le brouillon, et pas d'envoi possible. */
+export function formLinks(formId: string, preview: boolean) {
+  return preview
+    ? { formUrl: `/api/v1/admin/forms/${formId}/preview`, submitUrl: null }
+    : { formUrl: `/api/v1/forms/${formId}`, submitUrl: `/api/v1/forms/${formId}/submissions` };
+}
 
 /** Contexte prêt pour l'assemblage, et sources injoignables à signaler à l'admin. */
 export interface PreparedContext extends ReaderContext {
@@ -87,13 +95,14 @@ export class ReaderContextService {
   private async prepare(rows: Row[], options: Options): Promise<PreparedContext> {
     const refs = collectReferences(rows);
     if (options.personalPageId) refs.pageIds.add(options.personalPageId);
-    const [readable, media, values, sources] = await Promise.all([
+    const [readable, media, values, sources, forms] = await Promise.all([
       'draftsToo' in options.reader
         ? this.existingPages(refs.pageIds)
         : this.access.readablePageIds(options.reader, refs.pageIds),
       this.existingMedia(refs.mediaIds),
       this.data.readCells(refs.cells),
       this.data.describe([...refs.sourceIds]),
+      this.forms(refs.forms, options.preview),
     ]);
     const available = (id: string) =>
       (sources.get(id)?.available ?? false) && !values.unavailable.has(id);
@@ -112,8 +121,42 @@ export class ReaderContextService {
         options.preview
           ? `/api/v1/admin/blocks/${blockId}/rows?preview=true`
           : `/api/v1/blocks/${blockId}/rows`,
+      form: (formId) => forms.info.get(formId) ?? null,
+      rowForms: (blockId) => forms.rowForms.get(blockId) ?? [],
+      formLinks: (formId) => formLinks(formId, options.preview),
       unavailableSources,
     };
+  }
+
+  /**
+   * Formulaires des blocs `form` : version publiée, ou brouillon en aperçu.
+   * Les formulaires de ligne configurés sont rattachés au bloc qu'ils relient.
+   */
+  private async forms(
+    blocks: Map<string, string>,
+    preview: boolean,
+  ): Promise<{ info: Map<string, FormInfo>; rowForms: Map<string, RowFormLink[]> }> {
+    const info = new Map<string, FormInfo>();
+    const rowForms = new Map<string, RowFormLink[]>();
+    if (blocks.size === 0) return { info, rowForms };
+    const forms = await this.prisma.form.findMany({
+      where: { id: { in: [...blocks.keys()] }, deletedAt: null },
+      include: { published: true },
+    });
+    for (const form of forms) {
+      const def = (preview ? form.draftDefinition : form.published?.definition) as
+        FormDefinition | undefined;
+      const configured = !!def && isConfigured(form.mode, def);
+      info.set(form.id, { blockId: form.blockId, mode: form.mode, configured });
+      if (configured && form.mode === 'ligne' && blocks.get(form.id) === form.blockId) {
+        const linked = def!.linkedBlockId!;
+        rowForms.set(linked, [
+          ...(rowForms.get(linked) ?? []),
+          { formId: form.id, title: def!.title, ...formLinks(form.id, preview) },
+        ]);
+      }
+    }
+    return { info, rowForms };
   }
 
   private async existingPages(ids: Set<string>): Promise<Set<string>> {

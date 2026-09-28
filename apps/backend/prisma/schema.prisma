@@ -131,6 +131,9 @@ model User {
   groups         UserGroup[]
   sources        Source[]
   reimports      ReimportPreview[]
+  formVersions   FormVersion[]
+  submissions    Submission[]      @relation("SubmissionAuthor")
+  decisions      Submission[]      @relation("SubmissionDecider")
 
   @@map("users")
 }
@@ -293,6 +296,7 @@ model Page {
   landingOf   Setting[]
   permissions GroupPermission[]
   spaces      DiscussionSpace[]
+  forms       Form[]
 
   @@map("pages")
 }
@@ -407,6 +411,87 @@ model ReimportPreview {
   creator User   @relation(fields: [createdBy], references: [id], onDelete: Restrict)
 
   @@map("reimport_previews")
+}
+
+// 8. Formulaires et soumissions (14 §8). SQL ajouté dans la migration :
+// check (status = 'pending' or decided_at is not null), index GIN partiel
+// (conflict_keys) where status = 'pending', index (user_id, created_at desc).
+
+model Form {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  pageId           String    @map("page_id") @db.Uuid
+  /// Id du bloc `form` dans la page.
+  blockId          String    @unique @map("block_id") @db.Uuid
+  mode             FormMode
+  /// Définition en brouillon : champs, mappings, zone, clé.
+  draftDefinition  Json      @map("draft_definition")
+  /// Version en ligne ; vide = jamais publié.
+  publishedVersion Int?      @map("published_version")
+  isOpen           Boolean   @default(true) @map("is_open")
+  closesAt         DateTime? @map("closes_at") @db.Timestamptz
+  autoValidate     Boolean   @default(false) @map("auto_validate")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+  /// Verrouillage optimiste (≠ `published_version`).
+  version          Int       @default(1)
+
+  page        Page          @relation(fields: [pageId], references: [id], onDelete: Restrict)
+  versions    FormVersion[] @relation("FormVersions")
+  published   FormVersion?  @relation("PublishedFormVersion", fields: [id, publishedVersion], references: [formId, version], onDelete: Restrict, onUpdate: Restrict)
+  submissions Submission[]
+
+  @@map("forms")
+}
+
+model FormVersion {
+  formId      String   @map("form_id") @db.Uuid
+  version     Int
+  /// Définition figée à la publication.
+  definition  Json
+  publishedAt DateTime @default(now()) @map("published_at") @db.Timestamptz
+  publishedBy String   @map("published_by") @db.Uuid
+
+  form        Form         @relation("FormVersions", fields: [formId], references: [id], onDelete: Restrict)
+  publishedOf Form[]       @relation("PublishedFormVersion")
+  publisher   User         @relation(fields: [publishedBy], references: [id], onDelete: Restrict)
+  submissions Submission[]
+
+  @@id([formId, version])
+  @@map("form_versions")
+}
+
+model Submission {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  formId       String           @map("form_id") @db.Uuid
+  formVersion  Int              @map("form_version")
+  userId       String           @map("user_id") @db.Uuid
+  /// Valeurs soumises, y compris les champs automatiques.
+  values       Json
+  /// Valeur de la clé (formulaire de ligne).
+  rowKey       String?          @map("row_key")
+  /// Cellules visées, calculées à la soumission ; les mouvements n'en produisent pas.
+  conflictKeys String[]         @default([]) @map("conflict_keys")
+  status       SubmissionStatus @default(pending)
+  /// Ligne attribuée à un ajout, à la validation.
+  assignedRow  Int?             @map("assigned_row")
+  /// Ce qui a réellement été écrit : `{ values, cells: [{ sourceId, sheet, row, col, before, after, movement? }] }`.
+  written      Json?
+  /// Motif de refus ou d'invalidation.
+  reason       String?
+  decidedAt    DateTime?        @map("decided_at") @db.Timestamptz
+  /// Vide avec `validated` = validation automatique (« système »).
+  decidedBy    String?          @map("decided_by") @db.Uuid
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  form       Form        @relation(fields: [formId], references: [id], onDelete: Restrict)
+  versionRef FormVersion @relation(fields: [formId, formVersion], references: [formId, version], onDelete: Restrict)
+  user       User        @relation("SubmissionAuthor", fields: [userId], references: [id], onDelete: Restrict)
+  decider    User?       @relation("SubmissionDecider", fields: [decidedBy], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([formId, status])
+  @@map("submissions")
 }
 
 // 11. Journal (14 §11). SQL ajouté dans la migration : trigger d'ajout seul.

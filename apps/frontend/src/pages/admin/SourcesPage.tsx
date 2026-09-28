@@ -1,9 +1,16 @@
-import { EXCEL_MAX_BYTES, EXCEL_MIME, type SourceSummary } from '@strategos/shared';
+import {
+  EXCEL_MAX_BYTES,
+  EXCEL_MIME,
+  type ReimportMode,
+  type ReimportPreview,
+  type SourceSummary,
+} from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../../api/client';
+import { confirmReimport, previewReimport } from '../../api/forms';
 import { deleteSource, listSources, sourceDownloadUrl, uploadSource } from '../../api/sources';
 import { ErrorMessage } from '../../components/ErrorMessage';
 
@@ -46,6 +53,23 @@ export function SourcesPage() {
         const [warning] = (error.error.details.warnings ?? []) as Omit<InUse, 'source'>[];
         setInUse({ source, pages: warning?.pages ?? [], layouts: warning?.layouts ?? [] });
       }
+    },
+  });
+  const [reimport, setReimport] = useState<{
+    source: SourceSummary;
+    preview: ReimportPreview;
+  } | null>(null);
+  const reimportPreview = useMutation({
+    mutationFn: ({ source, file }: { source: SourceSummary; file: File }) =>
+      previewReimport(source.id, file).then((preview) => ({ source, preview })),
+    onSuccess: setReimport,
+  });
+  const reimportConfirm = useMutation({
+    mutationFn: (mode: ReimportMode) =>
+      confirmReimport(reimport!.source.id, reimport!.preview.reimportToken, mode),
+    onSuccess: () => {
+      setReimport(null);
+      void refresh();
     },
   });
   const removeError =
@@ -103,7 +127,64 @@ export function SourcesPage() {
         </div>
       )}
 
-      <ErrorMessage error={sources.error ?? removeError} />
+      {reimport && (
+        <div className="card warning" role="alertdialog" aria-labelledby="reimport-title">
+          <h2 id="reimport-title">{t('sources.reimport.title', { name: reimport.source.name })}</h2>
+          {reimport.preview.lostValidations.length === 0 ? (
+            <p>{t('sources.reimport.nothingLost')}</p>
+          ) : (
+            <>
+              <p>
+                {t('sources.reimport.lost', {
+                  count: reimport.preview.lostValidations.length,
+                  date: date(reimport.preview.lastDownloadedAt),
+                })}
+              </p>
+              <ul>
+                {reimport.preview.lostValidations.map((l) => (
+                  <li key={`${l.submissionId}${l.cell}`}>
+                    {t('sources.reimport.item', {
+                      cell: l.cell,
+                      before: l.valueInNewFile ?? '∅',
+                      after: l.validatedValue ?? '∅',
+                      date: date(l.validatedAt),
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <ErrorMessage error={reimportConfirm.error} />
+          <div className="actions">
+            {reimport.preview.lostValidations.length > 0 && (
+              <button
+                type="button"
+                disabled={reimportConfirm.isPending}
+                onClick={() => reimportConfirm.mutate('reapply')}
+              >
+                {t('sources.reimport.reapply')}
+              </button>
+            )}
+            <button
+              type="button"
+              className={reimport.preview.lostValidations.length > 0 ? 'danger' : undefined}
+              disabled={reimportConfirm.isPending}
+              onClick={() => reimportConfirm.mutate('overwrite')}
+            >
+              {t(
+                reimport.preview.lostValidations.length > 0
+                  ? 'sources.reimport.overwrite'
+                  : 'sources.reimport.confirm',
+              )}
+            </button>
+            <button type="button" className="secondary" onClick={() => setReimport(null)}>
+              {t('common.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ErrorMessage error={sources.error ?? removeError ?? reimportPreview.error} />
       <div className="table-wrap">
         <table>
           <thead>
@@ -153,6 +234,20 @@ export function SourcesPage() {
                       >
                         {t('sources.download')}
                       </a>
+                    )}
+                    {source.type === 'upload' && (
+                      <label className="button secondary file-button">
+                        {t('sources.reimport.action')}
+                        <input
+                          type="file"
+                          accept={`.xlsx,${EXCEL_MIME}`}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = '';
+                            if (file) reimportPreview.mutate({ source, file });
+                          }}
+                        />
+                      </label>
                     )}
                     <button
                       type="button"

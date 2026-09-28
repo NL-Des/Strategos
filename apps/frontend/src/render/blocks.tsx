@@ -7,6 +7,7 @@ import type {
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogBlock, SourceUnavailable, TableBlock } from './DataBlocks';
+import { FormBlock } from './FormBlock';
 import { LinkTo } from './LinkTo';
 
 function ImageBlock({ block }: { block: AssembledImageBlock }) {
@@ -70,6 +71,7 @@ const REGISTRY: {
   rich_content: RichContentBlock,
   table: TableBlock,
   catalog: CatalogBlock,
+  form: FormBlock,
 };
 
 export function BlockRenderer({ block }: { block: AssembledBlock }) {

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchRows } from '../api/pages';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Pagination } from '../components/Pagination';
+import { RowFormButtons } from './FormBlock';
 
 /** Source injoignable : le module l'annonce, le reste de la page s'affiche. */
 export function SourceUnavailable() {
@@ -154,6 +155,11 @@ export function TableBlock({ block }: { block: AssembledTableBlock }) {
                     <Cell cell={cell} />
                   </td>
                 ))}
+                {block.rowForms.length > 0 && (
+                  <td>
+                    <RowFormButtons forms={block.rowForms} rowKeys={row.rowKeys} />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -220,6 +226,7 @@ export function CatalogBlock({ block }: { block: AssembledCatalogBlock }) {
                   ))}
                 </dl>
               )}
+              <RowFormButtons forms={block.rowForms} rowKeys={card.rowKeys} />
             </div>
           </article>
         ))}

@@ -52,8 +52,8 @@ export class AdminSourcesController {
     @Actor() actor: AuditActor,
     @Res() res: Response,
   ): Promise<void> {
-    const { path, name } = await this.sources.download(id, actor);
-    res.download(path, name, { headers: { 'Content-Type': EXCEL_MIME } });
+    const { content, name } = await this.sources.download(id, actor);
+    res.attachment(name).type(EXCEL_MIME).send(content);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

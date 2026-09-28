@@ -7,6 +7,7 @@ import { AppLayout } from './components/AppLayout';
 import { ChangeCredentialsPage } from './pages/ChangeCredentialsPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { MySubmissionsPage } from './pages/MySubmissionsPage';
 import { PageRoute } from './pages/PageRoute';
 import { ProfilePage } from './pages/ProfilePage';
 
@@ -27,6 +28,7 @@ const ResourceRightsPage = admin(
 );
 const RightsPage = admin(() => import('./pages/admin/RightsPage'), 'RightsPage');
 const SourcesPage = admin(() => import('./pages/admin/SourcesPage'), 'SourcesPage');
+const SubmissionsPage = admin(() => import('./pages/admin/SubmissionsPage'), 'SubmissionsPage');
 const SettingsPage = admin(() => import('./pages/admin/SettingsPage'), 'SettingsPage');
 const UserPage = admin(() => import('./pages/admin/UserPage'), 'UserPage');
 const UsersPage = admin(() => import('./pages/admin/UsersPage'), 'UsersPage');
@@ -66,6 +68,7 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/layout/:kind', <LayoutEditorPage />],
   ['/admin/media', <MediaPage />],
   ['/admin/sources', <SourcesPage />],
+  ['/admin/submissions', <SubmissionsPage />],
   ['/admin/users', <UsersPage />],
   ['/admin/users/:id', <UserPage />],
   ['/admin/groups', <GroupsPage />],
@@ -94,6 +97,14 @@ export function App() {
           element={
             <Framed>
               <ProfilePage />
+            </Framed>
+          }
+        />
+        <Route
+          path="/submissions"
+          element={
+            <Framed>
+              <MySubmissionsPage />
             </Framed>
           }
         />

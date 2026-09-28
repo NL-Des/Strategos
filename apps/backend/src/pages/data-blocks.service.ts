@@ -6,6 +6,7 @@ import {
   type CellFormat,
   columnNumber,
   ErrorCode,
+  type FormDefinition,
   type LayoutConfig,
   PAGE_SIZE_MAX,
   type PageConfig,
@@ -15,6 +16,7 @@ import {
   type TableRow,
 } from '@strategos/shared';
 import { AppException } from '../common/app-exception.js';
+import { isConfigured } from '../forms/form-definition.js';
 import type { User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
@@ -45,6 +47,12 @@ export interface RowsQuery {
 }
 
 const notFound = () => new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
+
+/** Formulaire de ligne relié à un module : sa clé est renvoyée avec chaque ligne. */
+interface RowForm {
+  formId: string;
+  keyCol: number;
+}
 
 /** Formats triés comme des nombres (dates : numéro de série). */
 const NUMERIC_FORMATS: readonly CellFormat[] = ['number', 'currency', 'date'];
@@ -115,14 +123,38 @@ export class DataBlocksService {
       const readable = await this.access.readablePageIds(readerOf(user), [found.pageId]);
       if (!readable.has(found.pageId)) throw notFound();
     }
-    return this.rows(found.block, query);
+    const forms = found.pageId ? await this.rowForms(found.pageId, blockId, false) : [];
+    return this.rows(found.block, query, forms);
   }
 
   /** Lignes d'un module de brouillon (aperçu admin), ou de la version publiée. */
   async previewRows(blockId: string, query: RowsQuery): Promise<Paginated<TableRow | CatalogCard>> {
-    const block = (await this.findDraft(blockId)) ?? (await this.findPublished(blockId))?.block;
-    if (!block) throw notFound();
-    return this.rows(block, query);
+    const draft = await this.findDraft(blockId);
+    const found = draft ?? (await this.findPublished(blockId));
+    if (!found) throw notFound();
+    const forms = found.pageId ? await this.rowForms(found.pageId, blockId, !!draft) : [];
+    return this.rows(found.block, query, forms);
+  }
+
+  /**
+   * Formulaires de ligne configurés qui relient ce module et dont le bloc est
+   * sur la même version de la page (publiée, ou brouillon en aperçu).
+   */
+  private async rowForms(pageId: string, blockId: string, draft: boolean): Promise<RowForm[]> {
+    const page = await this.prisma.page.findUnique({ where: { id: pageId } });
+    const config = (draft ? page?.draftConfig : page?.publishedConfig) as PageConfig | null;
+    const forms = await this.prisma.form.findMany({
+      where: { pageId, deletedAt: null, mode: 'ligne' },
+      include: { published: true },
+    });
+    return forms.flatMap((form) => {
+      const def = (draft ? form.draftDefinition : form.published?.definition) as
+        FormDefinition | undefined;
+      const onPage = blockOfPage(config, form.blockId)?.type === 'form';
+      return def && onPage && def.linkedBlockId === blockId && isConfigured('ligne', def)
+        ? [{ formId: form.id, keyCol: columnNumber(def.keyCol!) }]
+        : [];
+    });
   }
 
   /**
@@ -165,7 +197,11 @@ export class DataBlocksService {
     }
   }
 
-  private async rows(block: Block, query: RowsQuery): Promise<Paginated<TableRow | CatalogCard>> {
+  private async rows(
+    block: Block,
+    query: RowsQuery,
+    rowForms: RowForm[],
+  ): Promise<Paginated<TableRow | CatalogCard>> {
     if (block.type !== 'table' && block.type !== 'catalog') throw notFound();
     const config = block.config;
     const pageSize = Math.min(query.pageSize ?? config.pageSize, PAGE_SIZE_MAX);
@@ -173,7 +209,12 @@ export class DataBlocksService {
 
     let lines: StoredCell[][];
     try {
-      lines = await this.readLines(config, columns);
+      // Colonnes clés des formulaires de ligne lues en plus, après les colonnes affichées.
+      lines = await this.readLines(
+        config,
+        columns,
+        rowForms.map((f) => ({ col: f.keyCol })),
+      );
     } catch (error) {
       if (error instanceof SourceUnavailableError) {
         throw new AppException(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.SOURCE_UNAVAILABLE);
@@ -185,11 +226,13 @@ export class DataBlocksService {
     const q = query.q?.trim().toLocaleLowerCase('fr');
     if (q && config.searchable) {
       lines = lines.filter((line) =>
-        line.some(
-          (cell, i) =>
-            columns[i]!.format !== 'image' &&
-            formatText(cell, columns[i]!.format).toLocaleLowerCase('fr').includes(q),
-        ),
+        line
+          .slice(0, columns.length)
+          .some(
+            (cell, i) =>
+              columns[i]!.format !== 'image' &&
+              formatText(cell, columns[i]!.format).toLocaleLowerCase('fr').includes(q),
+          ),
       );
     }
     const sort = /^(\d+):(asc|desc)$/.exec(query.sort ?? '');
@@ -208,13 +251,34 @@ export class DataBlocksService {
     }
 
     const slice = lines.slice((query.page - 1) * pageSize, query.page * pageSize);
-    const imageUrl = imageResolver(await this.mediaByName(slice, columns));
+    const imageUrl = imageResolver(
+      await this.mediaByName(
+        slice.map((line) => line.slice(0, columns.length)),
+        columns,
+      ),
+    );
     const cells = (line: StoredCell[]) =>
-      line.map((cell, i) => formatRowCell(cell, columns[i]!.format, imageUrl));
+      line
+        .slice(0, columns.length)
+        .map((cell, i) => formatRowCell(cell, columns[i]!.format, imageUrl));
+    const keys = (line: StoredCell[]) =>
+      rowForms.length > 0
+        ? {
+            rowKeys: Object.fromEntries(
+              rowForms.map((f, i) => [
+                f.formId,
+                formatText(line[columns.length + i]!, 'text').trim(),
+              ]),
+            ),
+          }
+        : {};
     const items =
       block.type === 'table'
-        ? slice.map((line) => ({ cells: cells(line) }))
-        : slice.map((line) => this.card(config as CatalogBlockConfig, cells(line)));
+        ? slice.map((line) => ({ cells: cells(line), ...keys(line) }))
+        : slice.map((line) => ({
+            ...this.card(config as CatalogBlockConfig, cells(line)),
+            ...keys(line),
+          }));
     return { items, total: lines.length, page: query.page, pageSize };
   }
 
@@ -230,6 +294,7 @@ export class DataBlocksService {
   private async readLines(
     config: TableBlockConfig | CatalogBlockConfig,
     columns: { col: number }[],
+    extra: { col: number }[] = [],
   ): Promise<StoredCell[][]> {
     const cols = rangeColumns(config);
     const last =
@@ -245,11 +310,22 @@ export class DataBlocksService {
     if (!rect) return [];
     const top = rect.top + (config.headerRow ? 1 : 0);
     if (rect.bottom < top) return [];
-    const read = await this.data.readRect(config.sourceId, config.sheet, { ...rect, top });
+    const wanted = [...columns, ...extra].map((c) => c.col);
+    const read = await this.data.readRect(config.sourceId, config.sheet, {
+      ...rect,
+      top,
+      left: Math.min(rect.left, ...wanted),
+      right: Math.max(rect.right, ...wanted),
+    });
     const lines: StoredCell[][] = [];
     for (let row = top; row <= rect.bottom; row++) {
       const line = columns.map(({ col }) => read.get(positionKey(row, col)) ?? EMPTY_CELL);
-      if (line.some((cell) => cell.type !== 'empty')) lines.push(line);
+      if (line.some((cell) => cell.type !== 'empty')) {
+        lines.push([
+          ...line,
+          ...extra.map(({ col }) => read.get(positionKey(row, col)) ?? EMPTY_CELL),
+        ]);
+      }
     }
     return lines;
   }
@@ -299,19 +375,25 @@ export class DataBlocksService {
   }
 
   /** Module d'un brouillon de page ou du header/footer. */
-  private async findDraft(blockId: string): Promise<Block | null> {
-    const pages = await this.prisma.$queryRaw<{ config: PageConfig }[]>`
-      SELECT draft_config AS config FROM pages
+  private async findDraft(
+    blockId: string,
+  ): Promise<{ block: Block; pageId: string | null } | null> {
+    const pages = await this.prisma.$queryRaw<{ id: string; config: PageConfig }[]>`
+      SELECT id, draft_config AS config FROM pages
       WHERE deleted_at IS NULL
         AND jsonb_path_exists(draft_config, '$.zones.*[*].columns[*].block ? (@.id == $id)',
                               jsonb_build_object('id', ${blockId}::text))
       LIMIT 1`;
-    if (pages[0]) return blockOfPage(pages[0].config, blockId);
+    if (pages[0]) {
+      const block = blockOfPage(pages[0].config, blockId);
+      return block && { block, pageId: pages[0].id };
+    }
     const parts = await this.prisma.$queryRaw<{ config: LayoutConfig }[]>`
       SELECT draft_config AS config FROM layout_parts
       WHERE jsonb_path_exists(draft_config, '$.rows[*].columns[*].block ? (@.id == $id)',
                               jsonb_build_object('id', ${blockId}::text))
       LIMIT 1`;
-    return parts[0] ? findBlock(parts[0].config.rows, blockId) : null;
+    const block = parts[0] ? findBlock(parts[0].config.rows, blockId) : null;
+    return block && { block, pageId: null };
   }
 }

@@ -8,6 +8,7 @@ import {
 } from '@strategos/shared';
 import type { Prisma, Source } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { Db } from '../prisma/prisma.types.js';
 import { EMPTY_CELL, type StoredCell } from './cell-format.js';
 import { pureExternalRef } from './excel-parser.js';
 
@@ -40,8 +41,8 @@ function isUsable(source: Source): boolean {
 }
 
 /**
- * Lecture des sources (08) : l'interface commune aux modules de page et,
- * plus tard, aux formulaires. Les Excel uploadés sont lus dans le staging ; les
+ * Lecture des sources (08) : l'interface commune aux modules de page et aux
+ * formulaires. Les Excel uploadés sont lus dans le staging ; les
  * Google Sheets et OneDrive s'y brancheront (étape 7) sans que les appelants
  * connaissent le type de source.
  */
@@ -49,13 +50,50 @@ function isUsable(source: Source): boolean {
 export class SourceDataService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Cellules non vides d'un rectangle, par `positionKey` ; les absentes sont vides. */
-  async readRect(sourceId: string, sheet: string, rect: Rect): Promise<Map<string, StoredCell>> {
-    await this.usableSource(sourceId);
-    return this.readStaging(sourceId, sheet, {
-      row: { gte: rect.top, lte: rect.bottom },
-      col: { gte: rect.left, lte: rect.right },
+  /**
+   * Cellules non vides d'un rectangle, par `positionKey` ; les absentes sont vides.
+   * `db` : client de la transaction d'une écriture (validation d'une soumission).
+   */
+  async readRect(
+    sourceId: string,
+    sheet: string,
+    rect: Rect,
+    db: Db = this.prisma,
+  ): Promise<Map<string, StoredCell>> {
+    await this.usableSource(sourceId, db);
+    return this.readStaging(
+      sourceId,
+      sheet,
+      { row: { gte: rect.top, lte: rect.bottom }, col: { gte: rect.left, lte: rect.right } },
+      0,
+      db,
+    );
+  }
+
+  /**
+   * Lignes de `top..bottom` dont au moins une des colonnes `cols` est remplie
+   * (valeur ou formule) : sert à trouver la première ligne vide d'une zone d'ajout.
+   */
+  async filledRows(
+    sourceId: string,
+    sheet: string,
+    cols: number[],
+    rows: { top: number; bottom: number },
+    db: Db = this.prisma,
+  ): Promise<Set<number>> {
+    await this.usableSource(sourceId, db);
+    const cells = await db.stagingCell.findMany({
+      where: {
+        sourceId,
+        sheet,
+        row: { gte: rows.top, lte: rows.bottom },
+        col: { in: cols },
+        OR: [{ valueType: { not: CellType.empty } }, { formula: { not: null } }],
+      },
+      select: { row: true },
+      distinct: ['row'],
     });
+    return new Set(cells.map((c) => c.row));
   }
 
   /** Dernière ligne remplie des colonnes `left..right` à partir de `startRow` (plage extensible). */
@@ -64,9 +102,10 @@ export class SourceDataService {
     sheet: string,
     cols: { left: number; right: number },
     startRow: number,
+    db: Db = this.prisma,
   ): Promise<number | null> {
-    await this.usableSource(sourceId);
-    const { _max } = await this.prisma.stagingCell.aggregate({
+    await this.usableSource(sourceId, db);
+    const { _max } = await db.stagingCell.aggregate({
       where: {
         sourceId,
         sheet,
@@ -119,8 +158,9 @@ export class SourceDataService {
     return new Map(sources.map((s) => [s.id, { name: s.name, available: isUsable(s) }]));
   }
 
-  private async usableSource(sourceId: string): Promise<Source> {
-    const source = await this.prisma.source.findUnique({ where: { id: sourceId } });
+  /** Source lisible, sinon `SourceUnavailableError`. */
+  async usableSource(sourceId: string, db: Db = this.prisma): Promise<Source> {
+    const source = await db.source.findUnique({ where: { id: sourceId } });
     if (!source || !isUsable(source)) throw new SourceUnavailableError(sourceId);
     return source;
   }
@@ -130,12 +170,14 @@ export class SourceDataService {
     sheet: string,
     positions: CellPosition[],
     depth: number,
+    db: Db = this.prisma,
   ): Promise<Map<string, StoredCell>> {
     return this.readStaging(
       sourceId,
       sheet,
       { OR: positions.map(({ row, col }) => ({ row, col })) },
       depth,
+      db,
     );
   }
 
@@ -150,8 +192,9 @@ export class SourceDataService {
     sheet: string,
     where: Prisma.StagingCellWhereInput,
     depth = 0,
+    db: Db = this.prisma,
   ): Promise<Map<string, StoredCell>> {
-    const rows = await this.prisma.stagingCell.findMany({ where: { sourceId, sheet, ...where } });
+    const rows = await db.stagingCell.findMany({ where: { sourceId, sheet, ...where } });
     const cells = new Map<string, StoredCell>();
     const linked: { row: number; col: number }[] = [];
     for (const r of rows) {
@@ -165,20 +208,26 @@ export class SourceDataService {
     }
     if (linked.length === 0 || depth >= MAX_LINK_DEPTH) return cells;
 
-    const references = await this.prisma.cellReference.findMany({
+    const references = await db.cellReference.findMany({
       where: { sourceId, sheet, OR: linked },
     });
     for (const ref of references) {
       const target = parseCellRef(ref.referencedRange);
       if (!target) continue;
       try {
-        await this.usableSource(ref.referencedSourceId);
+        await this.usableSource(ref.referencedSourceId, db);
       } catch (error) {
         if (error instanceof SourceUnavailableError) continue;
         throw error;
       }
       const value = (
-        await this.readPositions(ref.referencedSourceId, ref.referencedSheet, [target], depth + 1)
+        await this.readPositions(
+          ref.referencedSourceId,
+          ref.referencedSheet,
+          [target],
+          depth + 1,
+          db,
+        )
       ).get(positionKey(target.row, target.col));
       const own = cells.get(positionKey(ref.row, ref.col))!;
       cells.set(positionKey(ref.row, ref.col), {

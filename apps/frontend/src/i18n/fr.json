@@ -10,12 +10,15 @@
     "pageOf": "Page {{page}} sur {{total}}",
     "yes": "Oui",
     "no": "Non",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "confirm": "Confirmer"
   },
   "account": {
     "menu": "Menu du compte",
     "logout": "Se déconnecter",
-    "profile": "Profil"
+    "profile": "Profil",
+    "submissions": "Mes soumissions"
   },
   "login": {
     "title": "Connexion",
@@ -97,7 +100,8 @@
       "groups": "Groupes",
       "rights": "Droits",
       "settings": "Réglages",
-      "audit": "Journal"
+      "audit": "Journal",
+      "submissions": "Soumissions"
     }
   },
   "fields": {
@@ -193,7 +197,15 @@
     "FILE_TOO_LARGE": "Le fichier est trop volumineux.",
     "UNSUPPORTED_FILE_TYPE": "Ce type de fichier n’est pas accepté.",
     "EXCEL_PARSE_FAILED": "Ce fichier Excel n’a pas pu être lu. Vérifiez qu’il s’agit bien d’un classeur .xlsx.",
-    "SOURCE_NOT_UPLOAD": "Cette action ne concerne que les fichiers Excel uploadés."
+    "SOURCE_NOT_UPLOAD": "Cette action ne concerne que les fichiers Excel uploadés.",
+    "FORM_CLOSED": "Ce formulaire est fermé.",
+    "FORM_FULL": "Ce formulaire est complet.",
+    "ADD_ZONE_FULL": "La zone d’ajout est pleine : cette soumission ne peut plus être validée, seulement refusée.",
+    "ROW_KEY_NOT_FOUND": "La ligne visée est introuvable.",
+    "ROW_KEY_DUPLICATE": "Plusieurs lignes portent cette clé : corrigez le document avant de valider.",
+    "MOVEMENT_NOT_NUMERIC": "La valeur actuelle n’est pas un nombre : le mouvement ne peut pas être appliqué.",
+    "SUBMISSION_NOT_PENDING": "Cette soumission a déjà été traitée.",
+    "REIMPORT_TOKEN_EXPIRED": "Cet aperçu de réimport a expiré : recommencez."
   },
   "audit": {
     "title": "Journal des modifications",
@@ -241,7 +253,17 @@
       "settings.update": "Modification des réglages",
       "source.upload": "Ajout d’une source",
       "source.download": "Téléchargement d’une source",
-      "source.delete": "Retrait d’une source"
+      "source.delete": "Retrait d’une source",
+      "source.reimport": "Réimport du fichier",
+      "form.create": "Création du formulaire",
+      "form.update": "Modification du brouillon du formulaire",
+      "form.publish": "Publication du formulaire",
+      "form.delete": "Suppression du formulaire",
+      "form.settings": "Réglage immédiat du formulaire",
+      "submission.validate": "Validation de la soumission",
+      "submission.modify": "Validation avec modification",
+      "submission.reject": "Refus de la soumission",
+      "submission.invalidate": "Invalidation des soumissions en attente"
     },
     "targetTypes": {
       "user": "Compte",
@@ -250,7 +272,9 @@
       "layout": "Header/footer",
       "media": "Image",
       "settings": "Réglages",
-      "source": "Source"
+      "source": "Source",
+      "form": "Formulaire",
+      "submission": "Soumission"
     },
     "fields": {
       "username": "Pseudo",
@@ -456,11 +480,90 @@
         "image": "Image",
         "link": "Lien"
       }
+    },
+    "publishInvalidates_one": "La publication invalidera 1 soumission en attente. Publier quand même ?",
+    "publishInvalidates_other": "La publication invalidera {{count}} soumissions en attente. Publier quand même ?",
+    "form": {
+      "mode": "Type de formulaire",
+      "modes": {
+        "modification": "Modification",
+        "ligne": "Ligne",
+        "ajout": "Ajout"
+      },
+      "modeHints": {
+        "modification": "Chaque champ modifie une cellule précise du document.",
+        "ligne": "Modifie une ligne parmi d’autres, retrouvée par sa clé ; s’ouvre depuis un tableau ou un catalogue.",
+        "ajout": "Propose une nouvelle ligne dans une zone réservée du document."
+      },
+      "create": "Créer le formulaire",
+      "configured": "configuré",
+      "notConfigured": "non configuré : il n’est pas affiché",
+      "neverPublished": "jamais publié",
+      "texts": "Textes",
+      "title": "Titre",
+      "intro": "Texte d’introduction",
+      "successMessage": "Message après l’envoi",
+      "linkedBlock": "Tableau ou catalogue relié",
+      "chooseLinkedBlock": "Choisir un module…",
+      "linkedBlockHint": "Un module de la même source et de la même feuille, sur cette page.",
+      "keyCol": "Colonne clé",
+      "rowStart": "Première ligne",
+      "rowEnd": "Dernière ligne (vide : jusqu’à la dernière remplie)",
+      "startRow": "Ligne de départ",
+      "maxNewRows": "Nombre maximum de lignes",
+      "field": "Champ {{n}}",
+      "label": "Libellé",
+      "key": "Clé",
+      "cell": "Cellule",
+      "col": "Colonne",
+      "help": "Texte d’aide",
+      "type": "Type",
+      "types": {
+        "text": "Texte court",
+        "textarea": "Texte long",
+        "number": "Nombre",
+        "date": "Date",
+        "checkbox": "Case à cocher",
+        "select": "Liste déroulante"
+      },
+      "auto": "Rempli automatiquement",
+      "autoNone": "Non",
+      "autos": {
+        "pseudo": "Pseudo de l’auteur",
+        "date": "Date de soumission"
+      },
+      "required": "Obligatoire",
+      "movement": "Mouvement (quantité à ajouter ou retirer)",
+      "maxLength": "Longueur maximale",
+      "min": "Minimum",
+      "max": "Maximum",
+      "optionsKind": "Options",
+      "optionsList": "Saisies ici",
+      "optionsRange": "Lues dans une plage du document",
+      "optionsValues": "Une option par ligne",
+      "addField": "Ajouter un champ",
+      "removeField": "Retirer le champ",
+      "save": "Enregistrer le formulaire",
+      "saved": "Formulaire enregistré en brouillon : il changera à la publication de la page.",
+      "wouldInvalidate_one": "1 soumission en attente sera invalidée à la publication.",
+      "wouldInvalidate_other": "{{count}} soumissions en attente seront invalidées à la publication.",
+      "operational": "Réglages immédiats",
+      "operationalHint": "Ils prennent effet tout de suite, sans publication.",
+      "isOpen": "Ouvert.",
+      "isClosed": "Fermé.",
+      "open": "Rouvrir",
+      "close": "Fermer",
+      "closesAt": "Date limite",
+      "autoValidate": "Validation automatique (les soumissions sont écrites sans passer par vous)",
+      "zoneItem": "« {{form}} » sur la page « {{page}} »"
     }
   },
   "warnings": {
     "MEDIA_IN_USE": "L’image « {{filename}} » est encore utilisée ici. Si vous la supprimez, les modules qui l’affichent seront masqués :",
-    "SOURCE_IN_USE": "La source « {{name}} » est encore utilisée par :"
+    "SOURCE_IN_USE": "La source « {{name}} » est encore utilisée par :",
+    "FORMULA_CELL_TARGETED": "Une cellule visée contient une formule ou une liaison : elle sera remplacée par une valeur.",
+    "ADD_ZONE_NOT_COVERED": "Un tableau à plage fixe ne couvre pas la zone d’un formulaire d’ajout : les lignes ajoutées n’y apparaîtront pas.",
+    "SUBMISSIONS_INVALIDATED": "La publication invalidera des soumissions en attente."
   },
   "rights": {
     "title": "Droits",
@@ -533,6 +636,17 @@
       "ok": "Joignable",
       "unavailable": "Injoignable",
       "auth_expired": "Connexion expirée"
+    },
+    "reimport": {
+      "action": "Réimporter",
+      "title": "Réimporter « {{name}} »",
+      "nothingLost": "Aucune validation ne serait perdue.",
+      "lost_one": "1 validation faite depuis le dernier téléchargement ({{date}}) serait perdue :",
+      "lost_other": "{{count}} validations faites depuis le dernier téléchargement ({{date}}) seraient perdues :",
+      "item": "{{cell}} : {{before}} dans le nouveau fichier, {{after}} validé le {{date}}",
+      "reapply": "Réappliquer les validations",
+      "overwrite": "Écraser (les validations sont perdues)",
+      "confirm": "Réimporter"
     }
   },
   "render": {
@@ -542,5 +656,69 @@
     "search": "Rechercher",
     "noRows": "Aucune ligne.",
     "image": "Image"
+  },
+  "forms": {
+    "state": {
+      "closed": "Ce formulaire est fermé.",
+      "full": "Ce formulaire est complet."
+    },
+    "closesAt": "Ouvert jusqu’au {{date}}",
+    "sent": "Votre proposition a été envoyée.",
+    "again": "Nouvelle proposition",
+    "submit": "Envoyer",
+    "previewOnly": "Aperçu : l’envoi n’est possible qu’une fois la page publiée.",
+    "movementHint": "Quantité à ajouter (ex. 5) ou à retirer (ex. −3).",
+    "proposeChange": "Proposer une modification"
+  },
+  "submissions": {
+    "status": {
+      "pending": "En attente",
+      "validated": "Validée",
+      "rejected": "Refusée",
+      "modified": "Modifiée par l’admin",
+      "invalidated": "Invalidée par un changement du formulaire"
+    },
+    "reason": "Motif : {{reason}}",
+    "reasons": {
+      "form_changed": "le formulaire a changé, proposez à nouveau",
+      "form_deleted": "le formulaire a été retiré"
+    },
+    "decidedAt": "Traitée le {{date}}",
+    "mine": {
+      "title": "Mes soumissions",
+      "empty": "Vous n’avez encore rien proposé."
+    },
+    "admin": {
+      "title": "Soumissions",
+      "intro": "Propositions des utilisateurs : validez-les pour les écrire dans le document, modifiez-les ou refusez-les.",
+      "status": "Statut",
+      "all": "Tous",
+      "page": "Page",
+      "from": "Du",
+      "to": "Au",
+      "sort": "Ordre",
+      "oldest": "Plus anciennes d’abord",
+      "newest": "Plus récentes d’abord",
+      "allUsers": "Tous les utilisateurs",
+      "empty": "Aucune soumission pour ces filtres.",
+      "openPage": "page",
+      "rowKey": "Ligne : {{key}}",
+      "conflict_one": "En conflit avec 1 autre soumission en attente sur la même cellule.",
+      "conflict_other": "En conflit avec {{count}} autres soumissions en attente sur les mêmes cellules.",
+      "field": "Champ",
+      "cell": "Cellule",
+      "current": "Valeur actuelle",
+      "written": "Valeur écrite",
+      "proposed": "Proposé",
+      "rowAtValidation": "ligne attribuée à la validation",
+      "validate": "Valider",
+      "validateAnyway": "Valider quand même",
+      "modify": "Modifier",
+      "validateModified": "Valider avec ces valeurs",
+      "reject": "Refuser",
+      "rejectReason": "Motif du refus (facultatif) :",
+      "pendingCount_one": "1 soumission en attente",
+      "pendingCount_other": "{{count}} soumissions en attente"
+    }
   }
 }

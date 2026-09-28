@@ -354,7 +354,7 @@ FK composite `(id, published_version)` → `form_versions`, pour garantir que la
 | `published_at` | timestamptz | | `now()` | |
 | `published_by` | uuid | | — | FK `users` |
 
-Contenu de `definition` : `fields[]` (clé, libellé, type, règles, options saisies ou `{ sourceId, sheet, range }`, `auto`, `movement`, cible : cellule `{ sheet, row, col }` ou colonne `{ col }`) ; selon le mode, `sourceId`, `sheet`, `range`, `keyCol`, `linkedBlockId` (ligne) ou `startRow`, `maxNewRows` (ajout).
+Contenu de `definition` (`FormDefinition` dans `packages/shared`) : `title`, `intro`, `successMessage`, `sourceId`, `sheet` (une feuille par formulaire), `fields[]` (clé, libellé, aide, type, règles, options saisies `{ kind: "list", values }` ou lues `{ kind: "range", sourceId, sheet, range }`, `auto`, `movement`, cible : cellule `cell` « B2 » en modification, colonne `col` « C » en ligne ou ajout) ; selon le mode, `rowStart`, `rowEnd` (vide : jusqu'à la dernière ligne remplie), `keyCol`, `linkedBlockId` (ligne) ou `startRow`, `maxNewRows` (ajout). Le bloc `form` de la page ne porte que `{ formId }`.
 
 ### `submissions`
 | Colonne | Type | N | Défaut | Contrainte / rôle |
@@ -365,10 +365,10 @@ Contenu de `definition` : `fields[]` (clé, libellé, type, règles, options sai
 | `user_id` | uuid | | — | FK `users` |
 | `values` | jsonb | | — | Valeurs soumises, y compris les champs automatiques |
 | `row_key` | text | N | — | Valeur de la clé (formulaire de ligne) |
-| `conflict_keys` | text[] | | `'{}'` | Cellules visées, calculées à la soumission (ex. `src:Stock:r5:c4`, `src:Stock:key=137:c4`). Les champs « mouvement » n'en produisent pas |
+| `conflict_keys` | text[] | | `'{}'` | Cellules visées, calculées à la soumission (ex. `src:Stock:r5:c4`, `src:Stock:key=137:c4`). Les champs « mouvement », les champs laissés vides et les formulaires d'ajout n'en produisent pas |
 | `status` | enum `submission_status` (`pending`, `validated`, `rejected`, `modified`, `invalidated`) | | `pending` | |
 | `assigned_row` | int | N | — | Ligne attribuée à un ajout, à la validation |
-| `written` | jsonb | N | — | Ce qui a réellement été écrit : cellule, avant, après |
+| `written` | jsonb | N | — | Ce qui a réellement été écrit : `{ values, cells: [{ field, sourceId, sheet, row, col, before, after, movement? }] }` ; `values` sont les valeurs appliquées (corrigées par l'admin pour `modified`), rejouées par un réimport « réappliquer » |
 | `reason` | text | N | — | Motif de refus ou d'invalidation |
 | `decided_at` | timestamptz | N | — | |
 | `decided_by` | uuid | N | — | FK `users` ; vide avec `validated` = validation automatique |

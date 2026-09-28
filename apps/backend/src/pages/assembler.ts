@@ -5,9 +5,12 @@ import {
   type BlockError,
   columnNumber,
   type DataSourceRef,
+  type FormLinks,
+  type FormMode,
   type LinkTarget,
   type ResolvedLink,
   type Row,
+  type RowFormLink,
 } from '@strategos/shared';
 import { formatText, type StoredCell } from '../sources/cell-format.js';
 import { headerRow } from '../sources/data-range.js';
@@ -28,6 +31,17 @@ export interface ReaderContext {
   sourceAvailable: (sourceId: string) => boolean;
   /** Adresse des lignes d'un Tableau ou d'un Catalogue (page publiée ou aperçu). */
   rowsUrl: (blockId: string) => string;
+  /** Formulaire d'un bloc `form` (version publiée, ou brouillon en aperçu) ; `null` s'il n'existe plus. */
+  form: (formId: string) => FormInfo | null;
+  /** Formulaires de ligne reliés à un Tableau ou un Catalogue. */
+  rowForms: (blockId: string) => RowFormLink[];
+  formLinks: (formId: string) => FormLinks;
+}
+
+export interface FormInfo {
+  blockId: string;
+  mode: FormMode;
+  configured: boolean;
 }
 
 const unavailable = (ref: { sourceId: string }, ctx: ReaderContext): { error?: BlockError } =>
@@ -105,6 +119,7 @@ function assembleBlock(block: Block, ctx: ReaderContext): AssembledBlock | null 
           searchable: c.searchable,
         },
         rowsUrl: ctx.rowsUrl(block.id),
+        rowForms: ctx.rowForms(block.id),
         ...unavailable(c, ctx),
       };
     }
@@ -122,8 +137,19 @@ function assembleBlock(block: Block, ctx: ReaderContext): AssembledBlock | null 
           searchable: c.searchable,
         },
         rowsUrl: ctx.rowsUrl(block.id),
+        rowForms: ctx.rowForms(block.id),
         ...unavailable(c, ctx),
       };
+    }
+    // Formulaire : absent tant qu'il n'est pas configuré. Un formulaire de ligne
+    // n'est pas rendu seul : il s'ouvre depuis son Tableau ou son Catalogue.
+    case 'form': {
+      const { formId } = block.config;
+      const form = ctx.form(formId);
+      if (!form || form.blockId !== block.id || !form.configured || form.mode === 'ligne') {
+        return null;
+      }
+      return { id: block.id, type: 'form', config: { formId, ...ctx.formLinks(formId) } };
     }
   }
 }
@@ -145,6 +171,8 @@ export interface References {
   sourceIds: Set<string>;
   /** Cellules lues à l'assemblage : valeurs du Contenu libre, en-têtes sans libellé. */
   cells: CellNeed[];
+  /** Blocs `form` : formulaire → bloc. */
+  forms: Map<string, string>;
 }
 
 export function collectReferences(rows: Row[]): References {
@@ -152,6 +180,7 @@ export function collectReferences(rows: Row[]): References {
   const mediaIds = new Set<string>();
   const sourceIds = new Set<string>();
   const cells: CellNeed[] = [];
+  const forms = new Map<string, string>();
   const headers = (ref: DataSourceRef, columns: { col: string; label: string }[]) => {
     sourceIds.add(ref.sourceId);
     const row = headerRow(ref);
@@ -184,6 +213,7 @@ export function collectReferences(rows: Row[]): References {
       );
     }
     if (block?.type === 'catalog') headers(block.config, block.config.details);
+    if (block?.type === 'form') forms.set(block.config.formId, block.id);
   }
-  return { pageIds, mediaIds, sourceIds, cells };
+  return { pageIds, mediaIds, sourceIds, cells, forms };
 }
