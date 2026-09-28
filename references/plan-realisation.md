@@ -13,7 +13,7 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 6 — Formulaires et soumissions](#étape-6--formulaires-et-soumissions)
 - [x] [Étape 7 — Google Sheets et OneDrive](#étape-7--google-sheets-et-onedrive)
 - [x] [Étape 8 — Espaces de discussion](#étape-8--espaces-de-discussion)
-- [ ] [Étape 9 — Chat temps réel](#étape-9--chat-temps-réel)
+- [x] [Étape 9 — Chat temps réel](#étape-9--chat-temps-réel)
 - [ ] [Étape 10 — Carte cliquable](#étape-10--carte-cliquable)
 - [ ] [Étape 11 — Thèmes complets et notes](#étape-11--thèmes-complets-et-notes)
 - [ ] [Étape 12 — Modèles et duplication](#étape-12--modèles-et-duplication)
@@ -290,12 +290,12 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 - Historique paginé par curseur ; modification, suppression et masquage comme dans les sujets.
 
 **Critères d'acceptation**
-- [ ] Connexion WebSocket authentifiée par le cookie, `Origin` vérifié.
-- [ ] `chat.join` sans lecture de la page → `chat.error { code: "NOT_FOUND" }`.
-- [ ] `chat.send` → `chat.ack` avec le même `clientId` ; les autres membres reçoivent `chat.message.created`.
-- [ ] Modification, suppression et masquage archivés et diffusés.
-- [ ] Compte désactivé → connexion WebSocket fermée.
-- [ ] Après reconnexion, `?after=` rattrape les messages manqués.
+- [x] Connexion WebSocket authentifiée par le cookie, `Origin` vérifié.
+- [x] `chat.join` sans lecture de la page → `chat.error { code: "NOT_FOUND" }`.
+- [x] `chat.send` → `chat.ack` avec le même `clientId` ; les autres membres reçoivent `chat.message.created`.
+- [x] Modification, suppression et masquage archivés et diffusés.
+- [x] Compte désactivé → connexion WebSocket fermée.
+- [x] Après reconnexion, `?after=` rattrape les messages manqués.
 
 **Démo** : deux navigateurs échangent en direct sur une page ; un utilisateur sans lecture de la page est refusé.
 

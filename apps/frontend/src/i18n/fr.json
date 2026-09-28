@@ -505,6 +505,11 @@
         "created": "Date de création"
       }
     },
+    "chat": {
+      "hint": "Le chat est créé à la publication de la page. Tout utilisateur qui peut lire la page peut y écrire.",
+      "name": "Nom du salon",
+      "height": "Hauteur (pixels)"
+    },
     "form": {
       "mode": "Type de formulaire",
       "modes": {
@@ -721,6 +726,18 @@
       "unhide": "Rétablir",
       "pin": "Épingler",
       "unpin": "Désépingler"
+    },
+    "chat": {
+      "empty": "Aucun message pour le moment.",
+      "message": "Message",
+      "placeholder": "Écrire un message…",
+      "connecting": "Connexion…",
+      "send": "Envoyer",
+      "edited": "modifié",
+      "confirmDelete": "Supprimer ce message ?",
+      "hidden": "Masqué",
+      "hide": "Masquer",
+      "unhide": "Rétablir"
     }
   },
   "forms": {

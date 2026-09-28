@@ -63,6 +63,9 @@ export function newBlock(type: AvailableBlockType): Block {
     case 'discussion_space':
       // L'espace est créé côté serveur à la publication de la page.
       return { id: newId(), type, config: { name: '', sortMode: 'activity' } };
+    case 'chat':
+      // Le chat est créé côté serveur à la publication de la page.
+      return { id: newId(), type, config: { name: '', height: 400 } };
   }
 }
 

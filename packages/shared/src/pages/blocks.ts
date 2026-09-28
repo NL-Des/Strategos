@@ -158,6 +158,17 @@ export interface DiscussionSpaceBlockConfig {
   sortMode: TopicSort;
 }
 
+/**
+ * Chat temps réel (06 — Chat, 07). Le chat lui-même (`chats`) est créé à la
+ * publication de la page ; son nom suit le brouillon. Ce n'est pas une ressource
+ * du modèle de droits : quiconque peut lire la page peut lire et écrire le chat.
+ */
+export interface ChatBlockConfig {
+  name: string;
+  /** Hauteur du module en pixels. */
+  height: number;
+}
+
 export interface BlockConfigs {
   image: ImageBlockConfig;
   buttons: ButtonsBlockConfig;
@@ -166,9 +177,13 @@ export interface BlockConfigs {
   catalog: CatalogBlockConfig;
   form: FormBlockConfig;
   discussion_space: DiscussionSpaceBlockConfig;
+  chat: ChatBlockConfig;
 }
 
 export const DISCUSSION_SPACE_NAME_MAX_LENGTH = 100;
+export const CHAT_NAME_MAX_LENGTH = 100;
+export const CHAT_HEIGHT_MIN = 200;
+export const CHAT_HEIGHT_MAX = 800;
 
 export type AvailableBlockType = keyof BlockConfigs;
 
@@ -181,4 +196,5 @@ export const AVAILABLE_BLOCK_TYPES: readonly AvailableBlockType[] = [
   'catalog',
   'form',
   'discussion_space',
+  'chat',
 ];

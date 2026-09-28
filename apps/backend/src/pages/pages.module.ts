@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ChatModule } from '../chat/chat.module.js';
 import { DiscussionsModule } from '../discussions/discussions.module.js';
 import { FormsModule } from '../forms/forms.module.js';
 import { PermissionsModule } from '../permissions/permissions.module.js';
@@ -22,6 +23,7 @@ import { ReaderContextService } from './reader-context.service.js';
     SourcesModule,
     FormsModule,
     DiscussionsModule,
+    ChatModule,
   ],
   controllers: [
     AdminPagesController,

@@ -158,6 +158,11 @@ export interface PublishPreview {
     name: string;
     change: 'created' | 'deleted';
   }[];
+  /** Chats créés ou retirés par la publication (07). */
+  chats: {
+    name: string;
+    change: 'created' | 'deleted';
+  }[];
 }
 
 /** Validation qu'un réimport ferait perdre. */

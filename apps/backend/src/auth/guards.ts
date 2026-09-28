@@ -15,12 +15,20 @@ function requestOf(context: ExecutionContext): Request {
   return context.switchToHttp().getRequest<Request>();
 }
 
+/**
+ * Ces guards ne concernent que HTTP. La passerelle WebSocket du chat gère sa
+ * propre authentification (cookie de session au handshake, `Origin` vérifié),
+ * donc les guards se retirent des contextes non HTTP (`ws`).
+ */
+const isHttp = (context: ExecutionContext): boolean => context.getType() === 'http';
+
 /** Résout la session du cookie et l'attache à la requête ; ne refuse rien. */
 @Injectable()
 export class SessionGuard implements CanActivate {
   constructor(private readonly sessions: SessionService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (!isHttp(context)) return true;
     const req = requestOf(context);
     const token: unknown = req.cookies?.[SESSION_COOKIE];
     if (typeof token === 'string' && token) {
@@ -36,6 +44,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 @Injectable()
 export class CsrfGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
+    if (!isHttp(context)) return true;
     const req = requestOf(context);
     if (SAFE_METHODS.has(req.method)) return true;
 
@@ -60,6 +69,7 @@ export class AuthGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    if (!isHttp(context)) return true;
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [
       context.getHandler(),
       context.getClass(),
@@ -78,6 +88,7 @@ export class CredentialsChangeGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    if (!isHttp(context)) return true;
     const user = requestOf(context).auth?.user;
     if (!user?.mustChangeCredentials) return true;
     const targets = [context.getHandler(), context.getClass()];
@@ -93,6 +104,7 @@ export class CredentialsChangeGuard implements CanActivate {
 @Injectable()
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
+    if (!isHttp(context)) return true;
     const req = requestOf(context);
     const isAdminRoute = req.path === '/api/v1/admin' || req.path.startsWith('/api/v1/admin/');
     if (!isAdminRoute || req.auth?.user.isAdmin) return true;

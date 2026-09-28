@@ -174,6 +174,18 @@ function assembleBlock(block: Block, ctx: ReaderContext): AssembledBlock | null 
         topicsUrl: `/api/v1/spaces/${info.spaceId}/topics`,
       };
     }
+    // Chat : visible dès que le lecteur peut lire la page (pas de filtrage par
+    // droit). Le salon est identifié par l'id du bloc ; l'envoi passe par le
+    // WebSocket, l'historique par `messagesUrl`.
+    case 'chat': {
+      const { name, height } = block.config;
+      return {
+        id: block.id,
+        type: 'chat',
+        config: { name, height },
+        messagesUrl: `/api/v1/chats/${block.id}/messages`,
+      };
+    }
   }
 }
 

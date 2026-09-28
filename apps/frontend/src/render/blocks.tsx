@@ -6,6 +6,7 @@ import type {
 } from '@strategos/shared';
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChatBlock } from './ChatBlock';
 import { CatalogBlock, SourceUnavailable, TableBlock } from './DataBlocks';
 import { DiscussionSpaceBlock } from './DiscussionSpaceBlock';
 import { FormBlock } from './FormBlock';
@@ -74,6 +75,7 @@ const REGISTRY: {
   catalog: CatalogBlock,
   form: FormBlock,
   discussion_space: DiscussionSpaceBlock,
+  chat: ChatBlock,
 };
 
 export function BlockRenderer({ block }: { block: AssembledBlock }) {

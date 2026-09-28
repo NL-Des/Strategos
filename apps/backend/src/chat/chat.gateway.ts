@@ -1,0 +1,172 @@
+import type { IncomingMessage } from 'node:http';
+import { type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import {
+  ConnectedSocket,
+  MessageBody,
+  type OnGatewayConnection,
+  type OnGatewayDisconnect,
+  SubscribeMessage,
+  WebSocketGateway,
+} from '@nestjs/websockets';
+import {
+  CHAT_WS_EVENTS,
+  CHAT_WS_PATH,
+  type ChatErrorFrame,
+  type ChatJoinFrame,
+  type ChatSendFrame,
+  ErrorCode,
+  MESSAGE_MAX_LENGTH,
+} from '@strategos/shared';
+import { AppException } from '../common/app-exception.js';
+import { config } from '../config.js';
+import { SESSION_COOKIE } from '../auth/auth.constants.js';
+import { SessionService } from '../auth/session.service.js';
+import { ChatAccessService } from './chat-access.service.js';
+import { ChatMessagesService } from './chat-messages.service.js';
+import { ChatRealtimeService, type ChatSocket } from './chat-realtime.service.js';
+
+/** Trame `{ event, data }` renvoyée à l'appelant. */
+type Frame = { event: string; data: unknown };
+
+/** Lit un cookie dans l'en-tête `Cookie` brut du handshake. */
+function readCookie(header: string | undefined, name: string): string | undefined {
+  if (!header) return undefined;
+  for (const part of header.split(';')) {
+    const eq = part.indexOf('=');
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === name) return decodeURIComponent(part.slice(eq + 1).trim());
+  }
+  return undefined;
+}
+
+const REVALIDATE_INTERVAL_MS = 30_000;
+
+/**
+ * Passerelle WebSocket du chat (13 §4). Le préfixe global `api/v1` ne s'applique
+ * pas aux passerelles, d'où le chemin explicite. Authentifiée par le **cookie de
+ * session** au handshake, avec vérification de l'en-tête `Origin`. Une session
+ * révoquée (compte désactivé) ferme la connexion — au message suivant et par une
+ * revalidation périodique. L'accès à un salon suit la lecture de la page.
+ */
+@WebSocketGateway({ path: CHAT_WS_PATH })
+export class ChatGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
+{
+  private readonly sockets = new Set<ChatSocket>();
+  private timer?: ReturnType<typeof setInterval>;
+
+  constructor(
+    private readonly sessions: SessionService,
+    private readonly access: ChatAccessService,
+    private readonly messages: ChatMessagesService,
+    private readonly realtime: ChatRealtimeService,
+  ) {}
+
+  onModuleInit(): void {
+    this.timer = setInterval(() => void this.revalidateAll(), REVALIDATE_INTERVAL_MS);
+  }
+
+  onModuleDestroy(): void {
+    if (this.timer) clearInterval(this.timer);
+    for (const socket of this.sockets) socket.close();
+  }
+
+  /** Handshake : `Origin` autorisé et session valide, sinon fermeture. */
+  async handleConnection(client: ChatSocket, request: IncomingMessage): Promise<void> {
+    const origin = request.headers.origin;
+    if (!origin || !config.appOrigins.includes(origin)) {
+      client.close();
+      return;
+    }
+    const token = readCookie(request.headers.cookie, SESSION_COOKIE);
+    const auth = token ? await this.sessions.resolve(token) : null;
+    if (!auth) {
+      client.close();
+      return;
+    }
+    client.sessionToken = token;
+    client.user = auth.user;
+    this.sockets.add(client);
+  }
+
+  handleDisconnect(client: ChatSocket): void {
+    this.realtime.dropSocket(client);
+    this.sockets.delete(client);
+  }
+
+  @SubscribeMessage(CHAT_WS_EVENTS.join)
+  async join(
+    @ConnectedSocket() client: ChatSocket,
+    @MessageBody() body: ChatJoinFrame,
+  ): Promise<Frame> {
+    const user = await this.reauth(client);
+    if (!user) return this.error();
+    try {
+      const chat = await this.access.requireChatByBlock(user, body.blockId);
+      this.realtime.join(chat.blockId, client);
+      return { event: CHAT_WS_EVENTS.joined, data: { blockId: chat.blockId } };
+    } catch (err) {
+      return this.error(this.codeOf(err));
+    }
+  }
+
+  @SubscribeMessage(CHAT_WS_EVENTS.leave)
+  leave(@ConnectedSocket() client: ChatSocket, @MessageBody() body: ChatJoinFrame): void {
+    this.realtime.leave(body.blockId, client);
+  }
+
+  @SubscribeMessage(CHAT_WS_EVENTS.send)
+  async send(
+    @ConnectedSocket() client: ChatSocket,
+    @MessageBody() body: ChatSendFrame,
+  ): Promise<Frame> {
+    const user = await this.reauth(client);
+    if (!user) return this.error(ErrorCode.UNAUTHENTICATED, body?.clientId);
+    const content = body?.content;
+    if (typeof content !== 'string' || content.length < 1 || content.length > MESSAGE_MAX_LENGTH) {
+      return this.error(ErrorCode.VALIDATION_FAILED, body?.clientId);
+    }
+    try {
+      const message = await this.messages.send(body.blockId, user, content);
+      // Les autres membres reçoivent `created` ; l'émetteur reçoit l'accusé.
+      this.realtime.broadcast(
+        { type: 'chat.message.created', blockId: body.blockId, message },
+        client,
+      );
+      return { event: CHAT_WS_EVENTS.ack, data: { clientId: body.clientId, message } };
+    } catch (err) {
+      return this.error(this.codeOf(err), body.clientId);
+    }
+  }
+
+  /** Revalide la session du socket ; met à jour l'utilisateur ou ferme la connexion. */
+  private async reauth(client: ChatSocket) {
+    const auth = client.sessionToken ? await this.sessions.resolve(client.sessionToken) : null;
+    if (!auth) {
+      client.close();
+      this.handleDisconnect(client);
+      return null;
+    }
+    client.user = auth.user;
+    return auth.user;
+  }
+
+  private async revalidateAll(): Promise<void> {
+    for (const socket of [...this.sockets]) {
+      const auth = socket.sessionToken ? await this.sessions.resolve(socket.sessionToken) : null;
+      if (!auth) {
+        socket.close();
+        this.handleDisconnect(socket);
+      }
+    }
+  }
+
+  private codeOf(err: unknown): string {
+    return err instanceof AppException ? err.getBody().code : ErrorCode.INTERNAL_ERROR;
+  }
+
+  private error(code: string = ErrorCode.NOT_FOUND, clientId?: string): Frame {
+    const data: ChatErrorFrame = clientId === undefined ? { code } : { clientId, code };
+    return { event: CHAT_WS_EVENTS.error, data };
+  }
+}

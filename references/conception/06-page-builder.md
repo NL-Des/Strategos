@@ -131,7 +131,7 @@ Un mini-forum : une liste de sujets, et leurs messages (pouvant contenir des ima
 
 ### Chat
 Messagerie interne en temps réel, sans intégration IA. L'admin le place sur les pages de son choix. Règles détaillées dans [Discussions](07-discussions.md#chat).
-- **Réglages** : nom du salon, hauteur du module.
+- **Réglages** : nom du salon, hauteur du module (en pixels, de 200 à 800).
 - **Accès** : quiconque peut lire la page peut lire le chat et y écrire.
 - **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
 

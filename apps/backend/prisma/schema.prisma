@@ -134,11 +134,13 @@ model User {
   formVersions   FormVersion[]
   submissions    Submission[]      @relation("SubmissionAuthor")
   decisions      Submission[]      @relation("SubmissionDecider")
-  topics         Topic[]
-  messages       TopicMessage[]    @relation("MessageAuthor")
-  hiddenMessages TopicMessage[]    @relation("MessageHider")
-  revisions      MessageRevision[]
-  attachments    Attachment[]
+  topics             Topic[]
+  messages           TopicMessage[]    @relation("MessageAuthor")
+  hiddenMessages     TopicMessage[]    @relation("MessageHider")
+  chatMessages       ChatMessage[]     @relation("ChatMessageAuthor")
+  hiddenChatMessages ChatMessage[]     @relation("ChatMessageHider")
+  revisions          MessageRevision[]
+  attachments        Attachment[]
 
   @@map("users")
 }
@@ -301,6 +303,7 @@ model Page {
   landingOf   Setting[]
   permissions GroupPermission[]
   spaces      DiscussionSpace[]
+  chats       Chat[]
   forms       Form[]
 
   @@map("pages")
@@ -382,9 +385,50 @@ model TopicMessage {
   @@map("topic_messages")
 }
 
+/// Chat temps réel (07 — Chat). Créé à la publication de la page qui contient
+/// son bloc, comme les espaces ; accessible à qui peut lire la page (pas une
+/// ressource du modèle de droits).
+model Chat {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  pageId    String    @map("page_id") @db.Uuid
+  /// Id du bloc dans la page.
+  blockId   String    @unique @map("block_id") @db.Uuid
+  name      String
+  /// Ligne créée à la publication de la page.
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  page     Page          @relation(fields: [pageId], references: [id], onDelete: Restrict)
+  messages ChatMessage[]
+
+  @@map("chats")
+}
+
+model ChatMessage {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  chatId    String    @map("chat_id") @db.Uuid
+  authorId  String    @map("author_id") @db.Uuid
+  /// Texte nettoyé (liste blanche).
+  content   String
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  editedAt  DateTime? @map("edited_at") @db.Timestamptz
+  hiddenAt  DateTime? @map("hidden_at") @db.Timestamptz
+  hiddenBy  String?   @map("hidden_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  chat        Chat              @relation(fields: [chatId], references: [id], onDelete: Restrict)
+  author      User              @relation("ChatMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  hider       User?             @relation("ChatMessageHider", fields: [hiddenBy], references: [id], onDelete: SetNull)
+  revisions   MessageRevision[]
+  attachments Attachment[]
+
+  @@index([chatId, id])
+  @@map("chat_messages")
+}
+
 /// Archive des versions précédentes et des masquages (07 — Points techniques).
-/// `chatMessageId` est créée à l'étape 8 sans relation ; sa FK et les tables chat
-/// arrivent à l'étape 9. `CHECK (num_nonnulls(...) = 1)` complété en SQL.
+/// `CHECK (num_nonnulls(...) = 1)` complété en SQL.
 model MessageRevision {
   id              String         @id @default(uuid(7)) @db.Uuid
   topicMessageId  String?        @map("topic_message_id") @db.Uuid
@@ -396,6 +440,7 @@ model MessageRevision {
   createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
 
   topicMessage TopicMessage? @relation(fields: [topicMessageId], references: [id], onDelete: Cascade)
+  chatMessage  ChatMessage?  @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
   actor        User          @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([topicMessageId])
@@ -403,7 +448,7 @@ model MessageRevision {
   @@map("message_revisions")
 }
 
-/// Pièces jointes images (07). `chatMessageId` sans relation jusqu'à l'étape 9.
+/// Pièces jointes images (07).
 /// `CHECK (num_nonnulls(...) <= 1)` et `CHECK (size_bytes <= 5242880)` en SQL.
 model Attachment {
   id             String   @id @default(uuid(7)) @db.Uuid
@@ -417,8 +462,10 @@ model Attachment {
 
   uploader     User          @relation(fields: [uploaderId], references: [id], onDelete: Restrict)
   topicMessage TopicMessage? @relation(fields: [topicMessageId], references: [id], onDelete: Cascade)
+  chatMessage  ChatMessage?  @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
 
   @@index([topicMessageId])
+  @@index([chatMessageId])
   @@map("attachments")
 }
 

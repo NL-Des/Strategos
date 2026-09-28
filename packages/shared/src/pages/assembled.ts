@@ -126,6 +126,22 @@ export interface AssembledDiscussionSpaceBlock {
   topicsUrl: string;
 }
 
+/**
+ * Chat temps réel visible par le lecteur (07). Présent dès que le lecteur peut
+ * lire la page (pas de filtrage par droit). L'historique se charge par
+ * `messagesUrl` ; l'envoi passe par le WebSocket, avec `id` comme identifiant de
+ * salon (`chat.join { blockId: id }`).
+ */
+export interface AssembledChatBlock {
+  id: string;
+  type: 'chat';
+  config: {
+    name: string;
+    height: number;
+  };
+  messagesUrl: string;
+}
+
 export type AssembledBlock =
   | AssembledImageBlock
   | AssembledButtonsBlock
@@ -133,7 +149,8 @@ export type AssembledBlock =
   | AssembledTableBlock
   | AssembledCatalogBlock
   | AssembledFormBlock
-  | AssembledDiscussionSpaceBlock;
+  | AssembledDiscussionSpaceBlock
+  | AssembledChatBlock;
 
 /** Cellule d'une ligne de Tableau ou d'une carte, déjà formatée. */
 export interface RowCell extends CellValue {

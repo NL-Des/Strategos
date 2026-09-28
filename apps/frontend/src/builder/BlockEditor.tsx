@@ -1,4 +1,10 @@
-import { ALIGNMENTS, type Block, TOPIC_SORTS } from '@strategos/shared';
+import {
+  ALIGNMENTS,
+  type Block,
+  CHAT_HEIGHT_MAX,
+  CHAT_HEIGHT_MIN,
+  TOPIC_SORTS,
+} from '@strategos/shared';
 import { useTranslation } from 'react-i18next';
 import { CatalogEditor, TableEditor } from './DataBlockEditors';
 import { newId } from './defaults';
@@ -174,6 +180,32 @@ function DiscussionSpaceEditor({
   );
 }
 
+function ChatEditor({ block, onChange }: Props<Extract<Block, { type: 'chat' }>>) {
+  const { t } = useTranslation();
+  const config = block.config;
+  const set = (patch: Partial<typeof config>) =>
+    onChange({ ...block, config: { ...config, ...patch } });
+  return (
+    <div className="form">
+      <p className="hint">{t('builder.chat.hint')}</p>
+      <label>
+        {t('builder.chat.name')}
+        <input value={config.name} onChange={(e) => set({ name: e.target.value })} />
+      </label>
+      <label>
+        {t('builder.chat.height')}
+        <input
+          type="number"
+          min={CHAT_HEIGHT_MIN}
+          max={CHAT_HEIGHT_MAX}
+          value={config.height}
+          onChange={(e) => set({ height: Number(e.target.value) })}
+        />
+      </label>
+    </div>
+  );
+}
+
 /** Réglages d'un module, selon son type. */
 export function BlockEditor({ block, onChange }: Props<Block>) {
   switch (block.type) {
@@ -196,5 +228,7 @@ export function BlockEditor({ block, onChange }: Props<Block>) {
       return <FormEditor block={block} onChange={onChange} />;
     case 'discussion_space':
       return <DiscussionSpaceEditor block={block} onChange={onChange} />;
+    case 'chat':
+      return <ChatEditor block={block} onChange={onChange} />;
   }
 }

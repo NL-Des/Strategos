@@ -76,7 +76,7 @@ export class PageFormsService {
     db: Db,
     pageId: string,
     draft: PageConfig,
-  ): Promise<Omit<PublishPreview, 'spaces'>> {
+  ): Promise<Omit<PublishPreview, 'spaces' | 'chats'>> {
     const changes = await this.changes(db, pageId, draft);
     return {
       forms: changes.map(({ form, change }) => ({

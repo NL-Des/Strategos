@@ -13,6 +13,7 @@ import {
 } from '@strategos/shared';
 import type { AuditActor } from '../audit/audit-actor.js';
 import { AuditService } from '../audit/audit.service.js';
+import { PageChatsService } from '../chat/page-chats.service.js';
 import { AppException } from '../common/app-exception.js';
 import { PageSpacesService } from '../discussions/page-spaces.service.js';
 import { FormsService } from '../forms/forms.service.js';
@@ -77,6 +78,7 @@ export class PagesService {
     private readonly forms: FormsService,
     private readonly pageForms: PageFormsService,
     private readonly pageSpaces: PageSpacesService,
+    private readonly pageChats: PageChatsService,
   ) {}
 
   async list(): Promise<AdminPageSummary[]> {
@@ -162,7 +164,11 @@ export class PagesService {
     const page = await this.getIn(this.prisma, id);
     const config = validatePageConfig(page.draftConfig);
     const preview = await this.pageForms.preview(this.prisma, id, config);
-    return { ...preview, spaces: await this.pageSpaces.preview(this.prisma, id, config) };
+    return {
+      ...preview,
+      spaces: await this.pageSpaces.preview(this.prisma, id, config),
+      chats: await this.pageChats.preview(this.prisma, id, config),
+    };
   }
 
   /**
@@ -176,6 +182,7 @@ export class PagesService {
       const config = validatePageConfig(before.draftConfig);
       await this.pageForms.publish(tx, id, config, admin, actor, confirm);
       await this.pageSpaces.publish(tx, id, config);
+      await this.pageChats.publish(tx, id, config);
       const themeId =
         config.themeId && (await tx.theme.count({ where: { id: config.themeId } }))
           ? config.themeId

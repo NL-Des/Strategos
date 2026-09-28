@@ -95,3 +95,73 @@ export interface PatchTopicInput {
 export interface PinTopicInput {
   pinned: boolean;
 }
+
+// Chat temps réel (07 — Chat, 13 §4 WebSocket du chat). Le chat n'est pas une
+// ressource du modèle de droits : l'accès suit la lecture de la page. Messages
+// texte seulement (pas de pièce jointe à cette étape).
+
+/** Chemin de la passerelle WebSocket du chat (préfixe global non appliqué). */
+export const CHAT_WS_PATH = '/api/v1/ws';
+
+/** Un message de chat, vu par un lecteur (masqués et supprimés exclus). */
+export interface ChatMessageView {
+  id: string;
+  author: UserRef;
+  content: string;
+  createdAt: string;
+  editedAt: string | null;
+  /** Le lecteur est l'auteur : il peut modifier ou supprimer ce message. */
+  mine: boolean;
+  /** Message masqué par l'admin : renvoyé aux seuls admins, pour le rétablir. */
+  hidden: boolean;
+}
+
+/** `PUT /chat-messages/:id` (auteur) : modifier son message. */
+export type EditChatMessageInput = EditMessageInput;
+
+/**
+ * Événement diffusé aux membres d'un salon (13 — Événement de chat). Pour
+ * `deleted` et `hidden`, seul `message.id` est envoyé.
+ */
+export type ChatEvent =
+  | { type: 'chat.message.created'; blockId: string; message: ChatMessageView }
+  | { type: 'chat.message.updated'; blockId: string; message: ChatMessageView }
+  | { type: 'chat.message.deleted'; blockId: string; message: { id: string } }
+  | { type: 'chat.message.hidden'; blockId: string; message: { id: string } };
+
+/** Codes des trames WebSocket du chat (`{ event, data }`). */
+export const CHAT_WS_EVENTS = {
+  join: 'chat.join',
+  leave: 'chat.leave',
+  send: 'chat.send',
+  joined: 'chat.joined',
+  ack: 'chat.ack',
+  error: 'chat.error',
+} as const;
+
+/** Trames client → serveur. */
+export interface ChatJoinFrame {
+  blockId: string;
+}
+export interface ChatLeaveFrame {
+  blockId: string;
+}
+export interface ChatSendFrame {
+  blockId: string;
+  /** Identifiant local du message côté client, renvoyé dans l'accusé. */
+  clientId: string;
+  content: string;
+}
+
+/** Trames serveur → client. */
+export interface ChatJoinedFrame {
+  blockId: string;
+}
+export interface ChatAckFrame {
+  clientId: string;
+  message: ChatMessageView;
+}
+export interface ChatErrorFrame {
+  clientId?: string;
+  code: string;
+}

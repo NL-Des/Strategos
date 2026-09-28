@@ -29,6 +29,10 @@ import {
   type CatalogLayout,
   CELL_FORMATS,
   type CellFormat,
+  CHAT_HEIGHT_MAX,
+  CHAT_HEIGHT_MIN,
+  CHAT_NAME_MAX_LENGTH,
+  type ChatBlockConfig,
   type DataRange,
   DISCUSSION_SPACE_NAME_MAX_LENGTH,
   type DiscussionSpaceBlockConfig,
@@ -249,6 +253,18 @@ export class DiscussionSpaceBlockConfigSchema implements DiscussionSpaceBlockCon
   sortMode: TopicSort;
 }
 
+export class ChatBlockConfigSchema implements ChatBlockConfig {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(CHAT_NAME_MAX_LENGTH)
+  name: string;
+
+  @IsInt()
+  @Min(CHAT_HEIGHT_MIN)
+  @Max(CHAT_HEIGHT_MAX)
+  height: number;
+}
+
 /** Un schéma par module disponible ; le typage impose d'en avoir un pour chacun. */
 export const BLOCK_CONFIG_SCHEMAS: { [K in AvailableBlockType]: new () => BlockConfigs[K] } = {
   image: ImageBlockConfigSchema,
@@ -258,4 +274,5 @@ export const BLOCK_CONFIG_SCHEMAS: { [K in AvailableBlockType]: new () => BlockC
   catalog: CatalogBlockConfigSchema,
   form: FormBlockConfigSchema,
   discussion_space: DiscussionSpaceBlockConfigSchema,
+  chat: ChatBlockConfigSchema,
 };

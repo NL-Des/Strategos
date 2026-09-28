@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { ChatModule } from './chat/chat.module.js';
 import { DiscussionsModule } from './discussions/discussions.module.js';
 import { FormsModule } from './forms/forms.module.js';
 import { GroupsModule } from './groups/groups.module.js';
@@ -31,6 +32,7 @@ import { UsersModule } from './users/users.module.js';
     SourcesModule,
     FormsModule,
     DiscussionsModule,
+    ChatModule,
     PagesModule,
     MediaModule,
   ],
