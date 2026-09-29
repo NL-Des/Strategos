@@ -26,7 +26,7 @@ export async function createTestApp(controllers: Type[] = []): Promise<NestExpre
 export async function resetDatabase(app: NestExpressApplication): Promise<void> {
   const prisma = app.get(PrismaService);
   await prisma.$executeRawUnsafe(
-    'TRUNCATE users, sessions, login_attempts, audit_log, pages, media, settings, groups, discussion_spaces, sources, forms, submissions CASCADE',
+    'TRUNCATE users, sessions, login_attempts, audit_log, pages, media, settings, groups, discussion_spaces, sources, forms, submissions, backups CASCADE',
   );
   // Thèmes : seul « Sobre », le thème de l'installation, est gardé, dans son état initial.
   await prisma.$executeRawUnsafe(`DELETE FROM themes WHERE name <> 'Sobre'`);

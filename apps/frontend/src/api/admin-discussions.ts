@@ -10,3 +10,7 @@ export const unhideMessage = (id: string) =>
 
 export const pinTopic = (id: string, pinned: boolean) =>
   apiFetch<TopicDetail>(`/admin/topics/${id}`, { method: 'PATCH', body: { pinned } });
+
+/** Suppression douce d'un sujet ; restaurable depuis la corbeille. */
+export const deleteTopic = (id: string) =>
+  apiFetch<void>(`/admin/topics/${id}`, { method: 'DELETE' });

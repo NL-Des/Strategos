@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { BackupModule } from './backups/backup.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { DiscussionsModule } from './discussions/discussions.module.js';
 import { FormsModule } from './forms/forms.module.js';
@@ -16,6 +17,7 @@ import { SettingsModule } from './settings/settings.module.js';
 import { SourcesModule } from './sources/sources.module.js';
 import { TemplatesModule } from './templates/templates.module.js';
 import { ThemesModule } from './themes/themes.module.js';
+import { TrashModule } from './trash/trash.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -37,6 +39,8 @@ import { UsersModule } from './users/users.module.js';
     PagesModule,
     MediaModule,
     TemplatesModule,
+    TrashModule,
+    BackupModule,
   ],
   controllers: [HealthController],
 })

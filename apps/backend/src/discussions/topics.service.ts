@@ -1,5 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  AuditAction,
+  AuditTargetType,
   ErrorCode,
   type Paginated,
   type TopicDetail,
@@ -8,6 +10,8 @@ import {
   TopicSort,
   type TopicWithMessages,
 } from '@strategos/shared';
+import type { AuditActor } from '../audit/audit-actor.js';
+import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
 import { sanitizeRichHtml } from '../common/html-sanitizer.js';
 import type { PaginationQueryDto } from '../common/pagination.dto.js';
@@ -45,6 +49,7 @@ export class TopicsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: SpaceAccessService,
+    private readonly audit: AuditService,
   ) {}
 
   /** Liste paginée : épinglés en tête, puis selon le tri de l'espace. */
@@ -156,6 +161,21 @@ export class TopicsService {
       include: { author: authorSelect },
     });
     return this.detail(updated, user);
+  }
+
+  /** Suppression douce par l'admin (route admin) ; restaurable depuis la corbeille (04). */
+  async remove(topicId: string, admin: User, actor: AuditActor): Promise<void> {
+    const { topic } = await this.access.requireTopic(admin, topicId, 'read');
+    await this.prisma.$transaction(async (tx) => {
+      await tx.topic.update({ where: { id: topic.id }, data: { deletedAt: new Date() } });
+      await this.audit.record(tx, actor, {
+        action: AuditAction.TOPIC_DELETE,
+        targetType: AuditTargetType.TOPIC,
+        targetId: topic.id,
+        before: { title: topic.title, deleted: false },
+        after: { title: topic.title, deleted: true },
+      });
+    });
   }
 
   private async detail(

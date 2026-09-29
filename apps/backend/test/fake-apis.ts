@@ -64,13 +64,14 @@ export class FakeApis {
   private server?: Server;
   private refreshCount = 0;
 
-  async start(): Promise<string> {
+  /** Port libre par défaut ; un port fixe pour les tests navigateur (e2e/). */
+  async start(port = 0): Promise<string> {
     this.server = createServer((req, res) => {
       this.handle(req, res).catch((error: unknown) => {
         res.writeHead(500).end(String(error));
       });
     });
-    await new Promise<void>((resolve) => this.server!.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>((resolve) => this.server!.listen(port, '127.0.0.1', resolve));
     return `http://127.0.0.1:${(this.server.address() as AddressInfo).port}`;
   }
 
@@ -153,6 +154,15 @@ export class FakeApis {
         }),
       }));
       return json(200, { sheets: [{ data: [{ startRow: 0, startColumn: 0, rowData }] }] });
+    }
+
+    // Microsoft : page de connexion, qui accepte aussitôt et renvoie au site avec un code.
+    if (/^\/ms\/[^/]+\/oauth2\/v2\.0\/authorize$/.test(path)) {
+      const back = new URL(url.searchParams.get('redirect_uri')!);
+      back.searchParams.set('code', 'good-code');
+      back.searchParams.set('state', url.searchParams.get('state') ?? '');
+      res.writeHead(302, { Location: back.toString() }).end();
+      return;
     }
 
     // Microsoft : jetons OAuth.

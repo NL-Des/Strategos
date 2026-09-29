@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { PAGE_SIZE_MAX } from '@strategos/shared';
 import {
@@ -61,11 +62,12 @@ export class PreviewQueryDto {
  * `pageSize`, celui du module ; `sort` = `<indice de colonne affichée>:asc|desc`.
  */
 export class BlockRowsQueryDto {
+  @ApiPropertyOptional({ type: Number, minimum: 1, default: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page = 1;
+  page: number = 1;
 
   @IsOptional()
   @Type(() => Number)

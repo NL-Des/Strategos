@@ -708,3 +708,18 @@ model Template {
   @@unique([type, name])
   @@map("templates")
 }
+
+// 10 bis. Sauvegardes (14 §4 `backups`) : une ligne par archive du volume `backups`.
+
+model Backup {
+  id         String       @id @default(uuid(7)) @db.Uuid
+  status     BackupStatus @default(running)
+  /// Archive dans le volume `backups` (nom de fichier relatif à `BACKUPS_DIR`).
+  filePath   String?      @map("file_path")
+  sizeBytes  BigInt?      @map("size_bytes")
+  error      String?
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  finishedAt DateTime?    @map("finished_at") @db.Timestamptz
+
+  @@map("backups")
+}

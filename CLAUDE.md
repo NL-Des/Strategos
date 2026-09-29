@@ -53,7 +53,7 @@ Une seule branche, `main` : pas de branche par étape ni de PR.
 
 ## Commandes
 
-Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, Vite), `packages/shared` (contrats). Node ≥ 22.12, TypeScript 6.0, tests Vitest.
+Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, Vite), `packages/shared` (contrats), `e2e` (Playwright). Node ≥ 22.12, TypeScript 6.0, tests Vitest.
 
 | But | Commande |
 |---|---|
@@ -70,6 +70,10 @@ Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, 
 | Nouvelle migration | modifier `apps/backend/prisma/schema.prisma`, puis `pnpm --filter @strategos/backend prisma migrate dev --name <nom>` (ajouter `--create-only` pour compléter en SQL : `CHECK`, index partiels, trigger) |
 | Réinitialiser le compte admin | `docker compose exec backend node dist/src/cli/reset-admin.js` (en local : `pnpm --filter @strategos/backend build` puis `node dist/src/cli/reset-admin.js` depuis `apps/backend`) |
 | Appliquer les migrations | `pnpm --filter @strategos/backend prisma migrate deploy` (automatique au démarrage du conteneur `backend`) |
+| Sauvegarde immédiate | `docker compose exec backend node dist/src/cli/run-backup.js` (sinon chaque nuit à 3 h ; archives dans le volume `backups`) |
+| Restaurer une sauvegarde | `docker compose stop backend`, puis `docker compose run --rm backend node dist/src/cli/restore-backup.js /data/backups/<archive>.tar.gz` (archive hors volume : ajouter `-v ./<archive>:/tmp/a.tar.gz` et viser `/tmp/a.tar.gz`), puis `docker compose start backend` |
+| Spécification OpenAPI | `pnpm openapi` → `references/openapi.json` (à relancer quand les routes changent) ; `/api/docs` en `pnpm dev` |
+| Tests navigateur (parcours A à D, responsive) | `pnpm test:browser:install` une fois (Chromium), puis `pnpm test:browser` avec `pnpm db:up` (hors `pnpm check` ; base `strategos_browser` recréée, API Google et Microsoft simulées ; captures dans `e2e/screenshots/`) |
 
 Pour Claude : le hook RTK ne réécrit pas les scripts pnpm du projet. Lancer `rtk err pnpm check`, `rtk err pnpm typecheck`, `rtk test pnpm test` et `rtk test pnpm test:e2e` (sortie réduite aux erreurs, code de retour conservé).
 
@@ -85,4 +89,5 @@ Conventions du code :
 - **Données des sources** : toujours par `SourceDataService` (`apps/backend/src/sources/source-data.service.ts`), qui ne dit pas aux appelants de quel type est la source ; aucune source, feuille ni cellule dans les réponses utilisateur (valeurs formatées seulement). Classeurs de test : `apps/backend/test/xlsx.ts`.
 - **Écriture dans les sources** : uniquement par `SubmissionProcessor.apply` (`apps/backend/src/forms/submission-processor.service.ts`), qui passe par `SourceWriteService` (verrou par `source_id`, pose de `needs_recalc`) ; jamais d'écriture directe dans `staging_cells`.
 - **Lecture d'une page** : toujours par `PageAccessService` (`apps/backend/src/pages/page-access.service.ts`) ; l'assemblage retire ce que le lecteur ne doit pas voir, le frontend affiche tel quel.
-- **Tests e2e** : `apps/backend/test/helpers.ts` fournit `TestClient` (cookies, `Origin`, CSRF, IP propre), `adminClient`, `resetDatabase`.
+- **Tests e2e** : `apps/backend/test/helpers.ts` fournit `TestClient` (cookies, `Origin`, CSRF, IP propre), `adminClient`, `resetDatabase` (toute nouvelle table sans lien vers `users` s'ajoute à son `TRUNCATE`).
+- **Tests navigateur** : paquet `e2e/` (Playwright). `global-setup.ts` lance une instance neuve (backend compilé, Vite, faux serveur `apps/backend/test/fake-apis.ts`) ; les fichiers s'enchaînent sur la même instance. Sélecteurs par libellés, lus dans `fr.json` via `t()` de `e2e/tests/helpers.ts`.

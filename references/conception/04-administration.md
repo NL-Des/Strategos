@@ -37,6 +37,14 @@ Sans notifications (voir [Transverse](11-transverse.md#notifications)), l'espace
 ### Corbeille
 Les éléments supprimés en douceur (pages, formulaires, sujets, messages des sujets et du chat, groupes, utilisateurs) sont listés dans une corbeille, filtrable par type, d'où l'administrateur peut les **restaurer** (voir [Suppression de contenu](11-transverse.md#suppression-de-contenu)).
 
+Règles de restauration (tracée au journal, `trash.restore`) :
+- **page** : seule la page revient ; ses formulaires, espaces et chats n'avaient pas été supprimés avec elle ;
+- **formulaire** : son bloc est remis dans une nouvelle rangée, en fin de zone principale du brouillon de sa page ; il revient en ligne à la prochaine publication. Refusé si la page est elle-même supprimée ;
+- **message de sujet** : refusé tant que son sujet est supprimé (restaurer le sujet d'abord) ; un message de chat reparaît au prochain chargement de l'historique ;
+- **compte ou groupe** : refusé si son nom a été repris entre-temps (unicité partielle).
+
+L'admin supprime un sujet depuis sa vue (bouton « Supprimer le sujet ») ; les messages et les autres éléments passent par leurs propres écrans.
+
 > Les notes personnelles n'apparaissent pas dans la corbeille : l'admin ne peut ni les modifier ni les supprimer, donc pas davantage les restaurer (voir [Profil utilisateur](05-profil-utilisateur.md)).
 
 ### Journal des modifications

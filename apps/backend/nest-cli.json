@@ -5,6 +5,16 @@
   "entryFile": "src/main",
   "compilerOptions": {
     "deleteOutDir": true,
-    "tsConfigPath": "tsconfig.build.json"
+    "tsConfigPath": "tsconfig.build.json",
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "esmCompatible": true,
+          "classValidatorShim": true,
+          "introspectComments": true
+        }
+      }
+    ]
   }
 }

@@ -43,5 +43,6 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   TOPIC_CLOSED: 'Ce sujet est clos : aucun nouveau message.',
   NOT_AUTHOR: "Vous n'êtes pas l'auteur de ce contenu.",
   TOO_MANY_ATTACHMENTS: 'Un message accepte au plus 4 pièces jointes.',
+  RESTORE_PARENT_DELETED: 'Restaurez d’abord l’élément qui le contient.',
   INTERNAL_ERROR: 'Une erreur interne est survenue.',
 };

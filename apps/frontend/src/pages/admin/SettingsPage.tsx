@@ -1,20 +1,88 @@
-import type { InstanceSettings } from '@strategos/shared';
+import type { BackupSummary, InstanceSettings } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { backupDownloadUrl, listBackups } from '../../api/backups';
 import { listPages } from '../../api/pages';
 import { getSettings, updateSettings } from '../../api/settings';
 import { listThemes } from '../../api/themes';
 import { ME_KEY } from '../../auth/useMe';
 import { ErrorMessage } from '../../components/ErrorMessage';
 
-/** Admin › Réglages de l'instance (04). Le téléchargement des sauvegardes arrive à l'étape 12. */
+/** Admin › Réglages de l'instance (04) et sauvegardes (11). */
 export function SettingsPage() {
   const { t } = useTranslation();
   const settings = useQuery({ queryKey: ['admin', 'settings'], queryFn: getSettings });
   if (settings.error) return <ErrorMessage error={settings.error} />;
   if (!settings.data) return <p>{t('common.loading')}</p>;
-  return <SettingsForm initial={settings.data} />;
+  return (
+    <>
+      <SettingsForm initial={settings.data} />
+      <Backups />
+    </>
+  );
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
+}
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+
+/** Sauvegardes quotidiennes : liste et téléchargement, pour emporter une copie hors du serveur. */
+function Backups() {
+  const { t } = useTranslation();
+  const backups = useQuery({ queryKey: ['admin', 'backups'], queryFn: listBackups });
+  return (
+    <section className="card">
+      <h2>{t('backups.title')}</h2>
+      <p className="muted">{t('backups.intro')}</p>
+      <ErrorMessage error={backups.error} />
+      {backups.data?.length === 0 && <p className="muted">{t('backups.empty')}</p>}
+      {backups.data && backups.data.length > 0 && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t('backups.date')}</th>
+                <th>{t('backups.status')}</th>
+                <th>{t('backups.size')}</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {backups.data.map((backup) => (
+                <BackupRow key={backup.id} backup={backup} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BackupRow({ backup }: { backup: BackupSummary }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <td>{formatDate(backup.createdAt)}</td>
+      <td>
+        {t(`backups.statuses.${backup.status}`)}
+        {backup.error && <small className="block">{backup.error}</small>}
+      </td>
+      <td>{backup.sizeBytes !== null && formatSize(backup.sizeBytes)}</td>
+      <td>
+        {backup.status === 'ok' && (
+          <a className="button secondary" href={backupDownloadUrl(backup.id)} download>
+            {t('backups.download')}
+          </a>
+        )}
+      </td>
+    </tr>
+  );
 }
 
 function SettingsForm({ initial }: { initial: InstanceSettings }) {

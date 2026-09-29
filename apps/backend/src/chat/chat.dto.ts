@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { type EditChatMessageInput, MESSAGE_MAX_LENGTH } from '@strategos/shared';
 import { Type } from 'class-transformer';
 import {
@@ -26,7 +27,8 @@ export class ChatHistoryQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit = 50;
+  @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 100, default: 50 })
+  limit: number = 50;
 }
 
 /** `PUT /chat-messages/:id` : modifier son message. */

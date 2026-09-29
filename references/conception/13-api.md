@@ -11,6 +11,7 @@ Le contrat entre le frontend et le backend : conventions communes, routes utilis
   - `/api/v1/…` : routes utilisateur (l'admin y a aussi accès, avec tous les droits) ;
   - `/api/v1/admin/…` : routes d'administration, protégées **globalement** par le guard de rôle admin.
 - Chat en temps réel : WebSocket sur `/api/v1/ws` (voir [§4](#4-websocket-du-chat)).
+- Spécification OpenAPI **générée depuis le code** (contrôleurs et DTO) : `pnpm openapi` l'écrit dans [`references/openapi.json`](../openapi.json) ; hors production, elle est aussi consultable sur `/api/docs`. Ce document reste la référence de conception.
 
 ### Authentification et CSRF
 - Session par **cookie** `httpOnly`, `secure`, `SameSite=Strict` (voir [Comptes et authentification](02-comptes-authentification.md#points-techniques)).
@@ -33,7 +34,7 @@ Toute erreur a le même format :
 | `403` | La ressource est **lisible**, mais l'action n'est pas permise : ouvrir un sujet ou poster sans le droit (`FORBIDDEN`), modifier ou supprimer le message d'un autre (`NOT_AUTHOR`) ; ou changement d'identifiants requis (`CREDENTIALS_CHANGE_REQUIRED`) ; ou jeton CSRF ou `Origin` invalide (`CSRF_INVALID`) |
 | `404` | `NOT_FOUND` : la ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
 | `409` | Conflit d'état : modification concurrente, soumission déjà traitée, confirmation d'avertissement requise, élément encore utilisé |
-| `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé…) |
+| `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé, restauration d'un élément dont le parent est supprimé `RESTORE_PARENT_DELETED`…) |
 | `429` | Trop de tentatives (`AUTH_TOO_MANY_ATTEMPTS`, avec `details.retryAfter`) |
 | `500` | Erreur inattendue (`INTERNAL_ERROR`) : ni sa cause ni sa trace ne sont renvoyées, elles sont journalisées côté serveur |
 | `502` / `503` | Source de données injoignable (`SOURCE_UNAVAILABLE`) ou connexion expirée (`SOURCE_AUTH_EXPIRED`) |
@@ -52,7 +53,7 @@ Les enregistrements qui ne bloquent pas (ex. sauvegarder un formulaire qui vise 
 
 ### Suppression et restauration
 - `DELETE` = **suppression douce** (voir [Transverse](11-transverse.md#suppression-de-contenu)).
-- La restauration se fait uniquement par l'admin, depuis la corbeille (`POST /admin/trash/:type/:id/restore`).
+- La restauration se fait uniquement par l'admin, depuis la corbeille (`POST /admin/trash/:type/:id/restore`, voir [Élément de la corbeille](#élément-de-la-corbeille)).
 
 ### Modifications concurrentes (admin)
 Les objets édités par l'admin (pages, formulaires, thèmes, groupes…) portent un champ `version`. Une mise à jour envoie la `version` lue. Si l'objet a changé entre-temps (dans un autre onglet, par exemple), la réponse est `409 EDIT_CONFLICT`.
@@ -157,11 +158,11 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | Méthode | Chemin | Rôle |
 |---|---|---|
 | GET | `/audit` | Journal paginé, du plus récent au plus ancien. Filtres : `actorKind` (`user`, `system`, `cli`), `actorId`, `action`, `targetType`, `targetId`, période `from` (inclus) – `to` (exclu) en ISO 8601 |
-| GET | `/trash` | Corbeille paginée, filtre par type |
-| POST | `/trash/:type/:id/restore` | Restaurer |
+| GET | `/trash` | Corbeille paginée, du plus récent au plus ancien, filtre `type` (`page`, `form`, `topic`, `topic_message`, `chat_message`, `group`, `user`) → [éléments](#élément-de-la-corbeille) |
+| POST | `/trash/:type/:id/restore` | Restaurer → `204`, tracé `trash.restore`. `404` si le type est inconnu ou l'élément absent ou non supprimé ; `409 USERNAME_TAKEN` / `409 GROUP_NAME_TAKEN` si le nom a été repris ; `422 RESTORE_PARENT_DELETED` pour un formulaire dont la page, ou un message dont le sujet, est supprimé |
 | GET / PUT | `/settings` | Réglages de l'instance : page d'arrivée, thème par défaut, durée de conservation des sauvegardes |
-| GET | `/backups` | Liste des sauvegardes disponibles |
-| GET | `/backups/:id/download` | Télécharger une sauvegarde (flux) |
+| GET | `/backups` | Liste des sauvegardes, de la plus récente à la plus ancienne : `[{ id, status, sizeBytes, error, createdAt, finishedAt }]` |
+| GET | `/backups/:id/download` | Télécharger l'archive `.tar.gz` d'une sauvegarde réussie (flux) ; `404` sinon |
 
 ### Sources — [08](08-sources-donnees.md), [04](04-administration.md#sources)
 | Méthode | Chemin | Rôle | Erreurs |
@@ -221,6 +222,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | Méthode | Chemin | Rôle |
 |---|---|---|
 | PATCH | `/topics/:id` | Épingler ou désépingler `{ pinned }` (renommer et clore passent par la route utilisateur, ouverte à l'admin) |
+| DELETE | `/topics/:id` | Supprimer un sujet (suppression douce, tracée `topic.delete`) ; restaurable depuis la corbeille |
 | POST | `/messages/:id/hide` · `/unhide` | Masquer ou rétablir un message de sujet |
 | POST | `/chat-messages/:id/hide` · `/unhide` | Idem pour le chat (diffusé en temps réel) |
 
@@ -328,6 +330,13 @@ Une liste vide signifie que le réimport ne perd rien.
   "message": { "id": "…", "author": { "id": "…", "username": "Kira" }, "content": "…", "createdAt": "…", "editedAt": null } }
 ```
 Pour `deleted` et `hidden`, seul `message.id` est envoyé.
+
+### Élément de la corbeille
+```json
+{ "type": "topic_message", "id": "…", "label": "Tank devant & soigneur derrière",
+  "context": "Stratégie", "author": "kira", "deletedAt": "2026-09-29T10:00:00Z" }
+```
+`label` : nom, titre ou pseudo ; pour un message, le début de son texte, sans balises. `context` : la page d'un formulaire, l'espace d'un sujet, le sujet ou le chat d'un message. `author` : l'auteur d'un sujet ou d'un message.
 
 ## 6. Qui protège quoi
 | Protection | Portée |

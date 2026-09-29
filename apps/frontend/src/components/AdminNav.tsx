@@ -19,6 +19,7 @@ const LINKS = [
   ['/admin/rights', 'rights'],
   ['/admin/settings', 'settings'],
   ['/admin/audit', 'audit'],
+  ['/admin/trash', 'trash'],
 ] as const;
 
 /** Soumissions en attente : compteur visible en permanence (04 — Tableau de bord). */

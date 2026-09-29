@@ -16,7 +16,7 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 9 — Chat temps réel](#étape-9--chat-temps-réel)
 - [x] [Étape 10 — Thèmes complets et notes](#étape-10--thèmes-complets-et-notes)
 - [x] [Étape 11 — Modèles et duplication](#étape-11--modèles-et-duplication)
-- [ ] [Étape 12 — Corbeille, sauvegardes et finitions](#étape-12--corbeille-sauvegardes-et-finitions)
+- [x] [Étape 12 — Corbeille, sauvegardes et finitions](#étape-12--corbeille-sauvegardes-et-finitions)
 - [ ] [Étape 13 — Carte cliquable](#étape-13--carte-cliquable)
 
 ## Organisation du dépôt
@@ -348,11 +348,11 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 - Vérification du responsive (mobile, tablette) ; OpenAPI généré depuis le code.
 
 **Critères d'acceptation**
-- [ ] Corbeille : types prévus par [04](conception/04-administration.md#corbeille), filtrable ; notes absentes ; restauration tracée.
-- [ ] Sauvegarde quotidienne (`pg_dump` et `uploads`), purge selon la rétention (7 jours par défaut), téléchargement.
-- [ ] La commande de restauration remet une instance neuve dans l'état sauvegardé.
-- [ ] Écrans vérifiés sur mobile et tablette.
-- [ ] Spécification OpenAPI générée depuis le code.
+- [x] Corbeille : types prévus par [04](conception/04-administration.md#corbeille), filtrable ; notes absentes ; restauration tracée.
+- [x] Sauvegarde quotidienne (`pg_dump` et `uploads`), purge selon la rétention (7 jours par défaut), téléchargement.
+- [x] La commande de restauration remet une instance neuve dans l'état sauvegardé.
+- [x] Écrans vérifiés sur mobile et tablette.
+- [x] Spécification OpenAPI générée depuis le code.
 
 **Démo** : les parcours A à D rejoués en Playwright sur une instance neuve.
 

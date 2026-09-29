@@ -55,7 +55,10 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **ExcelSyncModule** : cœur technique de la synchronisation Excel/Sheets — voir [08](conception/08-sources-donnees.md) et [09](conception/09-formulaires-soumissions.md).
 - **TemplatesModule** : bibliothèque de modèles et instanciation — voir [10](conception/10-modeles-duplication.md).
 - **FilesModule** : upload, stockage sur le volume Docker, métadonnées en base — voir [11](conception/11-transverse.md).
-- **BackupModule** : sauvegarde quotidienne et téléchargement admin — voir [11](conception/11-transverse.md#sauvegardes).
+- **TrashModule** : corbeille de l'admin (éléments supprimés en douceur) et restauration tracée — voir [04](conception/04-administration.md#corbeille).
+- **BackupModule** : sauvegarde quotidienne (`pg_dump` et volume `uploads`), purge, téléchargement admin ; commandes serveur `run-backup` et `restore-backup` — voir [11](conception/11-transverse.md#sauvegardes).
+
+La spécification OpenAPI est générée depuis les contrôleurs et les DTO (`@nestjs/swagger`) : `pnpm openapi` écrit [openapi.json](openapi.json), servie sur `/api/docs` hors production.
 
 ## 3. Modèle de données
 
@@ -116,7 +119,7 @@ sequenceDiagram
 
 ## 7. Déploiement
 
-Un seul `docker-compose.yml` : services `proxy` (Caddy, HTTPS automatique), `frontend`, `backend`, `db`, volumes nommés `db_data`, `uploads` et `backups`. Sauvegarde quotidienne et téléchargement depuis l'espace admin ([11](conception/11-transverse.md#sauvegardes)). La clé du compte de service Google est montée comme fichier secret dans le conteneur backend (dossier `secrets/`, ignoré par git, monté en lecture seule) ; les identifiants de l'application Azure passent par des variables d'environnement, et le jeton délégué de l'admin est stocké chiffré en base ([08](conception/08-sources-donnees.md#points-techniques)). Une seule commande (`docker compose up`) pour tout lancer.
+Un seul `docker-compose.yml` : services `proxy` (Caddy, HTTPS automatique), `frontend`, `backend`, `db`, volumes nommés `db_data`, `uploads` et `backups`. Sauvegarde quotidienne et téléchargement depuis l'espace admin ([11](conception/11-transverse.md#sauvegardes)). La clé du compte de service Google est montée comme fichier secret dans le conteneur backend (dossier `secrets/`, ignoré par git, monté en lecture seule) ; les identifiants de l'application Azure passent par des variables d'environnement, et le jeton délégué de l'admin est stocké chiffré en base ([08](conception/08-sources-donnees.md#points-techniques)). Une seule commande (`docker compose up`) pour tout lancer. L'image du backend embarque `pg_dump` et `pg_restore` (client PostgreSQL 18, comme la base).
 
 ## 8. Sécurité transverse
 

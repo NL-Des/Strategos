@@ -6,6 +6,21 @@ export const config = {
   get uploadsDir(): string {
     return resolve(process.env.UPLOADS_DIR ?? '.data/uploads');
   },
+  /** Archives de sauvegarde : volume `backups` en conteneur (11 — Sauvegardes). */
+  get backupsDir(): string {
+    return resolve(process.env.BACKUPS_DIR ?? '.data/backups');
+  },
+  /** Base de l'instance, pour `pg_dump` et `pg_restore`. */
+  get databaseUrl(): string {
+    return process.env.DATABASE_URL ?? '';
+  },
+  /** Outils PostgreSQL (paquet `postgresql18-client` de l'image), surchargés par les tests. */
+  get pgDumpBin(): string {
+    return process.env.PG_DUMP_BIN || 'pg_dump';
+  },
+  get pgRestoreBin(): string {
+    return process.env.PG_RESTORE_BIN || 'pg_restore';
+  },
   get isProduction(): boolean {
     return process.env.NODE_ENV === 'production';
   },

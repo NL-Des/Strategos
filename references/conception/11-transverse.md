@@ -26,7 +26,9 @@ Suppression douce (soft-delete) pour sujets, messages (sujets et chat), groupes,
 ### Sauvegardes
 - **Sauvegarde automatique quotidienne** de la base et des fichiers uploadés (images, Excel), dans un dossier dédié, avec une durée de conservation réglable (7 jours par défaut).
 - **Bouton « Télécharger une sauvegarde »** dans l'espace admin, pour emporter une copie hors du serveur.
-- La restauration d'une sauvegarde se fait par une commande serveur, comme la récupération du compte admin.
+- Chaque sauvegarde est une archive `strategos-<date>.tar.gz` qui contient `db.dump` (`pg_dump` au format personnalisé, sans le contenu de la table `backups`) et le dossier `uploads/`. La tâche tourne chaque nuit à 3 h ; `run-backup` en lance une à la demande.
+- La purge supprime les archives plus anciennes que la durée de conservation, mais **garde toujours la dernière sauvegarde réussie**, pour qu'une série d'échecs ne laisse jamais l'instance sans sauvegarde.
+- La restauration d'une sauvegarde se fait par une commande serveur, comme la récupération du compte admin, backend arrêté : la base est remplacée en une transaction (`pg_restore --clean`), puis le contenu du volume `uploads` ; les archives du volume `backups` sont réinscrites, et la restauration est tracée au journal (acteur `cli`).
 - Les sources connectées (Google Sheets, OneDrive) ne sont pas sauvegardées par Strategos : leur historique de versions reste chez Google ou Microsoft.
 
 ### Langue

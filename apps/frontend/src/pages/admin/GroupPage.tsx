@@ -2,6 +2,7 @@ import {
   GROUP_DESCRIPTION_MAX_LENGTH,
   GROUP_NAME_MAX_LENGTH,
   type GroupDetail,
+  type GroupPermissionInput,
   ResourceType,
 } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +17,7 @@ import {
   updateGroup,
 } from '../../api/groups';
 import { listPages } from '../../api/pages';
+import { getRightsMatrix } from '../../api/rights';
 import { listUsers } from '../../api/users';
 import { ErrorMessage } from '../../components/ErrorMessage';
 
@@ -177,14 +179,27 @@ function MembersEditor({ group }: { group: GroupDetail }) {
   );
 }
 
+type SpaceRights = Pick<GroupPermissionInput, 'canRead' | 'canCreateTopic' | 'canPost'>;
+const SPACE_RIGHTS = [
+  ['canRead', 'read'],
+  ['canCreateTopic', 'createTopic'],
+  ['canPost', 'post'],
+] as const;
+
 /**
- * Permissions : une page n'accorde que la lecture (03). Les permissions sur les
- * espaces de discussion arrivent avec eux (étape 8) et sont conservées telles quelles.
+ * Permissions (03) : une page n'accorde que la lecture ; un espace de discussion,
+ * la lecture, l'ouverture de sujets et la publication de messages. Ouvrir un
+ * sujet ou poster suppose de lire l'espace.
  */
 function PermissionsEditor({ group }: { group: GroupDetail }) {
   const { t } = useTranslation();
   const onUpdated = useOnGroupUpdated();
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: listPages });
+  // Les espaces existent dès que leur page est publiée ; la matrice des droits les liste.
+  const spaces = useQuery({
+    queryKey: ['admin', 'rights', 'spaces'],
+    queryFn: () => getRightsMatrix({ page: 1, pageSize: 1, type: ResourceType.space }),
+  });
   const [readable, setReadable] = useState(
     () =>
       new Set(
@@ -193,12 +208,20 @@ function PermissionsEditor({ group }: { group: GroupDetail }) {
           .map((p) => p.resourceId),
       ),
   );
+  const [spaceRights, setSpaceRights] = useState(
+    () =>
+      new Map<string, SpaceRights>(
+        group.permissions
+          .filter((p) => p.resourceType === ResourceType.space)
+          .map(({ resourceId, canRead, canCreateTopic, canPost }) => [
+            resourceId,
+            { canRead, canCreateTopic, canPost },
+          ]),
+      ),
+  );
   const save = useMutation({
     mutationFn: () =>
       replacePermissions(group.id, [
-        ...group.permissions
-          .filter((p) => p.resourceType !== ResourceType.page)
-          .map(({ resourceName: _name, ...p }) => p),
         ...[...readable].map((resourceId) => ({
           resourceType: ResourceType.page,
           resourceId,
@@ -206,9 +229,28 @@ function PermissionsEditor({ group }: { group: GroupDetail }) {
           canCreateTopic: false,
           canPost: false,
         })),
+        ...[...spaceRights]
+          .filter(([, r]) => r.canRead || r.canCreateTopic || r.canPost)
+          .map(([resourceId, rights]) => ({
+            resourceType: ResourceType.space,
+            resourceId,
+            ...rights,
+          })),
       ]),
     onSuccess: onUpdated,
   });
+  const setSpaceRight = (id: string, right: keyof SpaceRights, checked: boolean) => {
+    const current = spaceRights.get(id) ?? {
+      canRead: false,
+      canCreateTopic: false,
+      canPost: false,
+    };
+    const next =
+      right === 'canRead' && !checked
+        ? { canRead: false, canCreateTopic: false, canPost: false }
+        : { ...current, [right]: checked, ...(checked ? { canRead: true } : {}) };
+    setSpaceRights(new Map(spaceRights).set(id, next));
+  };
   const toggle = (id: string, checked: boolean) => {
     const next = new Set(readable);
     if (checked) next.add(id);
@@ -238,7 +280,27 @@ function PermissionsEditor({ group }: { group: GroupDetail }) {
           ))}
         </div>
       </fieldset>
-      <ErrorMessage error={pages.error ?? save.error} />
+      {(spaces.data?.resources.length ?? 0) > 0 && (
+        <fieldset>
+          <legend>{t('admin.group.spaces')}</legend>
+          {spaces.data!.resources.map((space) => (
+            <div key={space.id} className="space-rights" role="group" aria-label={space.name}>
+              <strong>{space.name}</strong>
+              {SPACE_RIGHTS.map(([right, name]) => (
+                <label key={right} className="inline">
+                  <input
+                    type="checkbox"
+                    checked={spaceRights.get(space.id)?.[right] ?? false}
+                    onChange={(e) => setSpaceRight(space.id, right, e.target.checked)}
+                  />
+                  {t(`rights.names.${name}`)}
+                </label>
+              ))}
+            </div>
+          ))}
+        </fieldset>
+      )}
+      <ErrorMessage error={pages.error ?? spaces.error ?? save.error} />
       <button type="button" disabled={save.isPending} onClick={() => save.mutate()}>
         {t('admin.group.savePermissions')}
       </button>

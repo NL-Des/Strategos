@@ -93,9 +93,10 @@
       "members": "Membres ({{n}})",
       "saveMembers": "Enregistrer les membres",
       "permissions": "Permissions",
-      "permissionsHint": "Une page n’accorde que la lecture. Les permissions des espaces de discussion arriveront avec eux.",
+      "permissionsHint": "Une page n’accorde que la lecture. Un espace de discussion accorde la lecture, l’ouverture de sujets et la publication de messages ; il apparaît ici une fois sa page publiée.",
       "readPages": "Pages lisibles",
-      "savePermissions": "Enregistrer les permissions"
+      "savePermissions": "Enregistrer les permissions",
+      "spaces": "Espaces de discussion"
     },
     "nav": {
       "pages": "Pages",
@@ -110,7 +111,8 @@
       "audit": "Journal",
       "submissions": "Soumissions",
       "themes": "Thèmes",
-      "templates": "Modèles"
+      "templates": "Modèles",
+      "trash": "Corbeille"
     }
   },
   "fields": {
@@ -224,7 +226,8 @@
     "TOO_MANY_ATTACHMENTS": "Un message accepte au plus 4 pièces jointes.",
     "THEME_NAME_TAKEN": "Un thème porte déjà ce nom.",
     "DEFAULT_THEME": "Le thème par défaut ne peut pas être supprimé. Choisissez d’abord un autre thème par défaut dans les réglages.",
-    "TEMPLATE_NAME_TAKEN": "Un modèle de ce type porte déjà ce nom."
+    "TEMPLATE_NAME_TAKEN": "Un modèle de ce type porte déjà ce nom.",
+    "RESTORE_PARENT_DELETED": "Restaurez d’abord l’élément qui le contient (la page du formulaire, le sujet du message)."
   },
   "audit": {
     "title": "Journal des modifications",
@@ -293,7 +296,10 @@
       "notes.read": "Consultation des notes",
       "template.create": "Enregistrement d’un modèle",
       "template.delete": "Suppression d’un modèle",
-      "template.instantiate": "Instanciation d’un modèle"
+      "template.instantiate": "Instanciation d’un modèle",
+      "topic.delete": "Suppression d’un sujet",
+      "trash.restore": "Restauration depuis la corbeille",
+      "backup.restore": "Restauration d’une sauvegarde"
     },
     "targetTypes": {
       "user": "Compte",
@@ -308,7 +314,9 @@
       "onedrive": "OneDrive",
       "message": "Message",
       "theme": "Thème",
-      "template": "Modèle"
+      "template": "Modèle",
+      "topic": "Sujet",
+      "backup": "Sauvegarde"
     },
     "fields": {
       "username": "Pseudo",
@@ -752,7 +760,9 @@
       "hide": "Masquer",
       "unhide": "Rétablir",
       "pin": "Épingler",
-      "unpin": "Désépingler"
+      "unpin": "Désépingler",
+      "deleteTopic": "Supprimer le sujet",
+      "confirmDeleteTopic": "Supprimer ce sujet ? Il pourra être restauré depuis la corbeille."
     },
     "chat": {
       "empty": "Aucun message pour le moment.",
@@ -966,6 +976,44 @@
       "form": "Le modèle garde les champs, libellés et types. Feuille, cellules, colonnes et zone d’ajout ne sont pas enregistrées.",
       "page": "Le modèle copie le dernier brouillon enregistré. Plages des tableaux et catalogues, valeurs insérées et mappings des formulaires ne sont pas enregistrés.",
       "topic": "Le modèle garde le titre et le message d’ouverture, pas les réponses."
+    }
+  },
+  "trash": {
+    "title": "Corbeille",
+    "intro": "Éléments supprimés : ils restent en base et peuvent être restaurés. Les notes personnelles n’y figurent pas.",
+    "type": "Type",
+    "allTypes": "Tous les types",
+    "item": "Élément",
+    "context": "Emplacement",
+    "deletedAt": "Supprimé le",
+    "by": "par {{author}}",
+    "untitled": "(sans titre)",
+    "restore": "Restaurer",
+    "restored": "« {{label}} » a été restauré.",
+    "restoredForm": "« {{label}} » a été restauré : son bloc est remis à la fin du brouillon de la page, publiez-la pour le remettre en ligne.",
+    "empty": "La corbeille est vide.",
+    "types": {
+      "page": "Page",
+      "form": "Formulaire",
+      "topic": "Sujet",
+      "topic_message": "Message de sujet",
+      "chat_message": "Message de chat",
+      "group": "Groupe",
+      "user": "Compte"
+    }
+  },
+  "backups": {
+    "title": "Sauvegardes",
+    "intro": "Une sauvegarde de la base et des fichiers est faite chaque nuit, et conservée selon la durée réglée ci-dessus. Téléchargez-en une pour garder une copie hors du serveur.",
+    "empty": "Aucune sauvegarde pour le moment : la première sera faite cette nuit.",
+    "date": "Date",
+    "status": "État",
+    "size": "Taille",
+    "download": "Télécharger",
+    "statuses": {
+      "running": "En cours",
+      "ok": "Réussie",
+      "failed": "Échec"
     }
   }
 }

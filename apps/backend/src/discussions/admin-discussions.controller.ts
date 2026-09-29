@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   HttpCode,
   HttpStatus,
   Param,
@@ -19,7 +20,7 @@ import { TopicsService } from './topics.service.js';
 /**
  * Modération des discussions (13 — Discussions). Réservé à l'admin (contrôleur
  * sous `admin/`). Renommer et clore passent par la route utilisateur, ouverte à
- * l'admin ; seul l'épinglage et le masquage sont ici.
+ * l'admin ; l'épinglage, la suppression d'un sujet et le masquage sont ici.
  */
 @Controller('admin')
 export class AdminDiscussionsController {
@@ -35,6 +36,16 @@ export class AdminDiscussionsController {
     @CurrentAuth() auth: AuthContext,
   ): Promise<TopicDetail> {
     return this.topics.setPinned(id, auth.user, dto.pinned);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('topics/:id')
+  async removeTopic(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentAuth() auth: AuthContext,
+    @Actor() actor: AuditActor,
+  ): Promise<void> {
+    await this.topics.remove(id, auth.user, actor);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

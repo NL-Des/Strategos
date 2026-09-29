@@ -52,6 +52,9 @@ export const AuditAction = {
   SUBMISSION_INVALIDATE: 'submission.invalidate',
   MESSAGE_HIDE: 'message.hide',
   MESSAGE_UNHIDE: 'message.unhide',
+  TOPIC_DELETE: 'topic.delete',
+  TRASH_RESTORE: 'trash.restore',
+  BACKUP_RESTORE: 'backup.restore',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 export const AUDIT_ACTIONS = Object.values(AuditAction);
@@ -70,6 +73,8 @@ export const AuditTargetType = {
   FORM: 'form',
   SUBMISSION: 'submission',
   MESSAGE: 'message',
+  TOPIC: 'topic',
+  BACKUP: 'backup',
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];
 export const AUDIT_TARGET_TYPES = Object.values(AuditTargetType);

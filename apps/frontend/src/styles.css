@@ -698,9 +698,11 @@ a.button.secondary {
   margin: 0;
 }
 
-/* Champs côte à côte dans les éditeurs de modules (colonnes, plage). */
+/* Champs côte à côte dans les éditeurs de modules (colonnes, plage), et filtres. */
 .inline-fields {
   display: flex;
+  /* Aussi quand la carte est un `.form` (en colonne par défaut). */
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.5rem;
@@ -708,6 +710,19 @@ a.button.secondary {
 
 .inline-fields > label {
   flex: 1 1 8rem;
+  min-width: 0;
+}
+
+/* Mobile : un champ ne dépasse jamais son cadre (un fieldset prend sinon la largeur
+   de son contenu le plus large). */
+fieldset {
+  min-width: 0;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
 }
 
 a.usage {
@@ -1087,4 +1102,13 @@ a.usage {
   height: 1.25rem;
   border-radius: 4px;
   border: 1px solid var(--border);
+}
+
+/* Droits d'un groupe sur un espace de discussion : nom, puis les trois droits. */
+.space-rights {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.25rem 0;
 }

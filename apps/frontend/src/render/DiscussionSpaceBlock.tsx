@@ -6,7 +6,7 @@ import type {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { hideMessage, pinTopic, unhideMessage } from '../api/admin-discussions';
+import { deleteTopic, hideMessage, pinTopic, unhideMessage } from '../api/admin-discussions';
 import {
   deleteMessage,
   editMessage,
@@ -225,6 +225,13 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
     mutationFn: () => patchTopic(topicId, { closed: true }),
     onSuccess: () => void refresh(),
   });
+  const remove = useMutation({
+    mutationFn: () => deleteTopic(topicId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['topics'] });
+      onBack();
+    },
+  });
   const { data: me } = useMe();
 
   if (query.error) return <ErrorMessage error={query.error} />;
@@ -246,7 +253,20 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
         {me?.isAdmin && (
           <SaveAsTemplate type="topic" sourceId={topic.id} defaultName={topic.title} />
         )}
+        {me?.isAdmin && (
+          <button
+            type="button"
+            className="danger"
+            disabled={remove.isPending}
+            onClick={() => {
+              if (window.confirm(t('render.discussion.confirmDeleteTopic'))) remove.mutate();
+            }}
+          >
+            {t('render.discussion.deleteTopic')}
+          </button>
+        )}
       </div>
+      <ErrorMessage error={remove.error} />
       <h3>
         {topic.title}
         {topic.closed && <span className="badge"> {t('render.discussion.closed')}</span>}

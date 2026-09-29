@@ -18,6 +18,7 @@ const admin = <K extends string>(load: () => Promise<Record<K, React.ComponentTy
 // Notes : leur éditeur (TipTap) n'est chargé qu'à l'ouverture de la page.
 const NotesPage = admin(() => import('./pages/NotesPage'), 'NotesPage');
 const AuditPage = admin(() => import('./pages/admin/AuditPage'), 'AuditPage');
+const TrashPage = admin(() => import('./pages/admin/TrashPage'), 'TrashPage');
 const GroupPage = admin(() => import('./pages/admin/GroupPage'), 'GroupPage');
 const GroupsPage = admin(() => import('./pages/admin/GroupsPage'), 'GroupsPage');
 const LayoutEditorPage = admin(() => import('./pages/admin/LayoutEditorPage'), 'LayoutEditorPage');
@@ -85,6 +86,7 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/rights/:type/:id', <ResourceRightsPage />],
   ['/admin/settings', <SettingsPage />],
   ['/admin/audit', <AuditPage />],
+  ['/admin/trash', <TrashPage />],
 ];
 
 export function App() {
