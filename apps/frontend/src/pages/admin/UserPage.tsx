@@ -14,6 +14,7 @@ import {
   resetPassword,
   updateUser,
 } from '../../api/users';
+import { readUserNotes } from '../../api/notes';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { RightsTable } from '../../components/RightsTable';
 
@@ -170,6 +171,8 @@ function UserDetails({ user }: { user: UserDetail }) {
         )}
       </div>
 
+      <UserNotes userId={user.id} />
+
       {!user.isAdmin && (
         <>
           <form
@@ -217,5 +220,37 @@ function UserDetails({ user }: { user: UserDetail }) {
       )}
       {user.isAdmin && <p className="muted">{t('admin.user.adminProtected')}</p>}
     </>
+  );
+}
+
+/**
+ * Notes personnelles du compte (05), en lecture seule. Elles ne sont chargées
+ * que sur demande : chaque consultation est inscrite au journal (`notes.read`),
+ * d'où une mutation plutôt qu'une requête rechargée automatiquement.
+ */
+function UserNotes({ userId }: { userId: string }) {
+  const { t } = useTranslation();
+  const read = useMutation({ mutationFn: () => readUserNotes(userId) });
+
+  return (
+    <div className="card">
+      <h2>{t('admin.user.notes')}</h2>
+      <p className="muted">{t('admin.user.notesHint')}</p>
+      <button type="button" disabled={read.isPending} onClick={() => read.mutate()}>
+        {t('admin.user.readNotes')}
+      </button>
+      <ErrorMessage error={read.error} />
+      {read.data?.length === 0 && <p className="muted">{t('admin.user.noNotes')}</p>}
+      {read.data?.map((note) => (
+        <article key={note.id} className="note">
+          <h3>{note.title}</h3>
+          <p className="muted">
+            {t('notes.updatedAt', { date: new Date(note.updatedAt).toLocaleString('fr-FR') })}
+          </p>
+          {/* HTML nettoyé par le backend (liste blanche). */}
+          <div className="block-rich" dangerouslySetInnerHTML={{ __html: note.content }} />
+        </article>
+      ))}
+    </div>
   );
 }

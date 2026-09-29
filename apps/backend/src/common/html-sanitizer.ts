@@ -8,6 +8,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const normalizeRef = (ref: string) => ref.replaceAll('$', '').toUpperCase();
 
+// Seul `target="_blank"` est gardé, toujours avec `rel="noopener noreferrer"`.
+const safeLink: sanitizeHtml.Transformer = (tagName, { target, rel: _rel, ...attribs }) => ({
+  tagName,
+  attribs: target === '_blank' ? { ...attribs, target, rel: 'noopener noreferrer' } : attribs,
+});
+
 /** Valeur de cellule insérée dans un Contenu libre (06) : attributs attendus et valides. */
 function isCellValue(attribs: Record<string, string>): boolean {
   return (
@@ -87,11 +93,7 @@ export function sanitizeRichHtml(html: string, { cellValues = false } = {}): str
           text: `{${sheet}!${ref}}`,
         };
       },
-      // Seul `target="_blank"` est gardé, toujours avec `rel="noopener noreferrer"`.
-      a: (tagName, { target, rel: _rel, ...attribs }) => ({
-        tagName,
-        attribs: target === '_blank' ? { ...attribs, target, rel: 'noopener noreferrer' } : attribs,
-      }),
+      a: safeLink,
     },
   });
   // Une valeur de cellule ne contient que son libellé : balises imbriquées retirées.
@@ -99,4 +101,19 @@ export function sanitizeRichHtml(html: string, { cellValues = false } = {}): str
     /(<span data-cell-source="[^"]*"[^>]*>)(\{[^<]*\})[\s\S]*?<\/span>/g,
     '$1$2</span>',
   );
+}
+
+/**
+ * HTML d'une note personnelle (05) : mise en forme simple (gras, italique,
+ * listes, liens). Ni images, ni titres, ni tableaux ; le reste est retiré.
+ */
+export function sanitizeNoteHtml(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'a'],
+    allowedAttributes: { a: ['href', 'target', 'rel'] },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedSchemesAppliedToAttributes: ['href'],
+    allowProtocolRelative: false,
+    transformTags: { a: safeLink },
+  });
 }

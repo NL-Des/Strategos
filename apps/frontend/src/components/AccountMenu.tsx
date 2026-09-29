@@ -7,7 +7,7 @@ import { ME_KEY, useMe } from '../auth/useMe';
 
 /**
  * Menu de compte (06) : seul élément que l'admin ne construit pas, fixe dans un
- * coin sur toutes les pages. Les notes s'y ajoutent à l'étape 11.
+ * coin sur toutes les pages : Profil, Notes, Mes soumissions et Déconnexion.
  */
 export function AccountMenu() {
   const { t } = useTranslation();
@@ -53,6 +53,11 @@ export function AccountMenu() {
           {!me.mustChangeCredentials && (
             <Link role="menuitem" to="/profile" onClick={() => setOpen(false)}>
               {t('account.profile')}
+            </Link>
+          )}
+          {!me.mustChangeCredentials && (
+            <Link role="menuitem" to="/notes" onClick={() => setOpen(false)}>
+              {t('account.notes')}
             </Link>
           )}
           {!me.mustChangeCredentials && (

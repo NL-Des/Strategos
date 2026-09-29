@@ -46,6 +46,7 @@ Sont tracées (action, cible, état avant/après, date) :
 - le téléchargement d'un Excel uploadé, et son réimport avec le choix fait (annuler, écraser, réappliquer) ;
 - le masquage d'un message par l'admin (modération) ;
 - les modifications et **publications** de pages, du header et du footer partagés, et les modifications de formulaires ;
+- la création, la modification et la suppression des thèmes ;
 - la réinitialisation du compte admin par commande serveur ;
 - les restaurations depuis la corbeille ;
 - les consultations des notes personnelles (voir [Profil utilisateur](05-profil-utilisateur.md)).

@@ -20,7 +20,8 @@
     "menu": "Menu du compte",
     "logout": "Se déconnecter",
     "profile": "Profil",
-    "submissions": "Mes soumissions"
+    "submissions": "Mes soumissions",
+    "notes": "Notes"
   },
   "login": {
     "title": "Connexion",
@@ -70,7 +71,11 @@
       "enabled": "Compte réactivé.",
       "delete": "Supprimer le compte",
       "deleteConfirm": "Supprimer le compte « {{username}} » ? Ses sessions seront fermées.",
-      "adminProtected": "Le compte administrateur ne peut être ni désactivé, ni supprimé, ni réinitialisé depuis le site. En cas de perte du mot de passe, utilisez la commande serveur."
+      "adminProtected": "Le compte administrateur ne peut être ni désactivé, ni supprimé, ni réinitialisé depuis le site. En cas de perte du mot de passe, utilisez la commande serveur.",
+      "notes": "Notes personnelles",
+      "notesHint": "Lecture seule. Chaque consultation est inscrite au journal.",
+      "readNotes": "Consulter les notes",
+      "noNotes": "Aucune note."
     },
     "groups": {
       "title": "Groupes",
@@ -103,7 +108,8 @@
       "rights": "Droits",
       "settings": "Réglages",
       "audit": "Journal",
-      "submissions": "Soumissions"
+      "submissions": "Soumissions",
+      "themes": "Thèmes"
     }
   },
   "fields": {
@@ -137,7 +143,9 @@
     "range": "Plage",
     "ref": "Plage",
     "startRow": "Ligne de départ",
-    "col": "Colonne"
+    "col": "Colonne",
+    "title": "Titre",
+    "content": "Contenu"
   },
   "hints": {
     "password": "Au moins {{min}} caractères. Une phrase facile à retenir fonctionne très bien.",
@@ -212,7 +220,9 @@
     "FORBIDDEN": "Action non autorisée.",
     "TOPIC_CLOSED": "Ce sujet est clos : aucun nouveau message.",
     "NOT_AUTHOR": "Vous n’êtes pas l’auteur de ce contenu.",
-    "TOO_MANY_ATTACHMENTS": "Un message accepte au plus 4 pièces jointes."
+    "TOO_MANY_ATTACHMENTS": "Un message accepte au plus 4 pièces jointes.",
+    "THEME_NAME_TAKEN": "Un thème porte déjà ce nom.",
+    "DEFAULT_THEME": "Le thème par défaut ne peut pas être supprimé. Choisissez d’abord un autre thème par défaut dans les réglages."
   },
   "audit": {
     "title": "Journal des modifications",
@@ -274,7 +284,11 @@
       "source.add": "Ajout d’une source",
       "onedrive.connect": "Connexion OneDrive",
       "message.hide": "Masquage d’un message",
-      "message.unhide": "Rétablissement d’un message"
+      "message.unhide": "Rétablissement d’un message",
+      "theme.create": "Création d’un thème",
+      "theme.update": "Modification d’un thème",
+      "theme.delete": "Suppression d’un thème",
+      "notes.read": "Consultation des notes"
     },
     "targetTypes": {
       "user": "Compte",
@@ -287,7 +301,8 @@
       "form": "Formulaire",
       "submission": "Soumission",
       "onedrive": "OneDrive",
-      "message": "Message"
+      "message": "Message",
+      "theme": "Thème"
     },
     "fields": {
       "username": "Pseudo",
@@ -802,6 +817,108 @@
       "rejectReason": "Motif du refus (facultatif) :",
       "pendingCount_one": "1 soumission en attente",
       "pendingCount_other": "{{count}} soumissions en attente"
+    }
+  },
+  "notes": {
+    "title": "Mes notes",
+    "visibleByAdmin": "Vos notes sont privées : les autres utilisateurs ne les voient pas, mais l’administrateur peut les lire.",
+    "new": "Nouvelle note",
+    "create": "Créer la note",
+    "saved": "Note enregistrée.",
+    "empty": "Aucune note pour l’instant.",
+    "updatedAt": "Modifiée le {{date}}",
+    "deleteConfirm": "Supprimer la note « {{title}} » ?",
+    "editor": {
+      "bold": "Gras",
+      "italic": "Italique",
+      "bulletList": "Liste à puces",
+      "orderedList": "Liste numérotée",
+      "link": "Lien",
+      "linkPrompt": "Adresse du lien (vide pour le retirer)"
+    }
+  },
+  "themes": {
+    "title": "Thèmes",
+    "intro": "Un thème regroupe le fond, les textes, les boutons, les tableaux, les cartes et les discussions. Une page sans thème utilise le thème par défaut, choisi dans les réglages.",
+    "default": "Par défaut",
+    "create": "Créer un thème",
+    "createSubmit": "Créer le thème",
+    "empty": "Aucun thème.",
+    "back": "← Tous les thèmes",
+    "saved": "Thème enregistré.",
+    "delete": "Supprimer le thème",
+    "deleteConfirm": "Supprimer le thème « {{name}} » ? Les pages qui l’utilisent passeront au thème par défaut.",
+    "defaultProtected": "C’est le thème par défaut : il ne peut pas être supprimé.",
+    "preview": "Aperçu",
+    "sections": {
+      "background": "Fond de page",
+      "text": "Textes",
+      "surface": "Encadrés",
+      "buttons": "Boutons",
+      "tables": "Tableaux",
+      "cards": "Cartes de catalogue",
+      "discussions": "Discussions et chat"
+    },
+    "fields": {
+      "color": "Couleur",
+      "image": "Image de fond",
+      "noImage": "Sans image",
+      "chooseImage": "Choisir une image",
+      "removeImage": "Retirer l’image",
+      "textColor": "Couleur du texte",
+      "headingColor": "Couleur des titres",
+      "linkColor": "Couleur des liens",
+      "font": "Police du texte",
+      "headingFont": "Police des titres",
+      "size": "Taille du texte (px)",
+      "background": "Fond",
+      "borderColor": "Bordure",
+      "radius": "Arrondi (px)",
+      "buttonColor": "Couleur du texte",
+      "style": "Style",
+      "headerBackground": "Fond des en-têtes",
+      "headerColor": "Texte des en-têtes",
+      "stripeColor": "Lignes alternées",
+      "titleColor": "Couleur des titres",
+      "shadow": "Ombre portée",
+      "messageBackground": "Fond des messages",
+      "authorColor": "Couleur des auteurs"
+    },
+    "fonts": {
+      "system": "Système",
+      "humanist": "Humaniste",
+      "geometric": "Géométrique",
+      "serif": "Avec empattements",
+      "old_style": "Classique",
+      "slab": "Égyptienne",
+      "mono": "Chasse fixe",
+      "rounded": "Arrondie"
+    },
+    "buttonStyles": {
+      "filled": "Plein",
+      "outline": "Contour"
+    },
+    "sample": {
+      "heading": "Titre de la page",
+      "text": "Un paragraphe de texte courant, avec",
+      "link": "un lien",
+      "button": "Bouton",
+      "table": {
+        "name": "Nom",
+        "level": "Niveau",
+        "rows": [
+          ["Kira", "42"],
+          ["Arkan", "37"],
+          ["Nadia", "51"]
+        ]
+      },
+      "cardTitle": "Épée runique",
+      "cardSubtitle": "Arme légendaire",
+      "cardDetail": "Dégâts",
+      "cardValue": "120",
+      "discussion": "Discussion",
+      "author": "Kira",
+      "message": "Rendez-vous ce soir à 21 h pour le raid."
     }
   }
 }

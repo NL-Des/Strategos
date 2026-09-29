@@ -195,7 +195,8 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/layout/:kind/preview?asGroup=` | Aperçu du header ou du footer, éventuellement avec les droits d'un groupe | — |
 | POST | `/layout/:kind/publish` | Publier le header ou le footer | — |
 | GET | `/blocks/:blockId/rows?preview=true` | Lignes d'un bloc de brouillon (ou, à défaut, de la version publiée), pour l'aperçu ; même réponse que la route utilisateur. L'aperçu assemblé pointe vers cette route dans `rowsUrl` | `404`, `503 SOURCE_UNAVAILABLE` |
-| CRUD | `/themes`, `/themes/:id` | Thèmes ; supprimer le thème par défaut est refusé | `422 DEFAULT_THEME` |
+| GET / POST | `/themes` | Lister (avec `isDefault`) ; créer `{ name, config }` | `409 THEME_NAME_TAKEN`, `VALIDATION_FAILED` |
+| GET / PUT / DELETE | `/themes/:id` | Lire ; modifier `{ version, name, config }` ; supprimer (physique) : les pages publiées et les brouillons qui l'utilisaient reviennent au thème par défaut ; supprimer le thème par défaut est refusé | `404`, `EDIT_CONFLICT`, `409 THEME_NAME_TAKEN`, `VALIDATION_FAILED` (image de fond inconnue), `422 DEFAULT_THEME` |
 | GET / POST | `/media` | Liste paginée (`?q=` sur le nom), upload (`multipart` : `file`, `alt` facultatif) | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE`, `409 MEDIA_NAME_TAKEN` |
 | GET | `/media/:id/usages` | Pages et header/footer qui utilisent l'image (brouillon ou version publiée) | `404` |
 | DELETE | `/media/:id` | Suppression douce, corps `{ confirm? }` ; avertissement `MEDIA_IN_USE` avec `pages` et `layouts` | `409 CONFIRMATION_REQUIRED` |

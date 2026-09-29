@@ -11,6 +11,7 @@ const LINKS = [
   ['/admin/layout/header', 'header'],
   ['/admin/layout/footer', 'footer'],
   ['/admin/media', 'media'],
+  ['/admin/themes', 'themes'],
   ['/admin/sources', 'sources'],
   ['/admin/users', 'users'],
   ['/admin/groups', 'groups'],

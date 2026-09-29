@@ -71,6 +71,8 @@ Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, 
 | Réinitialiser le compte admin | `docker compose exec backend node dist/src/cli/reset-admin.js` (en local : `pnpm --filter @strategos/backend build` puis `node dist/src/cli/reset-admin.js` depuis `apps/backend`) |
 | Appliquer les migrations | `pnpm --filter @strategos/backend prisma migrate deploy` (automatique au démarrage du conteneur `backend`) |
 
+Pour Claude : le hook RTK ne réécrit pas les scripts pnpm du projet. Lancer `rtk err pnpm check`, `rtk err pnpm typecheck`, `rtk test pnpm test` et `rtk test pnpm test:e2e` (sortie réduite aux erreurs, code de retour conservé).
+
 Conventions du code :
 - **Code d'erreur** : l'ajouter dans `packages/shared/src/errors.ts`, puis son texte de secours dans `apps/backend/src/common/error-messages.ts` et sa traduction `errors.<CODE>` dans `apps/frontend/src/i18n/fr.json` (typage et tests échouent sinon). Lever `new AppException(status, ErrorCode.X, details)`.
 - **Enum** : l'ajouter dans `schema.prisma` et dans `packages/shared/src/enums.ts` (un test compare les deux).

@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listPages } from '../../api/pages';
-import { getSettings, listThemes, updateSettings } from '../../api/settings';
+import { getSettings, updateSettings } from '../../api/settings';
+import { listThemes } from '../../api/themes';
 import { ME_KEY } from '../../auth/useMe';
 import { ErrorMessage } from '../../components/ErrorMessage';
 
-/** Admin › Réglages de l'instance (04). Le téléchargement des sauvegardes arrive à l'étape 13. */
+/** Admin › Réglages de l'instance (04). Le téléchargement des sauvegardes arrive à l'étape 12. */
 export function SettingsPage() {
   const { t } = useTranslation();
   const settings = useQuery({ queryKey: ['admin', 'settings'], queryFn: getSettings });

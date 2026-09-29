@@ -14,10 +14,10 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 7 — Google Sheets et OneDrive](#étape-7--google-sheets-et-onedrive)
 - [x] [Étape 8 — Espaces de discussion](#étape-8--espaces-de-discussion)
 - [x] [Étape 9 — Chat temps réel](#étape-9--chat-temps-réel)
-- [ ] [Étape 10 — Carte cliquable](#étape-10--carte-cliquable)
-- [ ] [Étape 11 — Thèmes complets et notes](#étape-11--thèmes-complets-et-notes)
-- [ ] [Étape 12 — Modèles et duplication](#étape-12--modèles-et-duplication)
-- [ ] [Étape 13 — Corbeille, sauvegardes et finitions](#étape-13--corbeille-sauvegardes-et-finitions)
+- [x] [Étape 10 — Thèmes complets et notes](#étape-10--thèmes-complets-et-notes)
+- [ ] [Étape 11 — Modèles et duplication](#étape-11--modèles-et-duplication)
+- [ ] [Étape 12 — Corbeille, sauvegardes et finitions](#étape-12--corbeille-sauvegardes-et-finitions)
+- [ ] [Étape 13 — Carte cliquable](#étape-13--carte-cliquable)
 
 ## Organisation du dépôt
 
@@ -299,26 +299,7 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 
 **Démo** : deux navigateurs échangent en direct sur une page ; un utilisateur sans lecture de la page est refusé.
 
-### Étape 10 — Carte cliquable
-**À lire avant de coder**
-- [06 — Carte cliquable](conception/06-page-builder.md#carte-cliquable), [Liens vers des pages non autorisées](conception/06-page-builder.md#liens-vers-des-pages-non-autorisées), [Points techniques](conception/06-page-builder.md#points-techniques)
-- [13 — Page assemblée](conception/13-api.md#page-assemblée)
-
-- Éditeur de polygones libres en SVG, coordonnées en pourcentages, détection des chevauchements.
-- Rendu : surbrillance et libellé au survol, double appui sur mobile, zones inactives vers les pages illisibles.
-
-Placée tard parce que c'est le composant le plus complexe et qu'aucune autre partie n'en dépend.
-
-**Critères d'acceptation**
-- [ ] Coordonnées des polygones stockées en pourcentages de l'image.
-- [ ] L'éditeur détecte et signale les chevauchements.
-- [ ] Zone vers une page illisible : sans lien dans le JSON, sans surbrillance ni libellé.
-- [ ] Mobile : premier appui = surbrillance et libellé, second appui = lien.
-- [ ] Les zones suivent l'image quand la largeur change.
-
-**Démo** : une carte avec trois zones, dont une vers une page illisible pour le groupe choisi en aperçu.
-
-### Étape 11 — Thèmes complets et notes
+### Étape 10 — Thèmes complets et notes
 **À lire avant de coder**
 - [06 — Thèmes](conception/06-page-builder.md#thèmes), [Menu de compte](conception/06-page-builder.md#menu-de-compte)
 - [05 — Profil utilisateur](conception/05-profil-utilisateur.md) (notes)
@@ -329,14 +310,14 @@ Placée tard parce que c'est le composant le plus complexe et qu'aucune autre pa
 - Notes personnelles : table `user_notes`, HTML en liste blanche, lecture admin tracée (`notes.read`) et mention permanente côté utilisateur.
 
 **Critères d'acceptation**
-- [ ] Page sans thème → thème par défaut ; supprimer le thème par défaut → `422 DEFAULT_THEME`.
-- [ ] Notes : HTML nettoyé (liste blanche), accès par propriété, suppression douce.
-- [ ] L'admin lit les notes en `GET` seulement ; chaque lecture écrit `notes.read` au journal.
-- [ ] Mention permanente « visibles par l'administrateur » sur la page de notes.
+- [x] Page sans thème → thème par défaut ; supprimer le thème par défaut → `422 DEFAULT_THEME`.
+- [x] Notes : HTML nettoyé (liste blanche), accès par propriété, suppression douce.
+- [x] L'admin lit les notes en `GET` seulement ; chaque lecture écrit `notes.read` au journal.
+- [x] Mention permanente « visibles par l'administrateur » sur la page de notes.
 
 **Démo** : deux pages sous deux thèmes différents ; une consultation de notes apparaît au journal.
 
-### Étape 12 — Modèles et duplication
+### Étape 11 — Modèles et duplication
 **À lire avant de coder**
 - [10 — Modèles et duplication](conception/10-modeles-duplication.md) (en entier)
 - [09 — Soumissions](conception/09-formulaires-soumissions.md#soumissions) (formulaire non configuré)
@@ -354,7 +335,7 @@ Placée tard parce que c'est le composant le plus complexe et qu'aucune autre pa
 
 **Démo** : [Parcours D](conception/12-parcours.md#parcours-d--espace-privé-dun-joueur-modèles-profil).
 
-### Étape 13 — Corbeille, sauvegardes et finitions
+### Étape 12 — Corbeille, sauvegardes et finitions
 **À lire avant de coder**
 - [04 — Corbeille](conception/04-administration.md#corbeille)
 - [11 — Suppression de contenu](conception/11-transverse.md#suppression-de-contenu), [Sauvegardes](conception/11-transverse.md#sauvegardes)
@@ -374,3 +355,22 @@ Placée tard parce que c'est le composant le plus complexe et qu'aucune autre pa
 - [ ] Spécification OpenAPI générée depuis le code.
 
 **Démo** : les parcours A à D rejoués en Playwright sur une instance neuve.
+
+### Étape 13 — Carte cliquable
+**À lire avant de coder**
+- [06 — Carte cliquable](conception/06-page-builder.md#carte-cliquable), [Liens vers des pages non autorisées](conception/06-page-builder.md#liens-vers-des-pages-non-autorisées), [Points techniques](conception/06-page-builder.md#points-techniques)
+- [13 — Page assemblée](conception/13-api.md#page-assemblée)
+
+- Éditeur de polygones libres en SVG, coordonnées en pourcentages, détection des chevauchements.
+- Rendu : surbrillance et libellé au survol, double appui sur mobile, zones inactives vers les pages illisibles.
+
+Placée en dernier parce que c'est le composant le plus complexe et qu'aucune autre partie n'en dépend.
+
+**Critères d'acceptation**
+- [ ] Coordonnées des polygones stockées en pourcentages de l'image.
+- [ ] L'éditeur détecte et signale les chevauchements.
+- [ ] Zone vers une page illisible : sans lien dans le JSON, sans surbrillance ni libellé.
+- [ ] Mobile : premier appui = surbrillance et libellé, second appui = lien.
+- [ ] Les zones suivent l'image quand la largeur change.
+
+**Démo** : une carte avec trois zones, dont une vers une page illisible pour le groupe choisi en aperçu.

@@ -141,6 +141,7 @@ model User {
   hiddenChatMessages ChatMessage[]     @relation("ChatMessageHider")
   revisions          MessageRevision[]
   attachments        Attachment[]
+  notes              UserNote[]
 
   @@map("users")
 }
@@ -669,4 +670,22 @@ model AuditLog {
   @@index([targetType, targetId])
   @@index([action, createdAt(sort: Desc)])
   @@map("audit_log")
+}
+
+// 10. Profil (14 §10). Index partiel (user_id, updated_at desc) where deleted_at
+// is null ajouté en SQL.
+
+model UserNote {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  title     String
+  /// HTML en liste blanche, nettoyé par le backend.
+  content   String
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("user_notes")
 }

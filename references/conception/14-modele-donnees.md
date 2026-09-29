@@ -126,7 +126,7 @@ Table à **une seule ligne**.
 |---|---|---|---|---|
 | `id` | uuid | | — | PK |
 | `name` | citext | | — | Unique |
-| `config` | jsonb | | — | Fond, polices, couleurs, styles des boutons, tableaux, cartes et discussions |
+| `config` | jsonb | | — | Fond (couleur, image de la médiathèque), textes (couleurs, polices, taille), encadrés, boutons (plein ou contour), tableaux, cartes et discussions. Polices : liste fermée de piles de polices système (`THEME_FONTS`), sans chargement externe |
 | `created_at`, `updated_at` | timestamptz | | `now()` | |
 | `version` | int | | `1` | |
 

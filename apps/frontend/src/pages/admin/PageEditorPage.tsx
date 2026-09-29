@@ -19,7 +19,7 @@ import {
   savePageDraft,
 } from '../../api/pages';
 import { getPublishPreview } from '../../api/forms';
-import { listThemes } from '../../api/settings';
+import { listThemes } from '../../api/themes';
 import { Warnings } from '../../builder/FormEditor';
 import { blocksOf, PageEditorContext } from '../../builder/PageEditorContext';
 import { RowsEditor } from '../../builder/RowsEditor';

@@ -32,6 +32,8 @@ La personnalisation passe par des **thèmes**. L'administrateur crée plusieurs 
 
 L'admin désigne un **thème par défaut** et peut attribuer un **thème à chaque page** : une page sans thème attribué utilise le thème par défaut. Il n'y a ni thème par groupe ni choix de l'utilisateur.
 
+Les polices sont choisies dans une **liste fermée** de polices déjà présentes sur les appareils (système, humaniste, géométrique, avec empattements, classique, égyptienne, chasse fixe, arrondie) : rien n'est chargé depuis l'extérieur. L'éditeur de thèmes affiche un **aperçu en direct** (titre, texte, boutons, tableau, carte, message de discussion). Supprimer un thème encore utilisé est permis : ses pages reviennent au thème par défaut.
+
 La mise en forme des fichiers sources (gras, couleurs de cellules…) **n'est pas reproduite** : Strategos ne lit que des valeurs, et l'apparence vient du thème et des formats choisis par l'admin.
 
 ### Médiathèque

@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import type { Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import type { GroupDetail } from '@strategos/shared';
+import { DEFAULT_THEME_CONFIG, type GroupDetail } from '@strategos/shared';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { hashPassword } from '../src/auth/password.js';
@@ -28,6 +28,12 @@ export async function resetDatabase(app: NestExpressApplication): Promise<void> 
   await prisma.$executeRawUnsafe(
     'TRUNCATE users, sessions, login_attempts, audit_log, pages, media, settings, groups, discussion_spaces, sources, forms, submissions CASCADE',
   );
+  // Thèmes : seul « Sobre », le thème de l'installation, est gardé, dans son état initial.
+  await prisma.$executeRawUnsafe(`DELETE FROM themes WHERE name <> 'Sobre'`);
+  await prisma.theme.update({
+    where: { name: 'Sobre' },
+    data: { config: DEFAULT_THEME_CONFIG as unknown as Prisma.InputJsonValue, version: 1 },
+  });
   // Données initiales de la migration des pages : réglages, header et footer vides.
   await prisma.$executeRawUnsafe(
     `INSERT INTO settings (id, default_theme_id) SELECT 1, id FROM themes WHERE name = 'Sobre'`,

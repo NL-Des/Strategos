@@ -15,6 +15,8 @@ import { ProfilePage } from './pages/ProfilePage';
 // l'éditeur de pages (TipTap) ni les autres écrans admin.
 const admin = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
   lazy(() => load().then((m) => ({ default: m[name] })));
+// Notes : leur éditeur (TipTap) n'est chargé qu'à l'ouverture de la page.
+const NotesPage = admin(() => import('./pages/NotesPage'), 'NotesPage');
 const AuditPage = admin(() => import('./pages/admin/AuditPage'), 'AuditPage');
 const GroupPage = admin(() => import('./pages/admin/GroupPage'), 'GroupPage');
 const GroupsPage = admin(() => import('./pages/admin/GroupsPage'), 'GroupsPage');
@@ -30,6 +32,8 @@ const RightsPage = admin(() => import('./pages/admin/RightsPage'), 'RightsPage')
 const SourcesPage = admin(() => import('./pages/admin/SourcesPage'), 'SourcesPage');
 const SubmissionsPage = admin(() => import('./pages/admin/SubmissionsPage'), 'SubmissionsPage');
 const SettingsPage = admin(() => import('./pages/admin/SettingsPage'), 'SettingsPage');
+const ThemeEditorPage = admin(() => import('./pages/admin/ThemeEditorPage'), 'ThemeEditorPage');
+const ThemesPage = admin(() => import('./pages/admin/ThemesPage'), 'ThemesPage');
 const UserPage = admin(() => import('./pages/admin/UserPage'), 'UserPage');
 const UsersPage = admin(() => import('./pages/admin/UsersPage'), 'UsersPage');
 
@@ -67,6 +71,8 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/pages/:id', <PageEditorPage />],
   ['/admin/layout/:kind', <LayoutEditorPage />],
   ['/admin/media', <MediaPage />],
+  ['/admin/themes', <ThemesPage />],
+  ['/admin/themes/:id', <ThemeEditorPage />],
   ['/admin/sources', <SourcesPage />],
   ['/admin/submissions', <SubmissionsPage />],
   ['/admin/users', <UsersPage />],
@@ -97,6 +103,16 @@ export function App() {
           element={
             <Framed>
               <ProfilePage />
+            </Framed>
+          }
+        />
+        <Route
+          path="/notes"
+          element={
+            <Framed>
+              <Suspense fallback={<Loading />}>
+                <NotesPage />
+              </Suspense>
             </Framed>
           }
         />

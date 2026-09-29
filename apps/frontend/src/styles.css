@@ -248,6 +248,7 @@ label.inline {
   background: var(--t-bg) var(--t-bg-image) center / cover fixed;
   color: var(--t-text);
   font-family: var(--t-font);
+  font-size: var(--t-size);
 }
 
 .themed h1,
@@ -255,6 +256,7 @@ label.inline {
 .themed h3,
 .themed h4 {
   color: var(--t-heading);
+  font-family: var(--t-heading-font);
 }
 
 .themed a {
@@ -353,8 +355,17 @@ label.inline {
   padding: 0.5rem 1rem;
   background: var(--t-btn-bg, var(--accent));
   color: var(--t-btn-color, #fff);
+  border: 1px solid var(--t-btn-border, var(--accent));
   border-radius: var(--t-btn-radius, 6px);
   text-decoration: none;
+}
+
+/* Boutons des modules (formulaires, discussions, chat) : style du thème. */
+.themed .layout-column button:not(.link, .secondary) {
+  background: var(--t-btn-bg);
+  border-color: var(--t-btn-border);
+  color: var(--t-btn-color);
+  border-radius: var(--t-btn-radius);
 }
 
 .block-rich img {
@@ -391,7 +402,7 @@ label.inline {
   place-items: center;
   font-weight: 700;
   background: var(--t-btn-bg, var(--accent));
-  border-color: var(--t-btn-bg, var(--accent));
+  border-color: var(--t-btn-border, var(--accent));
   color: var(--t-btn-color, #fff);
   box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
 }
@@ -724,6 +735,21 @@ a.usage {
 
 .block-table table {
   background: var(--t-surface, #fff);
+  border: 1px solid var(--t-table-border, var(--border));
+}
+
+.block-table th {
+  background: var(--t-table-head-bg, var(--surface));
+  color: var(--t-table-head-color, inherit);
+}
+
+.block-table th,
+.block-table td {
+  border-bottom-color: var(--t-table-border, var(--border));
+}
+
+.block-table tbody tr:nth-child(even) {
+  background: var(--t-table-stripe, transparent);
 }
 
 .block-table th button.sort {
@@ -783,9 +809,14 @@ a.usage {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  background: var(--t-surface, #fff);
-  border: 1px solid var(--t-border, var(--border));
-  border-radius: var(--t-radius, 8px);
+  background: var(--t-card-bg, #fff);
+  border: 1px solid var(--t-card-border, var(--border));
+  border-radius: var(--t-card-radius, 8px);
+  box-shadow: var(--t-card-shadow, none);
+}
+
+.catalog-card h3 {
+  color: var(--t-card-title, inherit);
 }
 
 .catalog-card.image_left {
@@ -816,7 +847,7 @@ a.usage {
 
 .catalog-card.image_background .card-body {
   position: relative;
-  background: color-mix(in srgb, var(--t-surface, #fff) 85%, transparent);
+  background: color-mix(in srgb, var(--t-card-bg, #fff) 85%, transparent);
 }
 
 .card-image {
@@ -972,4 +1003,88 @@ a.usage {
 /* Bouton qui ouvre un sélecteur de fichier (réimport). */
 .file-button input[type='file'] {
   display: none;
+}
+
+/* Discussions et chat (07) : encadrés et messages du thème. */
+.block-discussion,
+.block-chat {
+  padding: 0.75rem;
+  background: var(--t-disc-bg, var(--surface));
+  border: 1px solid var(--t-disc-border, var(--border));
+  border-radius: var(--t-disc-radius, 8px);
+}
+
+.topic-message,
+.chat-message {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--t-disc-msg-bg, var(--bg));
+  border-radius: var(--t-disc-radius, 8px);
+}
+
+.topic-message header strong,
+.chat-message header strong {
+  color: var(--t-disc-author, inherit);
+  margin-right: 0.5rem;
+}
+
+/* Thèmes (06) : éditeur, aperçu en direct et pastilles de la liste. */
+.theme-editor {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .theme-editor {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .theme-preview {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.theme-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color-field input[type='color'] {
+  width: 2.5rem;
+  height: 2rem;
+  padding: 0.1rem;
+}
+
+.theme-image-thumb {
+  max-width: 10rem;
+  max-height: 6rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.theme-sample.themed {
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background-attachment: scroll;
+}
+
+.theme-sample .zone > * + * {
+  margin-top: 1rem;
+}
+
+.theme-swatches {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.theme-swatches span {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
 }
