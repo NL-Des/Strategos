@@ -67,8 +67,16 @@ export class ChatMessagesService {
     return chatMessageView(created, user.id);
   }
 
-  /** Modifier son message ; l'ancienne version est archivée, la mise à jour diffusée. */
-  async edit(messageId: string, user: User, content: string): Promise<ChatMessageView> {
+  /**
+   * Modifier son message ; l'ancienne version est archivée, la mise à jour
+   * diffusée. L'admin peut aussi modifier celui d'un autre : c'est alors tracé.
+   */
+  async edit(
+    messageId: string,
+    user: User,
+    actor: AuditActor,
+    content: string,
+  ): Promise<ChatMessageView> {
     const { message, chat } = await this.access.requireChatMessage(user, messageId);
     this.access.requireAuthor(user, message.authorId);
     const clean = sanitizeRichHtml(content);
@@ -78,6 +86,14 @@ export class ChatMessagesService {
         where: { id: message.id },
         data: { content: clean, editedAt: new Date() },
       });
+      if (message.authorId !== user.id) {
+        await this.audit.record(tx, actor, {
+          action: AuditAction.MESSAGE_ADMIN_EDIT,
+          targetType: AuditTargetType.MESSAGE,
+          targetId: message.id,
+          after: { chatId: chat.id },
+        });
+      }
       return tx.chatMessage.findUniqueOrThrow({
         where: { id: message.id },
         include: CHAT_MESSAGE_INCLUDE,
@@ -91,13 +107,24 @@ export class ChatMessagesService {
     return chatMessageView(updated, user.id);
   }
 
-  /** Supprimer son message (archivé) ; la suppression est diffusée. */
-  async remove(messageId: string, user: User): Promise<void> {
+  /**
+   * Supprimer son message (archivé) ; la suppression est diffusée. Celle du
+   * message d'un autre par l'admin est tracée au journal.
+   */
+  async remove(messageId: string, user: User, actor: AuditActor): Promise<void> {
     const { message, chat } = await this.access.requireChatMessage(user, messageId);
     this.access.requireAuthor(user, message.authorId);
     await this.prisma.$transaction(async (tx) => {
       await archive(tx, message.id, RevisionAction.delete, message.content, user.id);
       await tx.chatMessage.update({ where: { id: message.id }, data: { deletedAt: new Date() } });
+      if (message.authorId !== user.id) {
+        await this.audit.record(tx, actor, {
+          action: AuditAction.MESSAGE_ADMIN_DELETE,
+          targetType: AuditTargetType.MESSAGE,
+          targetId: message.id,
+          after: { chatId: chat.id },
+        });
+      }
     });
     this.realtime.broadcast({
       type: 'chat.message.deleted',

@@ -36,6 +36,11 @@ export interface AdminLayoutPart {
   version: number;
 }
 
+/** Réponse de `PUT /admin/layout/:kind/draft` : avertissements non bloquants en plus. */
+export interface SaveLayoutDraftResult extends AdminLayoutPart {
+  warnings: Warning[];
+}
+
 export interface MediaItem {
   id: string;
   filename: string;

@@ -87,6 +87,16 @@ pnpm check        # format:check + lint + typecheck + test + test:e2e + build
 | Typage | `pnpm typecheck` |
 | Tests unitaires | `pnpm test` |
 | Tests e2e API | `pnpm test:e2e` |
+| Tests navigateur (parcours A à D, responsive) | `pnpm test:browser:install` une fois, puis `pnpm test:browser` (hors `pnpm check`) |
+| Spécification OpenAPI | `pnpm openapi` → `references/openapi.json` |
+
+## Exploitation (Docker)
+
+| But | Commande |
+|---|---|
+| Réinitialiser le compte admin | `docker compose exec backend node dist/src/cli/reset-admin.js` |
+| Sauvegarde immédiate | `docker compose exec backend node dist/src/cli/run-backup.js` (sinon chaque nuit à 3 h, fuseau `TZ`) |
+| Restaurer une sauvegarde | `docker compose stop backend`, puis `docker compose run --rm backend node dist/src/cli/restore-backup.js /data/backups/<archive>.tar.gz`, puis `docker compose start backend` |
 
 ## Documentation
 

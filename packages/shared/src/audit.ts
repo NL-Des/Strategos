@@ -52,6 +52,9 @@ export const AuditAction = {
   SUBMISSION_INVALIDATE: 'submission.invalidate',
   MESSAGE_HIDE: 'message.hide',
   MESSAGE_UNHIDE: 'message.unhide',
+  /** L'admin modifie ou supprime le message d'un autre (l'auteur, lui, n'est pas tracé). */
+  MESSAGE_ADMIN_EDIT: 'message.admin_edit',
+  MESSAGE_ADMIN_DELETE: 'message.admin_delete',
   TOPIC_DELETE: 'topic.delete',
   TRASH_RESTORE: 'trash.restore',
   BACKUP_RESTORE: 'backup.restore',

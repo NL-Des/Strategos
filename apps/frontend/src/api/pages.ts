@@ -9,6 +9,7 @@ import type {
   LayoutKind,
   PageConfig,
   Paginated,
+  SaveLayoutDraftResult,
   SavePageDraftResult,
 } from '@strategos/shared';
 import { apiFetch } from './client';
@@ -45,7 +46,7 @@ export const getLayoutPart = (kind: LayoutKind) =>
 export const saveLayoutDraft = (
   kind: LayoutKind,
   body: { config: LayoutConfig; version: number },
-) => apiFetch<AdminLayoutPart>(`/admin/layout/${kind}/draft`, { method: 'PUT', body });
+) => apiFetch<SaveLayoutDraftResult>(`/admin/layout/${kind}/draft`, { method: 'PUT', body });
 export const previewLayout = (kind: LayoutKind, asGroup?: string) =>
   apiFetch<AssembledRow[]>(`/admin/layout/${kind}/preview${previewQuery(asGroup)}`);
 export const publishLayout = (kind: LayoutKind) =>

@@ -445,9 +445,9 @@ describe('Sources et modules de données (e2e)', () => {
       const preview = (await admin.get(`/admin/pages/${page.id}/preview`)).body as AssembledPage;
       const assembled = preview.zones.main![0]!.columns[0]!.block!;
       expect(assembled.type === 'table' && assembled.rowsUrl).toBe(
-        `/api/v1/admin/blocks/${block.id}/rows?preview=true`,
+        `/api/v1/admin/blocks/${block.id}/rows`,
       );
-      const res = await admin.get(`/admin/blocks/${block.id}/rows?preview=true`);
+      const res = await admin.get(`/admin/blocks/${block.id}/rows`);
       expect(res.body.total).toBe(4);
       expect((await kira.get(`/blocks/${block.id}/rows`)).status).toBe(404);
     });

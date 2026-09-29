@@ -7,13 +7,13 @@ import { changeCredentials } from '../api/auth';
 import { ME_KEY, useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
 
-/** Changement d'identifiants forcé ; seul l'admin peut aussi changer de pseudo. */
+/** Changement d'identifiants forcé ; l'admin doit aussi changer de pseudo. */
 export function ChangeCredentialsPage() {
   const { t } = useTranslation();
   const { data: me } = useMe();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [newUsername, setNewUsername] = useState(me?.username ?? '');
+  const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -24,7 +24,7 @@ export function ChangeCredentialsPage() {
       changeCredentials({
         currentPassword,
         newPassword,
-        ...(me?.isAdmin && newUsername !== me.username ? { newUsername } : {}),
+        ...(me?.isAdmin ? { newUsername } : {}),
       }),
     onSuccess: (user) => {
       queryClient.setQueryData(ME_KEY, user);

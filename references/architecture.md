@@ -43,20 +43,24 @@ flowchart LR
 
 Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-validator` :
 
-- **AuthModule** : session, hash, `AuthGuard` — voir [02](conception/02-comptes-authentification.md).
+- **AuthModule** : session, hash, guards globaux (session, CSRF, `AuthGuard`, changement d'identifiants, admin) — voir [02](conception/02-comptes-authentification.md).
 - **UsersModule** : CRUD des comptes, réinitialisation du mot de passe, désactivation/réactivation — voir [02](conception/02-comptes-authentification.md).
 - **GroupsModule** : groupes, appartenance user↔groupe, calcul des permissions effectives et endpoints de lecture des droits — voir [03](conception/03-droits-groupes.md).
-- **PermissionsModule** : `PermissionsGuard` réutilisable sur chaque route — voir [03](conception/03-droits-groupes.md).
-- **AuditModule** : journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, DiscussionsModule, ChatModule, ExcelSyncModule et TemplatesModule — voir [04](conception/04-administration.md).
+- **PermissionsModule** : `PermissionsGuard` (`@RequireRead`, lecture d'une page) ; les autres contrôles passent par les services d'accès de chaque domaine, tous via `RightsService` — voir [03](conception/03-droits-groupes.md#points-techniques).
+- **SettingsModule** : réglages de l'instance (page d'arrivée, thème par défaut, rétention des sauvegardes) — voir [04](conception/04-administration.md#réglages-de-linstance).
+- **AuditModule** : journal des modifications ; appelé par tous les modules qui modifient des données et par les commandes serveur — voir [04](conception/04-administration.md#points-techniques).
 - **ProfileModule** : page administrative du profil et notes personnelles — voir [05](conception/05-profil-utilisateur.md).
-- **PagesModule** : CRUD des pages, brouillon/publication, header/footer partagés, thèmes, médiathèque, soft-delete — voir [06](conception/06-page-builder.md).
+- **PagesModule** : CRUD des pages, brouillon/publication, header/footer partagés, assemblage, soft-delete ; **PageAccessModule** en extrait la lecture d'une page (`PageAccessService`) pour les autres modules — voir [06](conception/06-page-builder.md).
+- **ThemesModule** : thèmes nommés — voir [06](conception/06-page-builder.md#thèmes).
+- **MediaModule** : médiathèque (upload, stockage sur le volume `uploads`, métadonnées en base) — voir [06](conception/06-page-builder.md#médiathèque).
 - **DiscussionsModule** : espaces de discussion, sujets et messages, pièces jointes images, modération — voir [07](conception/07-discussions.md).
 - **ChatModule** : chat temps réel et sa passerelle WebSocket (`/api/v1/ws`), historique par curseur, modération ; l'accès suit la lecture de la page (pas une ressource de droits) — voir [07](conception/07-discussions.md#chat).
-- **ExcelSyncModule** : cœur technique de la synchronisation Excel/Sheets — voir [08](conception/08-sources-donnees.md) et [09](conception/09-formulaires-soumissions.md).
+- **SourcesModule** : cœur technique Excel/Sheets : sources, staging, cache, lecture (`SourceDataService`), écriture (`SourceWriteService`), réimport — voir [08](conception/08-sources-donnees.md).
+- **FormsModule** : formulaires, soumissions et leur validation (`SubmissionProcessor`) — voir [09](conception/09-formulaires-soumissions.md).
 - **TemplatesModule** : bibliothèque de modèles et instanciation — voir [10](conception/10-modeles-duplication.md).
-- **FilesModule** : upload, stockage sur le volume Docker, métadonnées en base — voir [11](conception/11-transverse.md).
 - **TrashModule** : corbeille de l'admin (éléments supprimés en douceur) et restauration tracée — voir [04](conception/04-administration.md#corbeille).
-- **BackupModule** : sauvegarde quotidienne (`pg_dump` et volume `uploads`), purge, téléchargement admin ; commandes serveur `run-backup` et `restore-backup` — voir [11](conception/11-transverse.md#sauvegardes).
+- **BackupModule** : sauvegarde quotidienne (`pg_dump` et volume `uploads`), purge, téléchargement admin — voir [11](conception/11-transverse.md#sauvegardes).
+- **CliModule** : commandes serveur `reset-admin`, `run-backup` et `restore-backup` (`dist/src/cli/`).
 
 La spécification OpenAPI est générée depuis les contrôleurs et les DTO (`@nestjs/swagger`) : `pnpm openapi` écrit [openapi.json](openapi.json), servie sur `/api/docs` hors production.
 
@@ -83,7 +87,7 @@ Le calcul des droits effectifs (fonction de résolution unique) est décrit dans
 
 Soft-delete (`deleted_at`) sur pages, formulaires, espaces, sujets, messages (sujets et chat), chats, groupes, utilisateurs, notes, médias, sources — voir [11 — Suppression de contenu](conception/11-transverse.md#suppression-de-contenu).
 
-## 4. Moteur Excel/Sheets (`ExcelSyncModule`)
+## 4. Moteur Excel/Sheets (`SourcesModule`)
 
 - Lecture, cache, liaisons inter-fichiers et écriture : voir [08 — Sources de données](conception/08-sources-donnees.md#points-techniques).
 - Validation des soumissions `ajout` (calcul de la ligne, limite de lignes) : voir [09 — Formulaires et soumissions](conception/09-formulaires-soumissions.md#validation-dune-soumission-ajout).
@@ -100,7 +104,7 @@ Soft-delete (`deleted_at`) sur pages, formulaires, espaces, sujets, messages (su
 sequenceDiagram
     participant FE as Frontend
     participant BE as Backend
-    participant ES as ExcelSyncModule
+    participant ES as SourcesModule
     participant SRC as Fichier/Sheet
 
     FE->>BE: GET /api/v1/pages/:id
@@ -123,7 +127,7 @@ Un seul `docker-compose.yml` : services `proxy` (Caddy, HTTPS automatique), `fro
 
 ## 8. Sécurité transverse
 
-- `PermissionsGuard` appliqué à chaque route (lecture/création) — jamais de vérification uniquement côté frontend.
+- Droits vérifiés côté backend sur chaque route (`PermissionsGuard` ou service d'accès, une seule règle `RightsService`) — jamais de vérification uniquement côté frontend.
 - Ressource illisible → `404` (jamais `403`, qui révèlerait son existence) ; CSRF par en-tête `X-CSRF-Token` ; tableau complet des protections dans [13 — API](conception/13-api.md#6-qui-protège-quoi).
 - Règles propres à chaque domaine :
   - sessions et révocation : [02](conception/02-comptes-authentification.md#points-techniques) ;

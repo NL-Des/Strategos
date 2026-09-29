@@ -1,5 +1,5 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import type { AdminPage, MediaItem } from '@strategos/shared';
+import { type AdminPage, DEFAULT_THEME_CONFIG, type MediaItem } from '@strategos/shared';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import {
   PNG,
@@ -134,6 +134,25 @@ describe('Médiathèque et réglages (e2e)', () => {
       expect((await kira.get(`/media/${media.id}`)).status).toBe(404);
       const preview = await admin.get(`/admin/pages/${page.id}/preview`);
       expect(preview.body.zones.main[0].columns[0].block).toBeNull();
+    });
+
+    it('image en fond de thème → 409 avec le thème', async () => {
+      const media = await upload();
+      const theme = await admin.send('post', '/admin/themes', {
+        name: 'Nuit',
+        config: {
+          ...DEFAULT_THEME_CONFIG,
+          background: { color: '#000000', imageMediaId: media.id },
+        },
+      });
+      expectStatus(theme, 201);
+      const warned = await admin.send('delete', `/admin/media/${media.id}`, {});
+      expect(warned.status).toBe(409);
+      expect(warned.body.details.warnings[0]).toMatchObject({
+        code: 'MEDIA_IN_USE',
+        pages: [],
+        themes: [{ id: theme.body.id, name: 'Nuit' }],
+      });
     });
 
     it('image inutilisée → supprimée directement, tracée au journal', async () => {

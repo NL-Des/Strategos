@@ -5,6 +5,9 @@ import {
   cellRef,
   type FormDefinition,
   type FormMode,
+  type LayoutConfig,
+  type LayoutKind,
+  layoutAsPage,
   type PageConfig,
   parseRangeRef,
   type Row,
@@ -178,9 +181,10 @@ export class FormDataService {
    */
   async zoneCoverageWarnings(
     forms: { title: string; def: FormDefinition }[],
-    pages: { id: string; name: string; config: PageConfig | null }[],
+    pages: { id: string; name: string; config: PageConfig | null; layout?: LayoutKind }[],
   ): Promise<Warning[]> {
-    const uncovered: { form: string; page: string }[] = [];
+    // `layout` : header ou footer, nommé par le frontend (pas de texte ici).
+    const uncovered: { form: string; page: string; layout?: LayoutKind }[] = [];
     for (const form of forms) {
       if (!form.def.sourceId || !form.def.sheet || !form.def.startRow || !form.def.maxNewRows) {
         continue;
@@ -194,7 +198,11 @@ export class FormDataService {
           if (c.range?.mode !== 'fixed') continue;
           const rect = parseRangeRef(c.range.ref ?? '');
           if (rect && (rect.top > zone.top || rect.bottom < zone.bottom)) {
-            uncovered.push({ form: form.title, page: page.name });
+            uncovered.push({
+              form: form.title,
+              page: page.name,
+              ...(page.layout ? { layout: page.layout } : {}),
+            });
           }
         }
       }
@@ -209,11 +217,32 @@ export class FormDataService {
     ];
   }
 
-  /** Pages dont le brouillon cite la source (pour l'avertissement de couverture). */
+  /**
+   * Pages, puis header et footer, dont le brouillon cite la source (pour
+   * l'avertissement de couverture). Le header et le footer sont vus comme une
+   * page à une seule zone.
+   */
   async pagesUsingSource(sourceId: string) {
-    return this.prisma.$queryRaw<{ id: string; name: string; config: PageConfig }[]>`
-      SELECT id, name, draft_config AS config FROM pages
-      WHERE deleted_at IS NULL AND draft_config::text LIKE ${`%${sourceId}%`}
-      ORDER BY name`;
+    const pattern = `%${sourceId}%`;
+    const [pages, layouts] = await Promise.all([
+      this.prisma.$queryRaw<{ id: string; name: string; config: PageConfig }[]>`
+        SELECT id, name, draft_config AS config FROM pages
+        WHERE deleted_at IS NULL AND draft_config::text LIKE ${pattern}
+        ORDER BY name`,
+      this.prisma.layoutPart.findMany({
+        where: { kind: { in: ['header', 'footer'] } },
+        orderBy: { kind: 'desc' },
+      }),
+    ]);
+    const cited = layouts.filter((l) => JSON.stringify(l.draftConfig).includes(sourceId));
+    return [
+      ...pages,
+      ...cited.map((l) => ({
+        id: l.kind,
+        name: '',
+        layout: l.kind,
+        config: layoutAsPage(l.draftConfig as unknown as LayoutConfig),
+      })),
+    ];
   }
 }

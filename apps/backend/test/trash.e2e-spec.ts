@@ -2,6 +2,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { AdminPage, Paginated, PageConfig, Row, TrashItem } from '@strategos/shared';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import {
+  ADMIN_USERNAME,
   adminClient,
   createGroup,
   createTestApp,
@@ -163,7 +164,7 @@ describe('Corbeille (e2e)', () => {
       id: messageId,
       label: 'Tank devant & soigneur derrière',
       context: 'Stratégie',
-      author: 'admin',
+      author: ADMIN_USERNAME,
     });
     expect(all.items.find((i) => i.type === 'form')).toMatchObject({
       id: formId,

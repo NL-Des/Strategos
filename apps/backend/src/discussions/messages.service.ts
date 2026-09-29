@@ -64,8 +64,16 @@ export class MessagesService {
     return messageView(message, user);
   }
 
-  /** Modifier son message ; l'ancienne version est archivée. */
-  async edit(messageId: string, user: User, content: string): Promise<TopicMessageView> {
+  /**
+   * Modifier son message ; l'ancienne version est archivée. L'admin peut aussi
+   * modifier celui d'un autre : c'est alors tracé au journal.
+   */
+  async edit(
+    messageId: string,
+    user: User,
+    actor: AuditActor,
+    content: string,
+  ): Promise<TopicMessageView> {
     const { message, topic } = await this.access.requireMessage(user, messageId, 'read');
     this.access.requireAuthor(user, message.authorId);
     ensureOpen(topic);
@@ -76,6 +84,14 @@ export class MessagesService {
         where: { id: message.id },
         data: { content: clean, editedAt: new Date() },
       });
+      if (message.authorId !== user.id) {
+        await this.audit.record(tx, actor, {
+          action: AuditAction.MESSAGE_ADMIN_EDIT,
+          targetType: AuditTargetType.MESSAGE,
+          targetId: message.id,
+          after: { topicId: topic.id, spaceId: topic.spaceId },
+        });
+      }
       return tx.topicMessage.findUniqueOrThrow({
         where: { id: message.id },
         include: MESSAGE_INCLUDE,
@@ -84,13 +100,21 @@ export class MessagesService {
     return messageView(updated, user);
   }
 
-  /** Supprimer son message (archivé). */
-  async remove(messageId: string, user: User): Promise<void> {
-    const { message } = await this.access.requireMessage(user, messageId, 'read');
+  /** Supprimer son message (archivé) ; celui d'un autre par l'admin est tracé au journal. */
+  async remove(messageId: string, user: User, actor: AuditActor): Promise<void> {
+    const { message, topic } = await this.access.requireMessage(user, messageId, 'read');
     this.access.requireAuthor(user, message.authorId);
     await this.prisma.$transaction(async (tx) => {
       await archive(tx, message.id, RevisionAction.delete, message.content, user.id);
       await tx.topicMessage.update({ where: { id: message.id }, data: { deletedAt: new Date() } });
+      if (message.authorId !== user.id) {
+        await this.audit.record(tx, actor, {
+          action: AuditAction.MESSAGE_ADMIN_DELETE,
+          targetType: AuditTargetType.MESSAGE,
+          targetId: message.id,
+          after: { topicId: topic.id, spaceId: topic.spaceId },
+        });
+      }
     });
   }
 

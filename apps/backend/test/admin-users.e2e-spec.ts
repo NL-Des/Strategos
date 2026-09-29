@@ -2,6 +2,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { UsersService } from '../src/users/users.service.js';
 import {
+  ADMIN_USERNAME,
   TestClient,
   adminClient,
   createTestApp,
@@ -81,7 +82,10 @@ describe('Comptes, côté admin (e2e)', () => {
 
     const all = await admin.get('/admin/users?pageSize=2');
     expect(all.body).toMatchObject({ total: 3, page: 1, pageSize: 2 });
-    expect(all.body.items.map((u: { username: string }) => u.username)).toEqual(['admin', 'borin']);
+    expect(all.body.items.map((u: { username: string }) => u.username)).toEqual([
+      ADMIN_USERNAME,
+      'borin',
+    ]);
 
     const disabled = await admin.get('/admin/users?status=disabled');
     expect(disabled.body.items.map((u: { username: string }) => u.username)).toEqual(['kira']);

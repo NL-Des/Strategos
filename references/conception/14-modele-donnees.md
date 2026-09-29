@@ -10,7 +10,7 @@ Le schéma complet de la base PostgreSQL : tables, colonnes, clés, index et con
 | Nommage | Tables et colonnes en `snake_case`, au pluriel pour les tables (`@@map` / `@map` côté Prisma) |
 | Identifiants | `uuid`, en **UUID v7** générés par l'application : ils sont ordonnés dans le temps, ce qui permet la pagination par curseur (chat) et de bons index |
 | Dates | `timestamptz`, en UTC |
-| Horodatage | `created_at` (défaut `now()`) sur toutes les tables ; `updated_at` sur les tables modifiables |
+| Horodatage | `created_at` (défaut `now()`) sur les tables de contenu, pas sur les tables techniques (`settings`, `layout_parts`, `onedrive_credentials`, `staging_cells`, `cell_references`, `form_versions`, qui ont leur propre date) ; `updated_at` sur les tables modifiables |
 | Verrouillage optimiste | `version int not null default 1` sur les objets édités par l'admin, incrémentée à chaque mise à jour (`409 EDIT_CONFLICT`, voir [API](13-api.md#modifications-concurrentes-admin)) |
 | Suppression douce | `deleted_at timestamptz null`. Les lectures courantes filtrent `deleted_at is null` |
 | Unicité et suppression douce | Les unicités « métier » (pseudo, nom de groupe, nom de fichier…) sont des **index uniques partiels** `where deleted_at is null` : un nom libéré par une suppression peut être réutilisé. Restaurer un élément dont le nom a été repris échoue avec `409` |
@@ -177,7 +177,7 @@ Voir [06](06-page-builder.md).
 Les blocs vivent dans le JSON et portent un `id` (uuid) stable. Les modules qui ont leurs propres données (formulaires, espaces, chats) ont une ligne dans leur table, avec `page_id` et `block_id`.
 
 ### `layout_parts` — header et footer partagés
-La config n'accepte que des blocs sans données propres (image, boutons, carte, contenu libre, tableau, catalogue).
+La config n'accepte que des blocs sans données propres (image, boutons, contenu libre, tableau, catalogue).
 
 | Colonne | Type | N | Défaut | Contrainte / rôle |
 |---|---|---|---|---|
@@ -227,8 +227,8 @@ Index : `(space_id, pinned_at desc nulls last, last_activity_at desc) where dele
 | `created_at` | timestamptz | | `now()` | |
 | `edited_at` | timestamptz | N | — | |
 | `hidden_at` | timestamptz | N | — | Masqué par l'admin |
-| `hidden_by` | uuid | N | — | FK `users` |
-| `deleted_at` | timestamptz | N | — | Supprimé par l'auteur |
+| `hidden_by` | uuid | N | — | FK `users`, `on delete set null` |
+| `deleted_at` | timestamptz | N | — | Supprimé par l'auteur (ou l'admin) |
 
 Index : `(topic_id, id)`.
 
@@ -243,8 +243,8 @@ Archive des versions précédentes et des masquages.
 | Colonne | Type | N | Défaut | Contrainte / rôle |
 |---|---|---|---|---|
 | `id` | uuid | | — | PK |
-| `topic_message_id` | uuid | N | — | FK `topic_messages` |
-| `chat_message_id` | uuid | N | — | FK `chat_messages` (colonne créée sans FK à l'étape 8 ; la FK et `chat_messages` arrivent à l'étape 9) |
+| `topic_message_id` | uuid | N | — | FK `topic_messages`, `on delete cascade` |
+| `chat_message_id` | uuid | N | — | FK `chat_messages`, `on delete cascade` (colonne créée sans FK à l'étape 8 ; la FK et `chat_messages` arrivent à l'étape 9) |
 | `action` | enum `revision_action` (`edit`, `delete`, `hide`, `unhide`) | | — | |
 | `previous_content` | text | | — | Contenu **avant** l'action |
 | `actor_id` | uuid | | — | FK `users` (l'auteur ou l'admin) |
@@ -257,13 +257,13 @@ Archive des versions précédentes et des masquages.
 |---|---|---|---|---|
 | `id` | uuid | | — | PK |
 | `uploader_id` | uuid | | — | FK `users` |
-| `topic_message_id` | uuid | N | — | FK `topic_messages` |
-| `chat_message_id` | uuid | N | — | FK `chat_messages` (colonne créée sans FK à l'étape 8 ; la FK et `chat_messages` arrivent à l'étape 9) |
+| `topic_message_id` | uuid | N | — | FK `topic_messages`, `on delete cascade` |
+| `chat_message_id` | uuid | N | — | FK `chat_messages`, `on delete cascade` (colonne créée sans FK à l'étape 8 ; la FK et `chat_messages` arrivent à l'étape 9) |
 | `storage_path`, `mime` | text | | — | JPEG, PNG, WebP ou GIF |
 | `size_bytes` | int | | — | `check (size_bytes <= 5242880)` |
 | `created_at` | timestamptz | | `now()` | |
 
-`check (num_nonnulls(topic_message_id, chat_message_id) <= 1)` : une pièce jointe vient d'être uploadée (aucun rattachement) ou est rattachée à un seul message. Les pièces jointes jamais rattachées sont purgées au bout de 24 h. La limite de 4 par message est vérifiée par l'application.
+`check (num_nonnulls(topic_message_id, chat_message_id) <= 1)` : une pièce jointe vient d'être uploadée (aucun rattachement) ou est rattachée à un seul message. Index sur `topic_message_id` et sur `chat_message_id`. Les pièces jointes jamais rattachées sont purgées au bout de 24 h. La limite de 4 par message est vérifiée par l'application.
 
 ## 7. Sources de données
 Voir [08](08-sources-donnees.md).
@@ -303,7 +303,7 @@ La PK `(source_id, sheet, row, col)` sert aussi d'index pour lire une plage (lig
 | Colonne | Type | N | Défaut | Contrainte / rôle |
 |---|---|---|---|---|
 | `id` | uuid | | — | PK |
-| `source_id`, `sheet`, `row`, `col` | … | | — | Cellule qui contient la liaison |
+| `source_id`, `sheet`, `row`, `col` | … | | — | Cellule qui contient la liaison ; `source_id` : FK `sources`, `on delete cascade` |
 | `referenced_source_id` | uuid | | — | FK `sources` |
 | `referenced_sheet` | text | | — | |
 | `referenced_range` | text | | — | Ex. `B2:B40` |
@@ -311,7 +311,7 @@ La PK `(source_id, sheet, row, col)` sert aussi d'index pour lire une plage (lig
 Index : `(source_id, sheet, row, col)` et `(referenced_source_id, referenced_sheet)`, qui permet de retrouver les dépendants d'une cellule écrite pour `needs_recalc`.
 
 ### `onedrive_credentials`
-Table à **une seule ligne** (`id = 1`, `CHECK`) : `account_label` (compte Microsoft connecté), `refresh_token_encrypted` (bytea, chiffré avec une clé fournie au déploiement), `access_expires_at`, `expired_at` (rafraîchissement refusé : l'admin doit se reconnecter), `updated_at`.
+Table à **une seule ligne** (`id` integer, `id = 1`, `CHECK`) : `account_label` (compte Microsoft connecté), `refresh_token_encrypted` (bytea, chiffré avec une clé fournie au déploiement), `access_expires_at`, `expired_at` (rafraîchissement refusé : l'admin doit se reconnecter), `updated_at`.
 
 ### `reimport_previews`
 | Colonne | Type | N | Défaut | Contrainte / rôle |
@@ -335,7 +335,7 @@ Voir [09](09-formulaires-soumissions.md).
 | `block_id` | uuid | | — | Unique ; id du bloc dans la page |
 | `mode` | enum `form_mode` (`modification`, `ligne`, `ajout`) | | — | |
 | `draft_definition` | jsonb | | — | Définition en brouillon (champs, mappings, zone, clé) |
-| `published_version` | int | N | — | Version en ligne ; vide = jamais publié |
+| `published_version` | int | N | — | Version en ligne ; vide = jamais publié ; `check (published_version is null or published_version > 0)` |
 | `is_open` | boolean | | `true` | Réglage opérationnel, immédiat |
 | `closes_at` | timestamptz | N | — | Date limite |
 | `auto_validate` | boolean | | `false` | Validation automatique |
@@ -466,18 +466,20 @@ erDiagram
 Les références d'un formulaire ou d'un bloc vers une source (`sourceId` dans les JSON) ne sont pas des clés étrangères. L'écran « Sources » calcule les usages en parcourant les définitions publiées et en brouillon, et le retrait d'une source utilisée demande une confirmation.
 
 ## 13. Ordre de création (migrations)
-1. Types `enum`.
-2. `users`, `sessions`, `login_attempts`.
-3. `themes`, `pages` (sans la FK `users.personal_page_id`, ajoutée ensuite), `layout_parts`, `settings`.
-4. FK `users.personal_page_id`, `pages.published_by`.
-5. `groups`, `user_groups`.
-6. `discussion_spaces` (créée dès l'étape 4, avec les groupes, pour que `group_permissions` puisse la viser) ; puis, à l'étape 8, `topics`, `topic_messages`, `message_revisions`, `attachments` (les colonnes `chat_message_id` de ces deux dernières sont créées sans FK) ; enfin, à l'étape 9, `chats`, `chat_messages` et les FK `chat_message_id`.
-7. `group_permissions` (après pages et espaces).
-8. `sources`, `staging_cells`, `cell_references`, `onedrive_credentials`, `reimport_previews`.
-9. `forms`, `form_versions`, puis la FK composite `forms → form_versions`, puis `submissions`.
-10. `templates`, `user_notes`, `media`, `backups`.
-11. `audit_log` et son trigger.
-12. Données initiales : ligne `settings`, ligne `layout_parts` (header et footer vides), compte `admin` / `admin` avec `must_change_credentials = true`, thème par défaut sobre.
+Chaque étape du [plan de réalisation](../plan-realisation.md) crée les tables dont elle a besoin ; les migrations sont, dans l'ordre (`apps/backend/prisma/migrations`) :
+1. `init` : types `enum`.
+2. `accounts` : `users`, `sessions`, `login_attempts` ; compte `admin` / `admin` avec `must_change_credentials = true`.
+3. `audit_log` et son trigger d'ajout seul, puis `audit_log_actor_check`.
+4. `pages` : `settings`, `themes`, `media`, `pages`, `layout_parts`, FK `users.personal_page_id` et `pages.published_by` ; thème par défaut sobre, ligne `settings`, header et footer vides.
+5. `groups_rights` : `groups`, `user_groups`, `discussion_spaces` (créée avec les groupes, pour que `group_permissions` puisse la viser), `group_permissions`.
+6. `sources` : `sources`, `staging_cells`, `cell_references`, `reimport_previews`.
+7. `forms_submissions` : `forms`, `form_versions`, la FK composite `forms → form_versions`, `submissions`.
+8. `onedrive_credentials`.
+9. `discussions` : `topics`, `topic_messages`, `message_revisions`, `attachments` (colonnes `chat_message_id` sans FK).
+10. `chats` : `chats`, `chat_messages` et les FK `chat_message_id`.
+11. `themes_notes` : `user_notes`, et conversion des thèmes au format complet.
+12. `templates`.
+13. `backups`.
 
 ## Dépendances
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.

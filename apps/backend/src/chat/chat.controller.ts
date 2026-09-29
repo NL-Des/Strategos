@@ -11,6 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import type { ChatMessageView } from '@strategos/shared';
+import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { ChatMessagesService } from './chat-messages.service.js';
@@ -39,8 +40,9 @@ export class ChatController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: EditChatMessageDto,
     @CurrentAuth() auth: AuthContext,
+    @Actor() actor: AuditActor,
   ): Promise<ChatMessageView> {
-    return this.messages.edit(id, auth.user, dto.content);
+    return this.messages.edit(id, auth.user, actor, dto.content);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -48,7 +50,8 @@ export class ChatController {
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentAuth() auth: AuthContext,
+    @Actor() actor: AuditActor,
   ): Promise<void> {
-    await this.messages.remove(id, auth.user);
+    await this.messages.remove(id, auth.user, actor);
   }
 }

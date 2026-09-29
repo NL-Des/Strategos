@@ -9,11 +9,14 @@ import {
   ErrorCode,
   type LayoutConfig,
   LayoutKind,
+  layoutAsPage,
   type Row,
+  type SaveLayoutDraftResult,
 } from '@strategos/shared';
 import type { AuditActor } from '../audit/audit-actor.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
+import { PageFormsService } from '../forms/page-forms.service.js';
 import type { LayoutPart, Prisma, User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { assembleRows } from './assembler.js';
@@ -56,16 +59,21 @@ export class LayoutService {
     private readonly audit: AuditService,
     private readonly readers: ReaderContextService,
     private readonly dataBlocks: DataBlocksService,
+    private readonly pageForms: PageFormsService,
   ) {}
 
   async get(kind: LayoutKind): Promise<AdminLayoutPart> {
     return toAdmin(await this.prisma.layoutPart.findUniqueOrThrow({ where: { kind } }));
   }
 
-  async saveDraft(kind: LayoutKind, dto: SaveLayoutDraftDto, actor: AuditActor) {
+  async saveDraft(
+    kind: LayoutKind,
+    dto: SaveLayoutDraftDto,
+    actor: AuditActor,
+  ): Promise<SaveLayoutDraftResult> {
     const config = validateLayoutConfig(dto.config);
     await this.dataBlocks.checkReferences({ '': config.rows }, 'config.rows');
-    return this.prisma.$transaction(async (tx) => {
+    const part = await this.prisma.$transaction(async (tx) => {
       const before = await tx.layoutPart.findUniqueOrThrow({ where: { kind } });
       const { count } = await tx.layoutPart.updateMany({
         where: { kind, version: dto.version },
@@ -84,6 +92,13 @@ export class LayoutService {
       });
       return toAdmin(after);
     });
+    // Même avertissement que pour une page : plage fixe qui ne couvre pas une zone d'ajout.
+    const warnings = await this.pageForms.draftWarnings(
+      this.prisma,
+      { id: kind, name: '', layout: kind },
+      layoutAsPage(config),
+    );
+    return { ...part, warnings };
   }
 
   async publish(kind: LayoutKind, actor: AuditActor): Promise<AdminLayoutPart> {

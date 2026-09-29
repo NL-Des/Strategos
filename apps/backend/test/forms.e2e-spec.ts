@@ -385,6 +385,16 @@ describe('Formulaires et soumissions (e2e)', () => {
     });
   });
 
+  it('source utilisée par un formulaire seulement → retrait averti, avec sa page', async () => {
+    const { pageId } = await buildPage([{ mode: 'ajout', def: inscription }]);
+    const res = await admin.send('delete', `/admin/sources/${source.id}`, {});
+    expect(res.status).toBe(409);
+    expect(res.body.details.warnings[0]).toMatchObject({
+      code: 'SOURCE_IN_USE',
+      pages: [{ id: pageId, name: 'Tournoi' }],
+    });
+  });
+
   describe("formulaire d'ajout", () => {
     it("ligne calculée à la validation ; une ligne remplie à la main n'est jamais écrasée", async () => {
       const { formIds } = await buildPage([{ mode: 'ajout', def: inscription }]);
@@ -466,6 +476,36 @@ describe('Formulaires et soumissions (e2e)', () => {
       ]);
       const saved = await savePage(pageId, blocks);
       expect(saved.warnings.map((w) => w.code)).toEqual(['ADD_ZONE_NOT_COVERED']);
+    });
+
+    it('même avertissement pour un tableau à plage fixe du header', async () => {
+      const fixed = { ...table({ mode: 'fixed', ref: 'A1:E4' }) };
+      (fixed.config as { sheet: string }).sheet = INSCRIPTIONS;
+      const header = (await admin.get('/admin/layout/header/draft')).body as { version: number };
+      const saveHeader = await admin.send('put', '/admin/layout/header/draft', {
+        config: { rows: [rowOf(fixed)] },
+        version: header.version,
+      });
+      expectStatus(saveHeader, 200);
+      expect(saveHeader.body.warnings).toEqual([]);
+
+      const { drafts } = await buildPage([{ mode: 'ajout', def: inscription }]);
+      expect(drafts[0]!.warnings).toEqual([
+        expect.objectContaining({
+          code: 'ADD_ZONE_NOT_COVERED',
+          items: [{ form: 'Inscription', page: '', layout: 'header' }],
+        }),
+      ]);
+      const again = await admin.send('put', '/admin/layout/header/draft', {
+        config: { rows: [rowOf(fixed)] },
+        version: header.version + 1,
+      });
+      expect(again.body.warnings).toEqual([
+        expect.objectContaining({
+          code: 'ADD_ZONE_NOT_COVERED',
+          items: [{ form: 'Inscription', page: '', layout: 'header' }],
+        }),
+      ]);
     });
   });
 

@@ -31,6 +31,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      # Fuseau des tâches planifiées (sauvegarde de 3 h) et des dates des journaux.
+      TZ: ${TZ:-Europe/Paris}
       # Origines autorisées pour les requêtes qui modifient des données (CSRF).
       APP_ORIGINS: https://${DOMAIN:-localhost}
       DATABASE_URL: postgresql://${POSTGRES_USER:-strategos}:${POSTGRES_PASSWORD:-strategos}@db:5432/${POSTGRES_DB:-strategos}

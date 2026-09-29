@@ -10,7 +10,7 @@ import { SourceDataService } from './source-data.service.js';
 import { SourceWriteService } from './source-write.service.js';
 import { SourcesService } from './sources.service.js';
 
-/** ExcelSyncModule de l'architecture : sources, staging, liaisons et lecture (08). */
+/** Moteur Excel/Sheets (08) : sources, staging, liaisons, lecture et écriture. */
 @Module({
   controllers: [AdminSourcesController, OneDriveController],
   providers: [

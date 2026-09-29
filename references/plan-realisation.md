@@ -17,13 +17,12 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 10 — Thèmes complets et notes](#étape-10--thèmes-complets-et-notes)
 - [x] [Étape 11 — Modèles et duplication](#étape-11--modèles-et-duplication)
 - [x] [Étape 12 — Corbeille, sauvegardes et finitions](#étape-12--corbeille-sauvegardes-et-finitions)
-- [ ] [Étape 13 — Carte cliquable](#étape-13--carte-cliquable)
 
 ## Organisation du dépôt
 
 Un **monorepo pnpm workspaces**, choisi pour faciliter les évolutions et la maintenance par IA sous supervision humaine :
 
-- **Une seule source de vérité pour les contrats** : `packages/shared` porte les schémas de configuration des blocs (les 9 types de modules), les codes d'erreur (clés de traduction), les enums et les types de l'API. Un changement de contrat tient dans un seul diff : le backend et le frontend ne peuvent pas diverger sans que cela se voie.
+- **Une seule source de vérité pour les contrats** : `packages/shared` porte les schémas de configuration des blocs (les 8 types de modules), les codes d'erreur (clés de traduction), les enums et les types de l'API. Un changement de contrat tient dans un seul diff : le backend et le frontend ne peuvent pas diverger sans que cela se voie.
 - **Une seule branche, `main`** : chaque étape touche ensemble backend, frontend et `shared`, et se commite sur `main` comme une tranche complète, relue avant le commit.
 - **Un cadre commun** : un `CLAUDE.md` à la racine donne les conventions, les commandes et les renvois vers `references/` ; pas de CI : `pnpm check` lance en local toutes les vérifications (format, lint, typage, tests, build) et doit passer avant chaque commit.
 
@@ -122,7 +121,7 @@ Placé tôt pour que chaque étape suivante trace ses actions dès sa création.
 - Tables `themes` (thème par défaut seul), `pages`, `layout_parts`, `settings`, `media` ; FK `users.personal_page_id` et `pages.published_by`.
 - Zones, rangées et colonnes ; brouillon, aperçu, publication transactionnelle ; verrouillage optimiste (`version`).
 - `BlockRenderer` et registre des modules, avec les modules sans source : **Image**, **Boutons**, **Contenu libre** (sans valeurs de cellules).
-- Médiathèque (`FilesModule`), avertissement si une image est encore utilisée.
+- Médiathèque (`MediaModule`), avertissement si une image est encore utilisée.
 - Menu de compte fixe.
 - Écran Réglages de l'instance : page d'arrivée, thème par défaut.
 
@@ -355,22 +354,3 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 - [x] Spécification OpenAPI générée depuis le code.
 
 **Démo** : les parcours A à D rejoués en Playwright sur une instance neuve.
-
-### Étape 13 — Carte cliquable
-**À lire avant de coder**
-- [06 — Carte cliquable](conception/06-page-builder.md#carte-cliquable), [Liens vers des pages non autorisées](conception/06-page-builder.md#liens-vers-des-pages-non-autorisées), [Points techniques](conception/06-page-builder.md#points-techniques)
-- [13 — Page assemblée](conception/13-api.md#page-assemblée)
-
-- Éditeur de polygones libres en SVG, coordonnées en pourcentages, détection des chevauchements.
-- Rendu : surbrillance et libellé au survol, double appui sur mobile, zones inactives vers les pages illisibles.
-
-Placée en dernier parce que c'est le composant le plus complexe et qu'aucune autre partie n'en dépend.
-
-**Critères d'acceptation**
-- [ ] Coordonnées des polygones stockées en pourcentages de l'image.
-- [ ] L'éditeur détecte et signale les chevauchements.
-- [ ] Zone vers une page illisible : sans lien dans le JSON, sans surbrillance ni libellé.
-- [ ] Mobile : premier appui = surbrillance et libellé, second appui = lien.
-- [ ] Les zones suivent l'image quand la largeur change.
-
-**Démo** : une carte avec trois zones, dont une vers une page illisible pour le groupe choisi en aperçu.

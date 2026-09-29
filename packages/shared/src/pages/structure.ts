@@ -1,4 +1,4 @@
-import type { AvailableBlockType, BlockConfigs } from './blocks.js';
+import type { BlockType, BlockConfigs } from './blocks.js';
 
 /**
  * Structure d'une zone (06 — Points techniques) : une pile de rangées de 1 à 3
@@ -15,8 +15,8 @@ export const ROW_LAYOUTS = [
 export type ColumnWidth = '1/1' | '1/2' | '1/3' | '2/3';
 
 export type Block = {
-  [K in AvailableBlockType]: { id: string; type: K; config: BlockConfigs[K] };
-}[AvailableBlockType];
+  [K in BlockType]: { id: string; type: K; config: BlockConfigs[K] };
+}[BlockType];
 
 export interface Column {
   width: ColumnWidth;
@@ -58,3 +58,9 @@ export const EMPTY_PAGE_CONFIG: PageConfig = {
 };
 
 export const EMPTY_LAYOUT_CONFIG: LayoutConfig = { rows: [] };
+
+/** Header ou footer vu comme une page à une seule zone, pour les calculs communs. */
+export const layoutAsPage = (config: LayoutConfig): PageConfig => ({
+  ...EMPTY_PAGE_CONFIG,
+  zones: { main: config.rows ?? [], sidebar: null },
+});

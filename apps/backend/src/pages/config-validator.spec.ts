@@ -72,7 +72,7 @@ describe('validatePageConfig', () => {
     });
   });
 
-  it('refuse un module pas encore disponible', () => {
+  it('refuse un type de module inconnu (dont la carte cliquable retirée)', () => {
     const map = { id: id(2), type: 'clickable_map', config: {} };
     const { body } = errorOf(() =>
       validatePageConfig({
@@ -80,7 +80,7 @@ describe('validatePageConfig', () => {
       }),
     );
     expect(body.details.fields).toEqual({
-      'config.zones.main[0].columns[0].block.type': ['notAvailable'],
+      'config.zones.main[0].columns[0].block.type': ['isIn'],
     });
   });
 

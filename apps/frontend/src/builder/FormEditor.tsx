@@ -39,8 +39,13 @@ export function Warnings({ warnings }: { warnings: Warning[] }) {
           {t(`warnings.${w.code}`)}
           {Array.isArray(w.cells) && ` ${(w.cells as string[]).join(', ')}`}
           {Array.isArray(w.items) &&
-            ` ${(w.items as { form: string; page: string }[])
-              .map((item) => t('builder.form.zoneItem', item))
+            ` ${(w.items as { form: string; page: string; layout?: string }[])
+              .map((item) =>
+                t('builder.form.zoneItem', {
+                  form: item.form,
+                  page: item.layout ? t(`builder.zoneNames.${item.layout}`) : item.page,
+                }),
+              )
               .join(' ; ')}`}
         </p>
       ))}

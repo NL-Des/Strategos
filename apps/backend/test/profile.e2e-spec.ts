@@ -110,6 +110,27 @@ describe('Profil (e2e)', () => {
       expect(blocked.body.code).toBe('AUTH_TOO_MANY_ATTEMPTS');
     });
 
+    it('un mot de passe actuel correct remet le compteur à zéro', async () => {
+      const fail = () =>
+        kira.send('put', '/me/password', {
+          currentPassword: 'faux-mot-de-passe',
+          newPassword: 'nouveau-mot-de-passe',
+        });
+      for (let i = 0; i < 4; i++) expect((await fail()).status).toBe(401);
+      // Mot de passe actuel correct (refusé ensuite car identique au nouveau).
+      const same = await kira.send('put', '/me/password', {
+        currentPassword: PASSWORD,
+        newPassword: PASSWORD,
+      });
+      expect(same.status).toBe(400);
+      for (let i = 0; i < 4; i++) expect((await fail()).status).toBe(401);
+      const ok = await kira.send('put', '/me/password', {
+        currentPassword: PASSWORD,
+        newPassword: 'nouveau-mot-de-passe',
+      });
+      expect(ok.status).toBe(204);
+    });
+
     it('interdit tant que le changement d’identifiants est exigé', async () => {
       await admin.send('post', '/admin/users', {
         username: 'bob',

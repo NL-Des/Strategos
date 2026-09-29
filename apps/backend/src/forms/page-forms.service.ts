@@ -3,6 +3,7 @@ import {
   AuditAction,
   AuditTargetType,
   ErrorCode,
+  type LayoutKind,
   type PageConfig,
   type PublishPreview,
   SubmissionStatus,
@@ -164,7 +165,11 @@ export class PageFormsService {
    * Avertissements d'un brouillon de page : Tableau ou Catalogue à plage fixe
    * qui ne couvre pas la zone d'un formulaire d'ajout de la même source.
    */
-  async draftWarnings(db: Db, page: { id: string; name: string }, draft: PageConfig) {
+  async draftWarnings(
+    db: Db,
+    page: { id: string; name: string; layout?: LayoutKind },
+    draft: PageConfig,
+  ) {
     const tables = pageBlocks(draft).filter(
       (b) => (b.type === 'table' || b.type === 'catalog') && b.config.range?.mode === 'fixed',
     );

@@ -1,7 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
 import {
-  AVAILABLE_BLOCK_TYPES,
-  type AvailableBlockType,
   BLOCK_TYPES,
   type Block,
   type BlockType,
@@ -103,15 +101,11 @@ class StructureValidator {
       this.forbiddenBlockIds.push(id);
       return null;
     }
-    if (!(AVAILABLE_BLOCK_TYPES as readonly string[]).includes(type)) {
-      this.fail(`${path}.type`, 'notAvailable');
-      return null;
-    }
-    const config = this.config(`${path}.config`, type as AvailableBlockType, value.config);
+    const config = this.config(`${path}.config`, type, value.config);
     return { id, type, config } as Block;
   }
 
-  private config(path: string, type: AvailableBlockType, value: unknown): Block['config'] {
+  private config(path: string, type: BlockType, value: unknown): Block['config'] {
     if (!isRecord(value)) {
       this.fail(path, 'isObject');
       return value as Block['config'];

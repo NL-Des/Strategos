@@ -12,6 +12,7 @@ interface InUse {
   media: MediaItem;
   pages: { id: string; name: string }[];
   layouts: string[];
+  themes: { id: string; name: string }[];
 }
 
 /** Admin › Médiathèque : images accessibles à tout utilisateur connecté. */
@@ -48,7 +49,12 @@ export function MediaPage() {
     onError: (error, { item }) => {
       if (error instanceof ApiRequestError && error.code === 'CONFIRMATION_REQUIRED') {
         const [warning] = (error.error.details.warnings ?? []) as Omit<InUse, 'media'>[];
-        setInUse({ media: item, pages: warning?.pages ?? [], layouts: warning?.layouts ?? [] });
+        setInUse({
+          media: item,
+          pages: warning?.pages ?? [],
+          layouts: warning?.layouts ?? [],
+          themes: warning?.themes ?? [],
+        });
       }
     },
   });
@@ -99,6 +105,9 @@ export function MediaPage() {
             ))}
             {inUse.layouts.map((kind) => (
               <li key={kind}>{t(`builder.zoneNames.${kind}`)}</li>
+            ))}
+            {inUse.themes.map((theme) => (
+              <li key={theme.id}>{t('builder.media.themeUsage', { name: theme.name })}</li>
             ))}
           </ul>
           <div className="actions">

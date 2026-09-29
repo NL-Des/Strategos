@@ -6,6 +6,8 @@ import type { Response } from 'supertest';
 import WebSocket from 'ws';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import {
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
   adminClient,
   createGroup,
   createUser,
@@ -203,6 +205,15 @@ describe('Chat temps réel (e2e)', () => {
     await expect(badOrigin.closed()).resolves.toBeGreaterThanOrEqual(1000);
   });
 
+  it('refuse le handshake avant le changement d’identifiants imposé', async () => {
+    await createUser(admin, 'novice', 'temporaire-novice');
+    const client = new TestClient(app);
+    const res = await client.login('novice', 'temporaire-novice');
+    expectStatus(res, 200);
+    const ws = new WsClient(port, sessionCookie(res));
+    await expect(ws.closed()).resolves.toBeGreaterThanOrEqual(1000);
+  });
+
   it('chat.join sans lecture de la page → chat.error NOT_FOUND', async () => {
     const { blockId } = await pageWithChat();
     // Carol n'a aucun groupe : elle ne peut pas lire la page.
@@ -316,6 +327,38 @@ describe('Chat temps réel (e2e)', () => {
     wa.close();
   });
 
+  it('l’admin modifie ou supprime le message d’un autre : tracé au journal', async () => {
+    const { page, blockId } = await pageWithChat();
+    const alice = await member(app, admin, 'alice');
+    await createGroup(admin, 'lecteurs', { userIds: [alice.id], pageIds: [page.id] });
+
+    const wa = new WsClient(port, alice.cookie);
+    await wa.open();
+    wa.send(CHAT_WS_EVENTS.join, { blockId });
+    await wa.next((f) => f.event === CHAT_WS_EVENTS.joined);
+    wa.send(CHAT_WS_EVENTS.send, { blockId, clientId: 'c-1', content: 'à moi' });
+    const ack = await wa.next((f) => f.event === CHAT_WS_EVENTS.ack);
+    const messageId = (ack.data as { message: ChatMessageView }).message.id;
+
+    expectStatus(
+      await alice.client.send('put', `/chat-messages/${messageId}`, { content: 'moi' }),
+      200,
+    );
+    expect(await prisma.auditLog.count({ where: { targetId: messageId } })).toBe(0);
+
+    expectStatus(
+      await admin.send('put', `/chat-messages/${messageId}`, { content: 'modéré' }),
+      200,
+    );
+    expectStatus(await admin.send('delete', `/chat-messages/${messageId}`), 204);
+    const actions = await prisma.auditLog.findMany({
+      where: { targetId: messageId },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(actions.map((a) => a.action)).toEqual(['message.admin_edit', 'message.admin_delete']);
+    wa.close();
+  });
+
   it('compte désactivé → connexion WebSocket fermée', async () => {
     const { page, blockId } = await pageWithChat();
     const alice = await member(app, admin, 'alice');
@@ -364,5 +407,5 @@ describe('Chat temps réel (e2e)', () => {
 /** Nouvelle connexion admin (identifiants déjà changés) pour capter un cookie de session. */
 async function freshAdminLogin(app: NestExpressApplication): Promise<Response> {
   const client = new TestClient(app);
-  return client.login('admin', 'mot-de-passe-admin');
+  return client.login(ADMIN_USERNAME, ADMIN_PASSWORD);
 }

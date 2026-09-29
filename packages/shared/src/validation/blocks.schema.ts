@@ -19,7 +19,7 @@ import {
 import {
   ALIGNMENTS,
   type Alignment,
-  type AvailableBlockType,
+  type BlockType,
   type BlockConfigs,
   type ButtonItem,
   type ButtonsBlockConfig,
@@ -274,7 +274,7 @@ export class ChatBlockConfigSchema implements ChatBlockConfig {
 }
 
 /** Un schéma par module disponible ; le typage impose d'en avoir un pour chacun. */
-export const BLOCK_CONFIG_SCHEMAS: { [K in AvailableBlockType]: new () => BlockConfigs[K] } = {
+export const BLOCK_CONFIG_SCHEMAS: { [K in BlockType]: new () => BlockConfigs[K] } = {
   image: ImageBlockConfigSchema,
   buttons: ButtonsBlockConfigSchema,
   rich_content: RichContentBlockConfigSchema,

@@ -287,6 +287,31 @@ describe('Espaces de discussion (e2e)', () => {
       expect(revisions[0]!.previousContent).toBe('<p>x</p>');
     });
 
+    it('l’admin modifie ou supprime le message d’un autre : tracé au journal', async () => {
+      const opened = await kira.send('post', `/spaces/${spaceId}/topics`, {
+        title: 'T',
+        firstMessage: '<p>a</p>',
+      });
+      const topicId = opened.body.id as string;
+      const posted = await kira.send('post', `/topics/${topicId}/messages`, {
+        content: '<p>x</p>',
+      });
+      const messageId = posted.body.id as string;
+
+      // L'auteur modifie le sien : rien au journal.
+      expectStatus(await kira.send('put', `/messages/${messageId}`, { content: '<p>y</p>' }), 200);
+      expect(await prisma.auditLog.count({ where: { targetId: messageId } })).toBe(0);
+
+      expectStatus(await admin.send('put', `/messages/${messageId}`, { content: '<p>z</p>' }), 200);
+      expectStatus(await admin.send('delete', `/messages/${messageId}`), 204);
+      const actions = await prisma.auditLog.findMany({
+        where: { targetId: messageId },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(actions.map((a) => a.action)).toEqual(['message.admin_edit', 'message.admin_delete']);
+      expect(actions[0]!.after).toMatchObject({ topicId, spaceId });
+    });
+
     it('masquage : message exclu des lecteurs, archivé et tracé au journal', async () => {
       const opened = await kira.send('post', `/spaces/${spaceId}/topics`, {
         title: 'T',

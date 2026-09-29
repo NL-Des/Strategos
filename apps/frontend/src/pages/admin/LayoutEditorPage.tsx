@@ -1,24 +1,24 @@
 import {
-  AVAILABLE_BLOCK_TYPES,
+  BLOCK_TYPES,
   type AdminLayoutPart,
   type AssembledRow,
   LAYOUT_FORBIDDEN_BLOCK_TYPES,
   type LayoutKind,
   type Row,
+  type Warning,
 } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { getLayoutPart, previewLayout, publishLayout, saveLayoutDraft } from '../../api/pages';
+import { Warnings } from '../../builder/FormEditor';
 import { RowsEditor } from '../../builder/RowsEditor';
 import { PreviewGroupSelect } from '../../builder/PreviewGroupSelect';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { Rows } from '../../render/Rows';
 
-const LAYOUT_TYPES = AVAILABLE_BLOCK_TYPES.filter(
-  (type) => !LAYOUT_FORBIDDEN_BLOCK_TYPES.includes(type),
-);
+const LAYOUT_TYPES = BLOCK_TYPES.filter((type) => !LAYOUT_FORBIDDEN_BLOCK_TYPES.includes(type));
 
 /** Header ou footer partagé : même cycle brouillon → publication que les pages. */
 export function LayoutEditorPage() {
@@ -43,6 +43,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
   const [preview, setPreview] = useState<AssembledRow[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [previewGroup, setPreviewGroup] = useState('');
+  const [warnings, setWarnings] = useState<Warning[]>([]);
 
   const onSaved = (part: AdminLayoutPart) => {
     setSaved(part);
@@ -51,7 +52,11 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
     queryClient.setQueryData(['admin', 'layout', kind], part);
   };
   const save = async () => {
-    const part = await saveLayoutDraft(kind, { config: { rows }, version: saved.version });
+    const { warnings: found, ...part } = await saveLayoutDraft(kind, {
+      config: { rows },
+      version: saved.version,
+    });
+    setWarnings(found);
     onSaved(part);
   };
   const saveMutation = useMutation({
@@ -114,6 +119,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
           </p>
         )}
         <ErrorMessage error={error} />
+        <Warnings warnings={warnings} />
       </div>
       {preview && (
         <div className="preview">

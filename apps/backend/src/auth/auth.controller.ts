@@ -1,20 +1,16 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import type { Me } from '@strategos/shared';
-import type { CookieOptions, Request, Response } from 'express';
-import { config } from '../config.js';
+import type { Request, Response } from 'express';
 import { SettingsService } from '../settings/settings.service.js';
 import { toMe } from '../users/user.mapper.js';
-import { PRESESSION_COOKIE, SESSION_COOKIE, SESSION_TTL_MS } from './auth.constants.js';
+import { PRESESSION_COOKIE, SESSION_COOKIE } from './auth.constants.js';
 import { ChangeCredentialsDto, LoginDto } from './auth.dto.js';
 import { AuthService, type ClientMeta } from './auth.service.js';
+import { cookieOptions, setSessionCookie } from './cookies.js';
 import { deriveCsrfToken, randomSecret } from './csrf.js';
 import { AllowPendingCredentials, CurrentAuth, Public } from './decorators.js';
 import type { AuthContext } from './request-context.js';
 import { SessionService } from './session.service.js';
-
-function cookieOptions(): CookieOptions {
-  return { httpOnly: true, sameSite: 'strict', secure: config.isProduction, path: '/' };
-}
 
 export function clientMeta(req: Request): ClientMeta {
   return { ip: req.ip ?? '0.0.0.0', userAgent: req.headers['user-agent'] };
@@ -50,7 +46,7 @@ export class AuthController {
   ): Promise<Me> {
     const { user, token } = await this.auth.login(dto, clientMeta(req), req.auth?.sessionId);
     res.clearCookie(PRESESSION_COOKIE, cookieOptions());
-    res.cookie(SESSION_COOKIE, token, { ...cookieOptions(), maxAge: SESSION_TTL_MS });
+    setSessionCookie(res, token);
     return toMe(user, await this.settings.landingPageId());
   }
 

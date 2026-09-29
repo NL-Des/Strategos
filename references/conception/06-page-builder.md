@@ -10,7 +10,7 @@ L'administrateur coche les zones présentes sur la page, puis y place ses module
 
 - **Zones** : Header, Main, Sidebar, Footer. Il n'y a pas d'obligation à toutes les avoir : l'admin coche celles qu'il veut.
 - **Header et footer partagés** : l'admin construit **un header et un footer communs** à tout le site (typiquement, les boutons de navigation). Page par page, il choisit de les afficher ou non. Main et Sidebar sont propres à chaque page.
-  - Ils n'accueillent que des modules sans données propres : Image, Boutons, Carte cliquable, Contenu libre, Tableau, Catalogue. Les formulaires, espaces de discussion et chats n'y sont **pas autorisés** en v1, car leur accès dépend de la lecture d'une page précise.
+  - Ils n'accueillent que des modules sans données propres : Image, Boutons, Contenu libre, Tableau, Catalogue. Les formulaires, espaces de discussion et chats n'y sont **pas autorisés** en v1, car leur accès dépend de la lecture d'une page précise.
 - **Rangées et colonnes** : une zone est une pile de **rangées**, et chaque rangée contient **1, 2 ou 3 colonnes**. Chaque colonne accueille un module. L'admin ordonne les rangées et choisit la répartition des colonnes (ex. 1/2 + 1/2, 2/3 + 1/3).
 - **Responsive** : sur mobile, les colonnes d'une rangée s'empilent et la Sidebar passe sous le Main.
 
@@ -21,7 +21,7 @@ L'administrateur coche les zones présentes sur la page, puis y place ses module
 - **Les modules suivent la page** : la configuration des formulaires (champs, mappings, zone, clé), des espaces de discussion et des chats fait partie du brouillon. Elle ne prend effet qu'à la publication de la page. Un espace ou un chat ajouté au brouillon n'existe pour les utilisateurs qu'une fois la page publiée.
 - **Réglages opérationnels immédiats** : ouvrir ou fermer un formulaire, changer sa date limite, activer ou désactiver la validation automatique, épingler un sujet ou masquer un message prennent effet **tout de suite**, sans publication. Ce sont des actions de gestion courante, pas de construction.
 - Une page jamais publiée n'est visible par personne d'autre que l'admin.
-- **Aperçu avec les droits d'un groupe** : l'aperçu propose un **menu déroulant des groupes**. En choisissant un groupe, l'admin voit le brouillon exactement comme le verrait un membre de **ce seul groupe** : modules et liens non autorisés masqués, espaces illisibles invisibles, lien « Ma page personnelle » absent. L'option par défaut, « Administrateur », montre tout. L'aperçu fonctionne aussi pour le header et le footer.
+- **Aperçu avec les droits d'un groupe** : l'aperçu propose un **menu déroulant des groupes**. En choisissant un groupe, l'admin voit le brouillon exactement comme le verrait un membre de **ce seul groupe** : modules et liens non autorisés masqués, espaces illisibles invisibles, lien « Ma page personnelle » absent. L'option par défaut, « Administrateur », montre tout ce qui existe déjà : un espace de discussion ou un chat ajouté au brouillon n'apparaît dans l'aperçu qu'après la publication, puisqu'il n'est créé qu'à ce moment. L'aperçu fonctionne aussi pour le header et le footer.
 
 ### Thèmes
 La personnalisation passe par des **thèmes**. L'administrateur crée plusieurs thèmes nommés, chacun regroupant :
@@ -32,27 +32,26 @@ La personnalisation passe par des **thèmes**. L'administrateur crée plusieurs 
 
 L'admin désigne un **thème par défaut** et peut attribuer un **thème à chaque page** : une page sans thème attribué utilise le thème par défaut. Il n'y a ni thème par groupe ni choix de l'utilisateur.
 
-Les polices sont choisies dans une **liste fermée** de polices déjà présentes sur les appareils (système, humaniste, géométrique, avec empattements, classique, égyptienne, chasse fixe, arrondie) : rien n'est chargé depuis l'extérieur. L'éditeur de thèmes affiche un **aperçu en direct** (titre, texte, boutons, tableau, carte, message de discussion). Supprimer un thème encore utilisé est permis : ses pages reviennent au thème par défaut.
+Les polices sont choisies dans une **liste fermée** de polices déjà présentes sur les appareils (système, humaniste, géométrique, avec empattements, classique, égyptienne, chasse fixe, arrondie) : rien n'est chargé depuis l'extérieur. L'éditeur de thèmes affiche un **aperçu en direct** (titre, texte, boutons, tableau, carte, message de discussion). Supprimer un thème encore utilisé est permis : ses pages reviennent au thème par défaut. Le thème par défaut lui-même ne peut pas être supprimé.
 
 La mise en forme des fichiers sources (gras, couleurs de cellules…) **n'est pas reproduite** : Strategos ne lit que des valeurs, et l'apparence vient du thème et des formats choisis par l'admin.
 
 ### Médiathèque
-L'admin dispose d'une **médiathèque** où il uploade ses images : JPEG, PNG, WebP ou GIF, 10 Mo au plus. Le type est vérifié sur le contenu du fichier ; le SVG est refusé, car il peut contenir du script. Elle alimente les modules Image, Catalogue, Contenu libre et Carte cliquable. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages concernées. Les images de la médiathèque sont accessibles à **tout utilisateur connecté** ; elles ne doivent donc pas servir à stocker des documents confidentiels.
+L'admin dispose d'une **médiathèque** où il uploade ses images : JPEG, PNG, WebP ou GIF, 10 Mo au plus. Le type est vérifié sur le contenu du fichier ; le SVG est refusé, car il peut contenir du script. Elle alimente les modules Image, Catalogue et Contenu libre, ainsi que le fond des thèmes. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages, le header ou le footer et les thèmes concernés. Les images de la médiathèque sont accessibles à **tout utilisateur connecté** ; elles ne doivent donc pas servir à stocker des documents confidentiels.
 
 ### Menu de compte
 Seul élément qui n'est pas construit par l'admin : une **icône de compte**, fixe dans un coin de l'écran sur toutes les pages. Elle ouvre **Profil**, **Notes**, **Mes soumissions** et **Déconnexion** (voir [Profil utilisateur](05-profil-utilisateur.md)). Son style suit le thème de la page.
 
 ### Destinations des liens
-Un bouton, une image ou une zone de carte peut viser :
+Un bouton ou une image peut viser :
 - une **page interne** ;
 - une **URL externe** ;
 - « **Ma page personnelle** » : chaque utilisateur est mené à la page personnelle que l'admin lui a désignée (voir [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)). Cela permet un bouton « Mon espace » unique dans le header partagé. Le lien est masqué pour un utilisateur qui n'a pas de page personnelle.
 
 ### Liens vers des pages non autorisées
-Un lien (bouton, image-lien, zone de carte) vers une page que l'utilisateur ne peut pas lire est **masqué** :
+Un lien (bouton, image-lien) vers une page que l'utilisateur ne peut pas lire est **masqué** :
 - un bouton disparaît ;
-- une image reste affichée, mais sans lien ;
-- une zone de carte devient inactive : elle n'a plus de surbrillance, plus de libellé, et n'est plus cliquable.
+- une image reste affichée, mais sans lien.
 
 Les liens externes (URL) sont toujours affichés.
 
@@ -63,7 +62,6 @@ Chaque module suit la même fiche : **rôle**, **réglages de l'admin**, **rendu
 |---|---|---|
 | [Image](#image) | Afficher une image, avec un lien facultatif | Médiathèque |
 | [Boutons](#boutons) | Barre de navigation ou d'actions | — |
-| [Carte cliquable](#carte-cliquable) | Image dont des zones mènent à des pages | Médiathèque |
 | [Tableau](#tableau) | Afficher une plage d'un document | Source |
 | [Catalogue](#catalogue) | Une carte (image + textes) par ligne d'un document | Source + médiathèque |
 | [Contenu libre](#contenu-libre) | Texte mis en forme, avec des valeurs de cellules insérées | Saisie admin + source |
@@ -72,24 +70,13 @@ Chaque module suit la même fiche : **rôle**, **réglages de l'admin**, **rendu
 | [Chat](#chat) | Messagerie en temps réel | Base Strategos |
 
 ### Image
-- **Réglages** : image de la médiathèque, texte alternatif, taille (largeur de la colonne ou taille d'origine), alignement, **lien facultatif** (page interne ou URL externe).
+- **Réglages** : image de la médiathèque, texte alternatif, taille (largeur de la colonne ou taille d'origine), alignement, **lien facultatif** (voir [Destinations des liens](#destinations-des-liens)).
 - **Rendu** : l'image, cliquable si un lien est défini et autorisé.
 
 ### Boutons
-- **Réglages** : liste de boutons (libellé, destination : page interne ou URL externe), **orientation** (horizontale ou verticale) et **alignement** (gauche, centre, droite). Le style vient du thème.
+- **Réglages** : liste de boutons (libellé, destination : voir [Destinations des liens](#destinations-des-liens)), **orientation** (horizontale ou verticale) et **alignement** (gauche, centre, droite). Le style vient du thème.
 - **Rendu** : une barre de boutons à l'endroit où le module est placé. La position dans la page découle du choix de la zone et de la rangée ; typiquement, le header partagé contient la barre de navigation. Sur mobile, une barre horizontale trop longue passe à la ligne.
 - **Accès** : les boutons vers des pages non autorisées sont masqués.
-
-### Carte cliquable
-Image sur laquelle l'administrateur dessine des zones ; un clic sur une zone mène vers une page interne ou une page externe. C'est le composant le plus complexe de la liste (éditeur de zones dédié).
-- **Réglages** :
-  - une image de la médiathèque ;
-  - des zones en **polygones libres** (dessinées à la souris), pas de simples rectangles ;
-  - zones **disjointes** : l'éditeur empêche/avertit en cas de chevauchement entre deux zones ;
-  - pour chaque zone : destination, **libellé**, **couleur** et **opacité** (invisible, semi-transparente, opaque), libellé affiché au survol ou en permanence ;
-  - une carte = **une seule image** avec ses zones ; pas de système de sous-images/calques imbriqués.
-- **Rendu** : au survol, la zone passe en **surbrillance** et son libellé s'affiche en infobulle. Sur mobile, un premier appui met la zone en surbrillance et affiche le libellé, et un second appui ouvre le lien. La carte s'adapte à la largeur de l'écran, les zones suivant l'image.
-- **Accès** : les zones vers des pages non autorisées sont inactives.
 
 ### Tableau
 - **Réglages** :
@@ -127,7 +114,7 @@ Formulaire de modification, de ligne ou d'ajout de l'excel ou du google sheet (d
 
 ### Espace de discussion
 Un mini-forum : une liste de sujets, et leurs messages (pouvant contenir des images). C'est une **ressource du modèle de droits** (lecture, ouverture de sujets, publication de messages). Règles détaillées dans [Discussions](07-discussions.md#espaces-de-discussion).
-- **Réglages** : nom de l'espace, sujets épinglés, tri des sujets (activité récente ou date de création).
+- **Réglages** : nom de l'espace, tri des sujets (activité récente ou date de création). L'épinglage des sujets se fait depuis l'espace lui-même, par l'admin (réglage opérationnel immédiat).
 - **Accès** : si l'utilisateur ne peut pas lire l'espace, le module est **invisible**, même s'il peut lire la page.
 - **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
 
@@ -142,7 +129,7 @@ Un tableau ou un catalogue relié à une source affiche une plage qui peut être
 - **fixe** : une plage précise, par exemple `A1:D11` ;
 - **extensible** : des colonnes à partir d'une ligne donnée, **jusqu'à la dernière ligne remplie**, par exemple « colonnes A à D à partir de la ligne 1 ». Le tableau suit alors tout seul les lignes ajoutées, que ce soit par un formulaire d'ajout ou par l'admin directement dans le document.
 
-**Avertissement** : si une plage fixe ne couvre pas la zone d'un formulaire d'ajout qui écrit dans la même source, l'administrateur est averti à la création du formulaire et à la modification du tableau.
+**Avertissement** : si une plage fixe ne couvre pas la zone d'un formulaire d'ajout qui écrit dans la même source, l'administrateur est averti à l'enregistrement du formulaire et à celui de la page, du header ou du footer qui contient le tableau.
 
 > **Exemple** : une feuille « Inscriptions tournoi » contient les en-têtes en ligne 1 et 10 inscrits en lignes 2 à 11. L'admin place un tableau `A1:D11` et un formulaire d'ajout (ligne de départ 12, 20 lignes au maximum, voir [Formulaires et soumissions](09-formulaires-soumissions.md)). Quand une inscription est validée, elle est écrite en ligne 12, mais le tableau fixe ne l'affiche pas et le joueur croit que son inscription a échoué. Strategos avertit donc l'admin, qui choisit soit une plage **extensible** (« colonnes A à D à partir de la ligne 1 »), soit une plage fixe élargie `A1:D31`.
 
@@ -152,12 +139,11 @@ Un tableau ou un catalogue relié à une source affiche une plage qui peut être
 - **Header et footer** : la validation du brouillon de `layout_parts` refuse les blocs de type `form`, `discussion_space` et `chat` (`422 BLOCK_NOT_ALLOWED_IN_LAYOUT`).
 - **Aperçu par groupe** : l'assemblage de la page accepte un « contexte de droits » (utilisateur réel, ou membre fictif d'un groupe donné) ; c'est la même fonction que pour l'affichage réel, pour que l'aperçu soit fidèle. Le header et le footer partagés sont stockés dans `layout_parts(kind[header|footer], draft_config, published_config, published_at)`. La page porte `show_header` et `show_footer`.
 - **Structure du JSON** d'une zone : `rows[] → { columns: [{ width, block }] }`, où `block = { id, type, config }`. Les `block.id` sont stables, parce que les formulaires, espaces de discussion et chats y sont rattachés (`page_block_id`).
-- **Registre des modules** : `BlockRenderer` avec un registre `{ blockType: Component }` : `image`, `buttons`, `clickable_map`, `table`, `catalog`, `rich_content`, `form`, `discussion_space`, `chat`. Chaque type a son interface de `config` dans `packages/shared` et son schéma `class-validator` dans `packages/shared/validation` (backend seulement), qui implémente l'interface. Un type sans schéma est refusé à l'enregistrement.
+- **Registre des modules** : `BlockRenderer` avec un registre `{ blockType: Component }` : `image`, `buttons`, `rich_content`, `table`, `catalog`, `form`, `discussion_space`, `chat`. Chaque type a son interface de `config` dans `packages/shared` et son schéma `class-validator` dans `packages/shared/validation` (backend seulement), qui implémente l'interface. Un type sans schéma est refusé à l'enregistrement.
 - **Rangées** : répartitions permises `1/1`, `1/2 + 1/2`, `1/3 + 2/3`, `2/3 + 1/3`, `1/3 × 3` ; une colonne vide est permise. Les `id` des rangées et des blocs sont des UUID uniques dans la page, générés par l'éditeur.
 - **Assemblage côté backend** : à la lecture d'une page publiée, le backend retire les modules non autorisés (espaces illisibles, formulaires non configurés, modules de données sans plage) et les liens vers des pages illisibles, puis résout les valeurs (cellules du contenu libre, plages). Le frontend ne reçoit jamais ce qu'il ne doit pas afficher.
 - **Tableaux et catalogues** : `range_mode[fixed|extensible]`. Source, feuille et plage peuvent être vides (module non configuré, par exemple après l'instanciation d'un modèle de page) : le module est alors masqué aux utilisateurs. La pagination, le tri et la recherche sont faits **côté backend** sur les données du staging ou du cache (milliers de lignes), avec une requête par page affichée. En mode extensible, la dernière ligne remplie est calculée à la lecture.
 - **Médiathèque** : table `media` ([14](14-modele-donnees.md#media--médiathèque)), fichiers sur le volume `uploads`. Une image est référencée par son `filename` unique (catalogue) ou par son `id` (autres modules).
-- **Carte cliquable** : l'éditeur (polygones libres, détection de chevauchement) est un composant isolé, sur canvas/SVG dédié. Les coordonnées des polygones sont stockées en **pourcentages** de l'image, pour s'adapter à toutes les tailles d'écran.
 - **Contenu libre** : HTML en liste blanche, nettoyé côté backend (même bibliothèque que les notes, voir [Profil utilisateur](05-profil-utilisateur.md#points-techniques)). Les valeurs insérées sont des balises `<span data-cell-source data-cell-sheet data-cell-ref data-cell-format>` (format texte, nombre, date ou monnaie), mises sous forme canonique à l'enregistrement et résolues à l'affichage ; les notes n'en acceptent pas.
 - **Tableau et Catalogue** : un libellé de colonne vide reprend l'en-tête du document (première ligne de la plage si elle sert d'en-têtes), sinon la lettre de la colonne. Les colonnes choisies doivent être dans la plage. Les valeurs sont formatées côté backend (format français, monnaie en euros).
 - **Layout** : responsive par zones et par rangées, en CSS Grid/Flexbox, avec des breakpoints mobile et tablette.
@@ -189,7 +175,9 @@ _Aucune pour l'instant._
 - Tableaux : pagination, tri, recherche et colonnes configurables.
 - Catalogue : mises en page de carte prédéfinies.
 - Boutons : barre avec orientation et alignement.
-- Carte : surbrillance, libellé et opacité réglable par zone.
 - Menu de compte fixe (seule exception à la construction par l'admin).
 - Destination « Ma page personnelle ».
 - Tableaux et catalogues peuvent lancer un formulaire de ligne pré-rempli.
+
+**Décision (2026-09-29)**
+- La carte cliquable (image à zones polygonales menant à des pages) est retirée du projet ; elle n'a jamais été livrée.

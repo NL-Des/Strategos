@@ -13,6 +13,8 @@ import { configureApp } from '../src/setup.js';
 export const ORIGIN = 'http://localhost:5173';
 /** Mot de passe de l'admin une fois le changement forcé fait (voir `adminClient`). */
 export const ADMIN_PASSWORD = 'mot-de-passe-admin';
+/** Pseudo choisi par l'admin au premier changement d'identifiants (obligatoire). */
+export const ADMIN_USERNAME = 'administrateur';
 
 export async function createTestApp(controllers: Type[] = []): Promise<NestExpressApplication> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule], controllers }).compile();
@@ -123,6 +125,7 @@ export async function adminClient(app: NestExpressApplication): Promise<TestClie
       .send('post', '/auth/change-credentials', {
         currentPassword: 'admin',
         newPassword: ADMIN_PASSWORD,
+        newUsername: ADMIN_USERNAME,
       })
       .then((r) => expectStatus(r, 200));
   } else {

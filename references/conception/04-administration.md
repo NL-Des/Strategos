@@ -16,7 +16,7 @@ Un écran liste les sources de données et permet de les gérer (voir [Sources d
 - **ajouter** un Google Sheet par son lien : l'écran affiche l'**adresse du compte de service** avec laquelle partager le Sheet, puis teste l'accès ;
 - **connecter ou reconnecter** le compte OneDrive, puis ajouter un fichier ;
 - **uploader** un Excel, le **télécharger** et le **réimporter** (avec l'avertissement prévu) ;
-- pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages ou formulaires qui l'utilisent. Retirer une source encore utilisée déclenche un avertissement.
+- pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages qui l'utilisent, par un module ou par un formulaire (le header et le footer compris). Retirer une source encore utilisée déclenche un avertissement.
 
 ### Réglages de l'instance
 Un écran regroupe les réglages globaux : **page d'arrivée**, **thème par défaut**, **durée de conservation des sauvegardes**, et téléchargement d'une sauvegarde.
@@ -49,20 +49,23 @@ L'admin supprime un sujet depuis sa vue (bouton « Supprimer le sujet ») ; les 
 
 ### Journal des modifications
 Sont tracées (action, cible, état avant/après, date) :
-- les actions sur les comptes (y compris le changement d'identifiants fait par l'utilisateur lui-même), les appartenances aux groupes et les permissions ;
+- les actions sur les comptes (y compris le changement d'identifiants ou de mot de passe fait par l'utilisateur lui-même), les appartenances aux groupes et les permissions ;
+- les réglages de l'instance ;
 - la **validation, le refus et la modification des soumissions**, y compris les validations automatiques, avec la valeur réellement écrite (avant/après pour un mouvement), la cellule et la source ;
-- le téléchargement d'un Excel uploadé, et son réimport avec le choix fait (annuler, écraser, réappliquer) ;
-- le masquage d'un message par l'admin (modération) ;
-- les modifications et **publications** de pages, du header et du footer partagés, et les modifications de formulaires ;
+- les sources : upload, ajout d'un Google Sheet ou d'un fichier OneDrive, connexion du compte OneDrive, téléchargement d'un Excel uploadé, réimport avec le choix fait (annuler, écraser, réappliquer) et retrait ;
+- la modération par l'admin : masquage et rétablissement d'un message, modification ou suppression du message d'un autre, suppression d'un sujet ;
+- les modifications et **publications** de pages, du header et du footer partagés, les modifications, publications et réglages de formulaires ;
+- l'upload et la suppression des images de la médiathèque ;
 - la création, la modification et la suppression des thèmes ;
-- la réinitialisation du compte admin par commande serveur ;
-- les restaurations depuis la corbeille ;
+- l'enregistrement, la suppression et l'instanciation des modèles ;
+- la réinitialisation du compte admin par commande serveur (`user.reset_password`, acteur `cli`) ;
+- les restaurations depuis la corbeille, et la restauration d'une sauvegarde (acteur `cli`) ;
 - les consultations des notes personnelles (voir [Profil utilisateur](05-profil-utilisateur.md)).
 
 Le journal est consultable et filtrable par l'administrateur, et non modifiable. Pas de purge automatique définie pour l'instant (point à retravailler plus tard, comme le backup).
 
 ## Points techniques
-- **AuditModule** : écriture et consultation du journal des modifications ; appelé par UsersModule, GroupsModule, ProfileModule, PagesModule, DiscussionsModule, ExcelSyncModule et TemplatesModule. PermissionsModule ne fait que vérifier les droits et n'écrit rien.
+- **AuditModule** : écriture et consultation du journal des modifications ; appelé par AuthModule, UsersModule, GroupsModule, ProfileModule, SettingsModule, ThemesModule, MediaModule, PagesModule, SourcesModule, FormsModule, DiscussionsModule, ChatModule, TemplatesModule, TrashModule et les commandes serveur (CliModule). PermissionsModule ne fait que vérifier les droits et n'écrit rien.
 - Les vues de droits s'appuient sur la fonction de résolution unique (voir [Calcul des droits effectifs](03-droits-groupes.md#calcul-des-droits-effectifs)).
 - Routes d'administration (comptes, groupes, droits, journal) protégées par un guard de rôle admin.
 - Chaque entrée du journal d'audit est écrite dans la **même transaction** que la modification qu'elle trace ; aucune route de modification ou de suppression du journal n'est exposée.

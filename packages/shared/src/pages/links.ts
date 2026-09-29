@@ -1,4 +1,4 @@
-/** Destination d'un bouton, d'une image ou d'une zone de carte (06 — Destinations des liens). */
+/** Destination d'un bouton ou d'une image (06 — Destinations des liens). */
 export type LinkKind = 'page' | 'url' | 'personal_page';
 
 export interface LinkTarget {

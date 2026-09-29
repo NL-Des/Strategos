@@ -27,6 +27,7 @@ import {
   type TopicWithMessages,
 } from '@strategos/shared';
 import type { Response } from 'express';
+import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { AppException } from '../common/app-exception.js';
@@ -104,8 +105,9 @@ export class DiscussionsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: EditMessageDto,
     @CurrentAuth() auth: AuthContext,
+    @Actor() actor: AuditActor,
   ): Promise<TopicMessageView> {
-    return this.messages.edit(id, auth.user, dto.content);
+    return this.messages.edit(id, auth.user, actor, dto.content);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -113,8 +115,9 @@ export class DiscussionsController {
   async deleteMessage(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentAuth() auth: AuthContext,
+    @Actor() actor: AuditActor,
   ): Promise<void> {
-    await this.messages.remove(id, auth.user);
+    await this.messages.remove(id, auth.user, actor);
   }
 
   /** Upload d'une image jointe (`multipart`), à rattacher ensuite à un message. */

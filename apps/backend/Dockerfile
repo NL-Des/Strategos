@@ -10,7 +10,7 @@ RUN pnpm install --frozen-lockfile \
 FROM node:22-alpine
 ENV NODE_ENV=production
 # pg_dump et pg_restore des sauvegardes (11), de la même version que la base.
-RUN apk add --no-cache postgresql18-client
+RUN apk add --no-cache postgresql18-client tzdata
 WORKDIR /app
 COPY --from=build /out .
 EXPOSE 3000

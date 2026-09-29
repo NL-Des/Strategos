@@ -1,10 +1,11 @@
 import { type CanActivate, type ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ErrorCode } from '@strategos/shared';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AppException } from '../common/app-exception.js';
 import { config } from '../config.js';
 import { PRESESSION_COOKIE, SESSION_COOKIE } from './auth.constants.js';
+import { setSessionCookie } from './cookies.js';
 import { verifyCsrfToken } from './csrf.js';
 import { ALLOW_PENDING_CREDENTIALS, IS_PUBLIC } from './decorators.js';
 import { SessionService } from './session.service.js';
@@ -22,7 +23,11 @@ function requestOf(context: ExecutionContext): Request {
  */
 const isHttp = (context: ExecutionContext): boolean => context.getType() === 'http';
 
-/** Résout la session du cookie et l'attache à la requête ; ne refuse rien. */
+/**
+ * Résout la session du cookie et l'attache à la requête ; ne refuse rien. Une
+ * session prolongée renvoie son cookie, pour que l'expiration glisse aussi côté
+ * navigateur.
+ */
 @Injectable()
 export class SessionGuard implements CanActivate {
   constructor(private readonly sessions: SessionService) {}
@@ -33,6 +38,9 @@ export class SessionGuard implements CanActivate {
     const token: unknown = req.cookies?.[SESSION_COOKIE];
     if (typeof token === 'string' && token) {
       req.auth = (await this.sessions.resolve(token)) ?? undefined;
+      if (req.auth?.renewed) {
+        setSessionCookie(context.switchToHttp().getResponse<Response>(), token);
+      }
     }
     return true;
   }

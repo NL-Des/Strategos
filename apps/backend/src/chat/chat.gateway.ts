@@ -71,7 +71,7 @@ export class ChatGateway
     for (const socket of this.sockets) socket.close();
   }
 
-  /** Handshake : `Origin` autorisé et session valide, sinon fermeture. */
+  /** Handshake : `Origin` autorisé, session valide et identifiants déjà changés, sinon fermeture. */
   async handleConnection(client: ChatSocket, request: IncomingMessage): Promise<void> {
     const origin = request.headers.origin;
     if (!origin || !config.appOrigins.includes(origin)) {
@@ -80,7 +80,8 @@ export class ChatGateway
     }
     const token = readCookie(request.headers.cookie, SESSION_COOKIE);
     const auth = token ? await this.sessions.resolve(token) : null;
-    if (!auth) {
+    // Avant le changement d'identifiants imposé, rien d'autre n'est permis (02).
+    if (!auth || auth.user.mustChangeCredentials) {
       client.close();
       return;
     }
@@ -142,7 +143,7 @@ export class ChatGateway
   /** Revalide la session du socket ; met à jour l'utilisateur ou ferme la connexion. */
   private async reauth(client: ChatSocket) {
     const auth = client.sessionToken ? await this.sessions.resolve(client.sessionToken) : null;
-    if (!auth) {
+    if (!auth || auth.user.mustChangeCredentials) {
       client.close();
       this.handleDisconnect(client);
       return null;

@@ -10,7 +10,12 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { type AdminLayoutPart, type AssembledRow, LayoutKind } from '@strategos/shared';
+import {
+  type AdminLayoutPart,
+  type AssembledRow,
+  LayoutKind,
+  type SaveLayoutDraftResult,
+} from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
@@ -34,7 +39,7 @@ export class AdminLayoutController {
     @Param('kind', kindPipe) kind: LayoutKind,
     @Body() dto: SaveLayoutDraftDto,
     @Actor() actor: AuditActor,
-  ): Promise<AdminLayoutPart> {
+  ): Promise<SaveLayoutDraftResult> {
     return this.layout.saveDraft(kind, dto, actor);
   }
 

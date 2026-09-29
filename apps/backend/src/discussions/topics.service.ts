@@ -92,7 +92,7 @@ export class TopicsService {
         data: { topicId: topic.id, authorId: user.id, content },
       });
       await attachToMessage(tx, message.id, user.id, input.attachmentIds);
-      return this.detail(topic, user, true);
+      return this.detail(topic, user);
     });
   }
 
@@ -189,14 +189,11 @@ export class TopicsService {
       authorId: string;
     },
     user: User,
-    createTopicKnown = false,
   ): Promise<TopicDetail> {
     const closed = topic.closedAt !== null;
     const canManage = user.isAdmin || user.id === topic.authorId;
-    // Après avoir ouvert un sujet, l'utilisateur a forcément le droit de poster.
-    const canPost = createTopicKnown
-      ? !closed
-      : !closed && (await this.access.flags(user, topic.spaceId)).post;
+    // Ouvrir un sujet et poster sont deux droits distincts (07).
+    const canPost = !closed && (await this.access.flags(user, topic.spaceId)).post;
     return {
       id: topic.id,
       title: topic.title,

@@ -122,9 +122,7 @@ export class ReaderContextService {
       cell: (need) => values.cells.get(needKey(need)) ?? EMPTY_CELL,
       sourceAvailable: available,
       rowsUrl: (blockId) =>
-        options.preview
-          ? `/api/v1/admin/blocks/${blockId}/rows?preview=true`
-          : `/api/v1/blocks/${blockId}/rows`,
+        options.preview ? `/api/v1/admin/blocks/${blockId}/rows` : `/api/v1/blocks/${blockId}/rows`,
       form: (formId) => forms.info.get(formId) ?? null,
       rowForms: (blockId) => forms.rowForms.get(blockId) ?? [],
       formLinks: (formId) => formLinks(formId, options.preview),

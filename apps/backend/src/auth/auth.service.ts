@@ -62,7 +62,8 @@ export class AuthService {
 
   /**
    * Changement d'identifiants (forcé après un mot de passe temporaire). Seul
-   * l'admin peut changer de pseudo.
+   * l'admin change aussi de pseudo, et il y est obligé : le compte par défaut
+   * ne garde ni `admin` ni son ancien pseudo (02).
    */
   async changeCredentials(
     auth: AuthContext,
@@ -73,6 +74,14 @@ export class AuthService {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
         fields: { newUsername: ['notAllowed'] },
       });
+    }
+    if (auth.user.isAdmin) {
+      const missing = dto.newUsername === undefined;
+      if (missing || dto.newUsername!.toLowerCase() === auth.user.username.toLowerCase()) {
+        throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
+          fields: { newUsername: [missing ? 'isNotEmpty' : 'sameAsCurrent'] },
+        });
+      }
     }
     return this.updatePassword(auth, dto, meta, AuditAction.USER_CHANGE_CREDENTIALS);
   }
@@ -98,6 +107,8 @@ export class AuthService {
       await this.throttle.record(user.username, meta.ip, false);
       throw new AppException(HttpStatus.UNAUTHORIZED, ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
+    // Un succès remet le compteur à zéro, comme à la connexion.
+    await this.throttle.record(user.username, meta.ip, true);
     if (dto.newPassword === dto.currentPassword) {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
         fields: { newPassword: ['sameAsCurrent'] },

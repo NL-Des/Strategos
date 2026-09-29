@@ -159,13 +159,13 @@
     "isLength": "longueur incorrecte",
     "matches": "caractères non autorisés",
     "notAllowed": "non autorisé",
+    "isNotEmpty": "obligatoire",
     "sameAsCurrent": "doit être différent de l’actuel",
     "isUuid": "à choisir",
     "isIn": "valeur non prévue",
     "isUrl": "adresse invalide",
     "rowLayout": "répartition de colonnes non prévue",
     "duplicateId": "identifiant en double",
-    "notAvailable": "module pas encore disponible",
     "arrayMinSize": "au moins un élément",
     "whitelistValidation": "champ non prévu",
     "notFound": "introuvable",
@@ -290,6 +290,8 @@
       "onedrive.connect": "Connexion OneDrive",
       "message.hide": "Masquage d’un message",
       "message.unhide": "Rétablissement d’un message",
+      "message.admin_edit": "Modification du message d’un autre",
+      "message.admin_delete": "Suppression du message d’un autre",
       "theme.create": "Création d’un thème",
       "theme.update": "Modification d’un thème",
       "theme.delete": "Suppression d’un thème",
@@ -395,7 +397,6 @@
     "blockTypes": {
       "image": "Image",
       "buttons": "Boutons",
-      "clickable_map": "Carte cliquable",
       "table": "Tableau",
       "catalog": "Catalogue",
       "rich_content": "Contenu libre",
@@ -457,7 +458,8 @@
       "search": "Rechercher une image",
       "empty": "Aucune image.",
       "deleteConfirm": "Supprimer l’image « {{filename}} » ?",
-      "deleteAnyway": "Supprimer quand même"
+      "deleteAnyway": "Supprimer quand même",
+      "themeUsage": "Fond du thème « {{name}} »"
     },
     "pages": {
       "title": "Pages",

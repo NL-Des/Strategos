@@ -64,6 +64,22 @@ describe('Authentification (e2e)', () => {
       expect(res.body.code).toBe('UNAUTHENTICATED');
     });
 
+    it('session glissante : le cookie est prolongé avec la session', async () => {
+      const client = new TestClient(app);
+      await client.login('admin', 'admin');
+      // Dernière activité il y a 2 minutes : la requête suivante prolonge la session.
+      await prisma.session.updateMany({ data: { lastSeenAt: new Date(Date.now() - 120_000) } });
+      const res = await client.get('/auth/me');
+      expect(res.status).toBe(200);
+      const cookie = ([] as string[])
+        .concat(res.headers['set-cookie'] ?? [])
+        .find((c) => c.startsWith('strategos_session='));
+      expect(cookie).toMatch(/Max-Age=604800/);
+      // Sans prolongation (moins d'une minute), le cookie n'est pas renvoyé.
+      const again = await client.get('/auth/me');
+      expect(String(again.headers['set-cookie'] ?? '')).not.toMatch(/strategos_session=/);
+    });
+
     it('déconnexion → session révoquée', async () => {
       const client = new TestClient(app);
       await client.login('admin', 'admin');
@@ -207,6 +223,24 @@ describe('Authentification (e2e)', () => {
       expect((await client.get('/admin/users')).status).toBe(200);
     });
 
+    it('l’admin doit choisir un nouveau pseudo', async () => {
+      const client = new TestClient(app);
+      await client.login('admin', 'admin');
+      const missing = await client.send('post', '/auth/change-credentials', {
+        currentPassword: 'admin',
+        newPassword: ADMIN_PASSWORD,
+      });
+      expect(missing.status).toBe(400);
+      expect(missing.body.details.fields.newUsername).toEqual(['isNotEmpty']);
+      const same = await client.send('post', '/auth/change-credentials', {
+        currentPassword: 'admin',
+        newPassword: ADMIN_PASSWORD,
+        newUsername: 'ADMIN',
+      });
+      expect(same.status).toBe(400);
+      expect(same.body.details.fields.newUsername).toEqual(['sameAsCurrent']);
+    });
+
     it('newUsername refusé pour un non-admin', async () => {
       const admin = await adminClient(app);
       await createUser(admin, 'kira', 'temporaire-kira');
@@ -234,11 +268,13 @@ describe('Authentification (e2e)', () => {
       const wrong = await client.send('post', '/auth/change-credentials', {
         currentPassword: 'faux',
         newPassword: ADMIN_PASSWORD,
+        newUsername: 'nadia',
       });
       expect(wrong.body.code).toBe('AUTH_INVALID_CREDENTIALS');
       const short = await client.send('post', '/auth/change-credentials', {
         currentPassword: 'admin',
         newPassword: 'court',
+        newUsername: 'nadia',
       });
       expect(short.status).toBe(400);
       expect(short.body.details.fields.newPassword).toContain('isLength');
@@ -252,6 +288,7 @@ describe('Authentification (e2e)', () => {
       await first.send('post', '/auth/change-credentials', {
         currentPassword: 'admin',
         newPassword: ADMIN_PASSWORD,
+        newUsername: 'nadia',
       });
       expect((await first.get('/auth/me')).status).toBe(200);
       expect((await second.get('/auth/me')).status).toBe(401);

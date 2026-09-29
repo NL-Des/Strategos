@@ -5,6 +5,8 @@ export interface AuthContext {
   sessionId: string;
   csrfSecret: string;
   user: User;
+  /** La session vient d'être prolongée : le cookie doit l'être aussi. */
+  renewed?: boolean;
 }
 
 declare global {

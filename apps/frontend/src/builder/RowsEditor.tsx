@@ -1,10 +1,4 @@
-import {
-  AVAILABLE_BLOCK_TYPES,
-  type AvailableBlockType,
-  type Block,
-  ROW_LAYOUTS,
-  type Row,
-} from '@strategos/shared';
+import { BLOCK_TYPES, type BlockType, type Block, ROW_LAYOUTS, type Row } from '@strategos/shared';
 import { useTranslation } from 'react-i18next';
 import { BlockEditor } from './BlockEditor';
 import { newBlock, newRow } from './defaults';
@@ -15,11 +9,11 @@ const layoutKey = (row: Row) => row.columns.map((c) => c.width).join('+');
 export function RowsEditor({
   rows,
   onChange,
-  allowedTypes = AVAILABLE_BLOCK_TYPES,
+  allowedTypes = BLOCK_TYPES,
 }: {
   rows: Row[];
   onChange: (rows: Row[]) => void;
-  allowedTypes?: readonly AvailableBlockType[];
+  allowedTypes?: readonly BlockType[];
 }) {
   const { t } = useTranslation();
   const setRow = (i: number, row: Row) => onChange(rows.map((r, j) => (i === j ? row : r)));
@@ -103,7 +97,7 @@ export function RowsEditor({
                     <select
                       aria-label={t('builder.addBlock')}
                       value=""
-                      onChange={(e) => setBlock(newBlock(e.target.value as AvailableBlockType))}
+                      onChange={(e) => setBlock(newBlock(e.target.value as BlockType))}
                     >
                       <option value="">{t('builder.addBlock')}</option>
                       {allowedTypes.map((type) => (

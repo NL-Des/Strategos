@@ -15,7 +15,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import type { AuditActor } from '../audit/audit-actor.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppException } from '../common/app-exception.js';
-import { findJsonUsages, type JsonUsages } from '../common/json-usages.js';
+import { findJsonUsages, findThemeUsages, type JsonUsages } from '../common/json-usages.js';
 import { config } from '../config.js';
 import type { Media } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -49,6 +49,11 @@ export function cleanFilename(original: string): string {
 }
 
 /** Médiathèque (06) : images sur le volume `uploads`, métadonnées en base. */
+/** Usages d'une image : ceux des pages et du header/footer, plus les fonds de thème. */
+export interface MediaUsages extends JsonUsages {
+  themes: { id: string; name: string }[];
+}
+
 @Injectable()
 export class MediaService {
   constructor(
@@ -130,9 +135,13 @@ export class MediaService {
     return { path: join(config.uploadsDir, media.storagePath), mime: media.mime };
   }
 
-  /** Pages (brouillon ou version publiée) et header/footer qui citent l'image. */
-  usages(id: string): Promise<JsonUsages> {
-    return findJsonUsages(this.prisma, id);
+  /** Pages (brouillon ou version publiée), header/footer et thèmes qui citent l'image. */
+  async usages(id: string): Promise<MediaUsages> {
+    const [json, themes] = await Promise.all([
+      findJsonUsages(this.prisma, id),
+      findThemeUsages(this.prisma, id),
+    ]);
+    return { ...json, themes };
   }
 
   /**
@@ -143,7 +152,8 @@ export class MediaService {
     const media = await this.prisma.media.findFirst({ where: { id, deletedAt: null } });
     if (!media) throw notFound();
     const usages = await this.usages(id);
-    if (!confirm && (usages.pages.length > 0 || usages.layouts.length > 0)) {
+    const used = usages.pages.length + usages.layouts.length + usages.themes.length > 0;
+    if (!confirm && used) {
       throw new AppException(HttpStatus.CONFLICT, ErrorCode.CONFIRMATION_REQUIRED, {
         warnings: [
           {
@@ -151,6 +161,7 @@ export class MediaService {
             message: 'Cette image est encore utilisée.',
             pages: usages.pages,
             layouts: usages.layouts,
+            themes: usages.themes,
           },
         ],
       });

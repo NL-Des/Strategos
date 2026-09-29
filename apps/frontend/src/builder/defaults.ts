@@ -1,9 +1,9 @@
-import type { AvailableBlockType, Block, Row } from '@strategos/shared';
+import type { BlockType, Block, Row } from '@strategos/shared';
 
 export const newId = () => crypto.randomUUID();
 
 /** Configuration d'un module juste ajouté ; l'admin la complète avant d'enregistrer. */
-export function newBlock(type: AvailableBlockType): Block {
+export function newBlock(type: BlockType): Block {
   switch (type) {
     case 'image':
       return { id: newId(), type, config: { mediaId: '', alt: '', size: 'fit', align: 'center' } };

@@ -1,20 +1,6 @@
 import type { TopicSort } from '../enums.js';
 import type { LinkTarget } from './links.js';
 
-/** Types de modules (06 — Registre des modules). */
-export const BLOCK_TYPES = [
-  'image',
-  'buttons',
-  'clickable_map',
-  'table',
-  'catalog',
-  'rich_content',
-  'form',
-  'discussion_space',
-  'chat',
-] as const;
-export type BlockType = (typeof BLOCK_TYPES)[number];
-
 /** Modules refusés dans le header et le footer partagés (`422 BLOCK_NOT_ALLOWED_IN_LAYOUT`). */
 export const LAYOUT_FORBIDDEN_BLOCK_TYPES: readonly BlockType[] = [
   'form',
@@ -27,7 +13,6 @@ export type Alignment = (typeof ALIGNMENTS)[number];
 
 // Configuration de chaque module. Les schémas de validation correspondants sont
 // dans `@strategos/shared/validation` (backend) et implémentent ces interfaces.
-// Chaque étape ajoute les modules qu'elle livre.
 
 /** Image de la médiathèque, avec un lien facultatif (06 — Image). */
 export interface ImageBlockConfig {
@@ -202,10 +187,10 @@ export const CHAT_NAME_MAX_LENGTH = 100;
 export const CHAT_HEIGHT_MIN = 200;
 export const CHAT_HEIGHT_MAX = 800;
 
-export type AvailableBlockType = keyof BlockConfigs;
+/** Types de modules (06 — Registre des modules), dans l'ordre de l'éditeur. */
+export type BlockType = keyof BlockConfigs;
 
-/** Modules disponibles ; un type absent est refusé à l'enregistrement. */
-export const AVAILABLE_BLOCK_TYPES: readonly AvailableBlockType[] = [
+export const BLOCK_TYPES = [
   'image',
   'buttons',
   'rich_content',
@@ -214,4 +199,4 @@ export const AVAILABLE_BLOCK_TYPES: readonly AvailableBlockType[] = [
   'form',
   'discussion_space',
   'chat',
-];
+] as const satisfies readonly BlockType[];

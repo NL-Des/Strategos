@@ -52,13 +52,14 @@ export class SessionService {
       return null;
     }
 
-    if (now - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {
+    const renewed = now - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS;
+    if (renewed) {
       await this.prisma.session.update({
         where: { id },
         data: { lastSeenAt: new Date(now), expiresAt: new Date(now + SESSION_TTL_MS) },
       });
     }
-    return { sessionId: id, csrfSecret: session.csrfSecret, user };
+    return { sessionId: id, csrfSecret: session.csrfSecret, user, renewed };
   }
 
   async revoke(sessionId: string, db: Db = this.prisma): Promise<void> {
