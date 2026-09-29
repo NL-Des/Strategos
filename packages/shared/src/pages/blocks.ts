@@ -82,13 +82,30 @@ export interface DataRange {
   startRow?: number;
 }
 
-/** Données lues par un module : la source, la feuille et la plage. */
+/**
+ * Données lues par un module : la source, la feuille et la plage. Vides
+ * (`null`) sur un module non configuré, par exemple juste après l'instanciation
+ * d'un modèle de page (10) : il est alors masqué aux utilisateurs.
+ */
 export interface DataSourceRef {
+  sourceId: string | null;
+  sheet: string | null;
+  range: DataRange | null;
+  /** La première ligne de la plage sert d'en-têtes (elle n'est pas affichée comme donnée). */
+  headerRow: boolean;
+}
+
+/** Module de données dont la source, la feuille et la plage sont choisies. */
+export type ConfiguredDataSourceRef = Omit<DataSourceRef, 'sourceId' | 'sheet' | 'range'> & {
   sourceId: string;
   sheet: string;
   range: DataRange;
-  /** La première ligne de la plage sert d'en-têtes (elle n'est pas affichée comme donnée). */
-  headerRow: boolean;
+};
+
+export function isDataConfigured<R extends DataSourceRef>(
+  ref: R,
+): ref is R & ConfiguredDataSourceRef {
+  return !!ref.sourceId && !!ref.sheet && ref.range !== null;
 }
 
 export interface TableColumn {

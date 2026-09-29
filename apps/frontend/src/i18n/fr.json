@@ -109,7 +109,8 @@
       "settings": "Réglages",
       "audit": "Journal",
       "submissions": "Soumissions",
-      "themes": "Thèmes"
+      "themes": "Thèmes",
+      "templates": "Modèles"
     }
   },
   "fields": {
@@ -222,7 +223,8 @@
     "NOT_AUTHOR": "Vous n’êtes pas l’auteur de ce contenu.",
     "TOO_MANY_ATTACHMENTS": "Un message accepte au plus 4 pièces jointes.",
     "THEME_NAME_TAKEN": "Un thème porte déjà ce nom.",
-    "DEFAULT_THEME": "Le thème par défaut ne peut pas être supprimé. Choisissez d’abord un autre thème par défaut dans les réglages."
+    "DEFAULT_THEME": "Le thème par défaut ne peut pas être supprimé. Choisissez d’abord un autre thème par défaut dans les réglages.",
+    "TEMPLATE_NAME_TAKEN": "Un modèle de ce type porte déjà ce nom."
   },
   "audit": {
     "title": "Journal des modifications",
@@ -288,7 +290,10 @@
       "theme.create": "Création d’un thème",
       "theme.update": "Modification d’un thème",
       "theme.delete": "Suppression d’un thème",
-      "notes.read": "Consultation des notes"
+      "notes.read": "Consultation des notes",
+      "template.create": "Enregistrement d’un modèle",
+      "template.delete": "Suppression d’un modèle",
+      "template.instantiate": "Instanciation d’un modèle"
     },
     "targetTypes": {
       "user": "Compte",
@@ -302,7 +307,8 @@
       "submission": "Soumission",
       "onedrive": "OneDrive",
       "message": "Message",
-      "theme": "Thème"
+      "theme": "Thème",
+      "template": "Modèle"
     },
     "fields": {
       "username": "Pseudo",
@@ -507,7 +513,10 @@
         "currency": "Monnaie",
         "image": "Image",
         "link": "Lien"
-      }
+      },
+      "chooseSheet": "Choisir une feuille…",
+      "noRange": "Aucune plage",
+      "notConfigured": "Module non configuré : il reste masqué aux utilisateurs tant que la source, la feuille et la plage ne sont pas choisies."
     },
     "publishInvalidates_one": "La publication invalidera 1 soumission en attente. Publier quand même ?",
     "publishInvalidates_other": "La publication invalidera {{count}} soumissions en attente. Publier quand même ?",
@@ -597,7 +606,10 @@
       "close": "Fermer",
       "closesAt": "Date limite",
       "autoValidate": "Validation automatique (les soumissions sont écrites sans passer par vous)",
-      "zoneItem": "« {{form}} » sur la page « {{page}} »"
+      "zoneItem": "« {{form}} » sur la page « {{page}} »",
+      "fromTemplate": "Partir de",
+      "blank": "Un formulaire vide",
+      "templateHint": "Les champs du modèle sont repris ; la feuille et les cellules ou colonnes cibles sont à redéfinir."
     }
   },
   "warnings": {
@@ -919,6 +931,41 @@
       "discussion": "Discussion",
       "author": "Kira",
       "message": "Rendez-vous ce soir à 21 h pour le raid."
+    }
+  },
+  "templates": {
+    "title": "Modèles",
+    "intro": "Formulaires, pages et sujets enregistrés pour être réutilisés. Une copie garde la structure, mais jamais les feuilles, plages ni cellules visées : elles sont à choisir pour chaque nouvelle instance.",
+    "type": "Type de modèle",
+    "allTypes": "Tous les types",
+    "types": {
+      "form": "Formulaire",
+      "page": "Page",
+      "topic": "Sujet"
+    },
+    "empty": "Aucun modèle pour l’instant.",
+    "details": {
+      "form": "{{mode}} · {{count}} champ(s)",
+      "page": "{{count}} module(s)",
+      "topic": "Sujet « {{title}} »"
+    },
+    "deleteConfirm": "Supprimer le modèle « {{name}} » ? Les pages, formulaires et sujets déjà créés à partir de lui ne changent pas.",
+    "formHint": "Pour l’utiliser, ajoutez un module Formulaire dans l’éditeur de page et choisissez ce modèle.",
+    "pageHint": "La copie est créée en brouillon, sans permission : seul l’administrateur la voit. Ses tableaux, catalogues et formulaires restent masqués tant qu’ils ne sont pas reconfigurés.",
+    "pageName": "Nom de la nouvelle page",
+    "instantiatePage": "Créer la page",
+    "space": "Espace de discussion",
+    "chooseSpace": "Choisir un espace…",
+    "instantiateTopic": "Ouvrir le sujet",
+    "topicCreated": "Sujet ouvert dans l’espace choisi.",
+    "save": "Enregistrer comme modèle",
+    "saveSubmit": "Enregistrer le modèle",
+    "saved": "Modèle enregistré.",
+    "name": "Nom du modèle",
+    "saveHint": {
+      "form": "Le modèle garde les champs, libellés et types. Feuille, cellules, colonnes et zone d’ajout ne sont pas enregistrées.",
+      "page": "Le modèle copie le dernier brouillon enregistré. Plages des tableaux et catalogues, valeurs insérées et mappings des formulaires ne sont pas enregistrés.",
+      "topic": "Le modèle garde le titre et le message d’ouverture, pas les réponses."
     }
   }
 }

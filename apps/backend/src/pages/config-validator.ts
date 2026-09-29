@@ -139,8 +139,10 @@ class StructureValidator {
     type: 'table' | 'catalog',
     config: TableBlockConfig | CatalogBlockConfig,
   ) {
+    const range = config.range;
+    if (!range) return;
     const check = (field: string, col: string | undefined) => {
-      if (col && COLUMN_PATTERN.test(col) && !inRange(config, col))
+      if (col && COLUMN_PATTERN.test(col) && !inRange({ range }, col))
         this.fail(`${path}.${field}`, 'outOfRange');
     };
     if (type === 'table') {

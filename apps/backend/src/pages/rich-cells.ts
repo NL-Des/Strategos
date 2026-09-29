@@ -48,3 +48,11 @@ export function replaceRichCells(html: string): string {
   let i = 0;
   return html.replace(CELL_SPAN, () => `<span data-value="${i++}"></span>`);
 }
+
+/**
+ * Retire les valeurs insérées : chacune devient un simple repère texte
+ * (« {B2} »), sans lien avec le document (10 — instanciation d'une page).
+ */
+export function stripRichCells(html: string): string {
+  return html.replace(CELL_SPAN, (...m: string[]) => `{${m[3]}}`);
+}

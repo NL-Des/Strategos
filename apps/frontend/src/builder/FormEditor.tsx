@@ -20,7 +20,9 @@ import {
   setFormOpen,
   setFormSettings,
 } from '../api/forms';
+import { instantiateTemplate, listTemplates } from '../api/templates';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { SaveAsTemplate } from '../components/SaveAsTemplate';
 import { useSources } from './DataBlockEditors';
 import { usePageEditor } from './PageEditorContext';
 
@@ -78,23 +80,50 @@ function NewForm({
 }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<FormMode>(FormMode.modification);
+  const [templateId, setTemplateId] = useState('');
+  const templates = useQuery({
+    queryKey: ['admin', 'templates', 'form'],
+    queryFn: () => listTemplates('form'),
+  });
   const create = useMutation({
-    mutationFn: () => createForm({ pageId: pageId!, pageBlockId: blockId, mode }),
-    onSuccess: (form) => onCreated(form.id),
+    mutationFn: async () => {
+      if (!templateId)
+        return (await createForm({ pageId: pageId!, pageBlockId: blockId, mode })).id;
+      // Modèle : champs repris, mappings à redéfinir (10).
+      const result = await instantiateTemplate(templateId, { pageId, pageBlockId: blockId });
+      return result.type === 'form' ? result.formId : '';
+    },
+    onSuccess: (formId) => onCreated(formId),
   });
   return (
     <div className="form">
-      <label>
-        {t('builder.form.mode')}
-        <select value={mode} onChange={(e) => setMode(e.target.value as FormMode)}>
-          {Object.values(FormMode).map((m) => (
-            <option key={m} value={m}>
-              {t(`builder.form.modes.${m}`)}
-            </option>
-          ))}
-        </select>
-        <small>{t(`builder.form.modeHints.${mode}`)}</small>
-      </label>
+      {(templates.data?.length ?? 0) > 0 && (
+        <label>
+          {t('builder.form.fromTemplate')}
+          <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+            <option value="">{t('builder.form.blank')}</option>
+            {templates.data?.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name} ({t(`builder.form.modes.${template.details.mode}`)})
+              </option>
+            ))}
+          </select>
+          {templateId && <small>{t('builder.form.templateHint')}</small>}
+        </label>
+      )}
+      {!templateId && (
+        <label>
+          {t('builder.form.mode')}
+          <select value={mode} onChange={(e) => setMode(e.target.value as FormMode)}>
+            {Object.values(FormMode).map((m) => (
+              <option key={m} value={m}>
+                {t(`builder.form.modes.${m}`)}
+              </option>
+            ))}
+          </select>
+          <small>{t(`builder.form.modeHints.${mode}`)}</small>
+        </label>
+      )}
       <ErrorMessage error={create.error} />
       <button type="button" disabled={!pageId || create.isPending} onClick={() => create.mutate()}>
         {t('builder.form.create')}
@@ -194,6 +223,7 @@ function DefinitionEditor({ initial }: { initial: AdminForm }) {
         {form.configured ? t('builder.form.configured') : t('builder.form.notConfigured')}
         {form.publishedVersion === null && ` · ${t('builder.form.neverPublished')}`}
       </p>
+      <SaveAsTemplate type="form" sourceId={form.id} defaultName={def.title} />
 
       <fieldset>
         <legend>{t('builder.form.texts')}</legend>

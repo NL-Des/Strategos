@@ -225,12 +225,12 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | POST | `/chat-messages/:id/hide` · `/unhide` | Idem pour le chat (diffusé en temps réel) |
 
 ### Modèles — [10](10-modeles-duplication.md)
-| Méthode | Chemin | Rôle |
-|---|---|---|
-| GET | `/templates` | Bibliothèque, filtre par type (`form`, `page`, `topic`) |
-| POST | `/templates` | Enregistrer comme modèle `{ type, sourceId, name }` |
-| DELETE | `/templates/:id` | Supprimer |
-| POST | `/templates/:id/instantiate` | Instancier : page → nouvelle page en brouillon ; formulaire → `{ pageBlockId }` ; sujet → `{ spaceId }`. Mappings et plages réinitialisés |
+| Méthode | Chemin | Rôle | Erreurs |
+|---|---|---|---|
+| GET | `/templates` | Bibliothèque, filtre `?type=` (`form`, `page`, `topic`) | — |
+| POST | `/templates` | Enregistrer comme modèle `{ type, sourceId, name }` (nom unique par type) | `409 TEMPLATE_NAME_TAKEN`, `VALIDATION_FAILED` (`sourceId` introuvable) |
+| DELETE | `/templates/:id` | Supprimer (physique) | `404` |
+| POST | `/templates/:id/instantiate` | Instancier : page → `{ name? }`, nouvelle page en brouillon, sans permission ; formulaire → `{ pageId, pageBlockId }`, rattaché au bloc du brouillon ; sujet → `{ spaceId }`. Mappings et plages réinitialisés. Réponse : `{ type, pageId \| formId \| topicId }` | `404`, `VALIDATION_FAILED` (paramètre manquant, bloc déjà pris) |
 
 ## 4. WebSocket du chat
 - **Connexion** : `wss://…/api/v1/ws`, authentifiée par le cookie de session. L'en-tête `Origin` est vérifié à la connexion. Une session révoquée (compte désactivé) ferme la connexion.

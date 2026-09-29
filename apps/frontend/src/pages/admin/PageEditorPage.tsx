@@ -25,6 +25,7 @@ import { blocksOf, PageEditorContext } from '../../builder/PageEditorContext';
 import { RowsEditor } from '../../builder/RowsEditor';
 import { PreviewGroupSelect } from '../../builder/PreviewGroupSelect';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { SaveAsTemplate } from '../../components/SaveAsTemplate';
 import { PageRender } from '../../render/PageRender';
 
 /** Éditeur d'une page : on modifie toujours le brouillon, publié par un bouton dédié. */
@@ -168,6 +169,7 @@ function Editor({ initial }: { initial: AdminPage }) {
             {t('builder.pages.delete')}
           </button>
         </div>
+        <SaveAsTemplate type="page" sourceId={saved.id} defaultName={saved.name} />
         {notice && (
           <p className="notice" role="status">
             {notice}

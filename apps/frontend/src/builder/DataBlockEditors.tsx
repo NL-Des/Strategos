@@ -8,6 +8,7 @@ import {
   columnLetters,
   columnNumber,
   type DataSourceRef,
+  isDataConfigured,
   parseColumnsRef,
   parseRangeRef,
   TABLE_PAGE_SIZES,
@@ -25,6 +26,7 @@ export function useSources() {
 
 /** Colonnes de la plage (« A », « B »…), pour proposer des choix valides. */
 function rangeLetters(ref: DataSourceRef): string[] {
+  if (!ref.range) return [];
   const cols =
     ref.range.mode === 'fixed'
       ? parseRangeRef(ref.range.ref ?? '')
@@ -33,7 +35,10 @@ function rangeLetters(ref: DataSourceRef): string[] {
   return Array.from({ length: cols.right - cols.left + 1 }, (_, i) => columnLetters(cols.left + i));
 }
 
-/** Source, feuille, plage fixe ou extensible, et ligne d'en-têtes (06 — Plage des tableaux). */
+/**
+ * Source, feuille, plage fixe ou extensible, et ligne d'en-têtes (06 — Plage des
+ * tableaux). Tant que l'une manque, le module est masqué aux utilisateurs.
+ */
 function DataSourceFields<C extends DataSourceRef>({
   config,
   set,
@@ -45,19 +50,22 @@ function DataSourceFields<C extends DataSourceRef>({
   const sources = useSources();
   const source = sources.data?.find((s) => s.id === config.sourceId);
   const range = config.range;
-  const setRange = (patch: Partial<DataSourceRef['range']>) =>
-    set({ range: { ...range, ...patch } } as Partial<C>);
+  const setRange = (patch: Partial<NonNullable<DataSourceRef['range']>>) =>
+    range && set({ range: { ...range, ...patch } } as Partial<C>);
 
   return (
     <fieldset>
       <legend>{t('builder.data.source')}</legend>
+      {!isDataConfigured(config) && (
+        <p className="notice warning">{t('builder.data.notConfigured')}</p>
+      )}
       <label>
         {t('builder.data.sourceFile')}
         <select
-          value={config.sourceId}
+          value={config.sourceId ?? ''}
           onChange={(e) => {
             const next = sources.data?.find((s) => s.id === e.target.value);
-            set({ sourceId: e.target.value, sheet: next?.sheets[0] ?? '' } as Partial<C>);
+            set({ sourceId: next?.id ?? null, sheet: next?.sheets[0] ?? null } as Partial<C>);
           }}
         >
           <option value="">{t('builder.data.chooseSource')}</option>
@@ -70,8 +78,12 @@ function DataSourceFields<C extends DataSourceRef>({
       </label>
       <label>
         {t('builder.data.sheet')}
-        <select value={config.sheet} onChange={(e) => set({ sheet: e.target.value } as Partial<C>)}>
-          {!source?.sheets.includes(config.sheet) && (
+        <select
+          value={config.sheet ?? ''}
+          onChange={(e) => set({ sheet: e.target.value || null } as Partial<C>)}
+        >
+          <option value="">{t('builder.data.chooseSheet')}</option>
+          {config.sheet && !source?.sheets.includes(config.sheet) && (
             <option value={config.sheet}>{config.sheet}</option>
           )}
           {source?.sheets.map((sheet) => (
@@ -84,22 +96,25 @@ function DataSourceFields<C extends DataSourceRef>({
       <label>
         {t('builder.data.rangeMode')}
         <select
-          value={range.mode}
+          value={range?.mode ?? ''}
           onChange={(e) =>
             set({
               range:
                 e.target.value === 'fixed'
                   ? { mode: 'fixed', ref: 'A1:D10' }
-                  : { mode: 'extensible', columns: 'A:D', startRow: 1 },
+                  : e.target.value === 'extensible'
+                    ? { mode: 'extensible', columns: 'A:D', startRow: 1 }
+                    : null,
             } as Partial<C>)
           }
         >
+          <option value="">{t('builder.data.noRange')}</option>
           <option value="extensible">{t('builder.data.extensible')}</option>
           <option value="fixed">{t('builder.data.fixed')}</option>
         </select>
-        <small>{t(`builder.data.${range.mode}Hint`)}</small>
+        {range && <small>{t(`builder.data.${range.mode}Hint`)}</small>}
       </label>
-      {range.mode === 'fixed' ? (
+      {!range ? null : range.mode === 'fixed' ? (
         <label>
           {t('builder.data.rangeRef')}
           <input

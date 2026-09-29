@@ -3,15 +3,18 @@ import {
   type AssembledRow,
   type Block,
   type BlockError,
+  type CatalogBlockConfig,
   columnNumber,
-  type DataSourceRef,
+  type ConfiguredDataSourceRef,
   type FormLinks,
   type FormMode,
+  isDataConfigured,
   type LinkTarget,
   parseRangeRef,
   type ResolvedLink,
   type Row,
   type RowFormLink,
+  type TableBlockConfig,
 } from '@strategos/shared';
 import { formatText, type StoredCell } from '../sources/cell-format.js';
 import { headerRow, rangeColumns } from '../sources/data-range.js';
@@ -58,7 +61,12 @@ const unavailable = (ref: { sourceId: string }, ctx: ReaderContext): { error?: B
   ctx.sourceAvailable(ref.sourceId) ? {} : { error: 'SOURCE_UNAVAILABLE' };
 
 /** Libellé d'une colonne : celui de l'admin, sinon l'en-tête du document, sinon sa lettre. */
-function columnLabel(ref: DataSourceRef, col: string, label: string, ctx: ReaderContext): string {
+function columnLabel(
+  ref: ConfiguredDataSourceRef,
+  col: string,
+  label: string,
+  ctx: ReaderContext,
+): string {
   if (label.trim()) return label.trim();
   const row = headerRow(ref);
   if (row !== null && ctx.sourceAvailable(ref.sourceId)) {
@@ -115,8 +123,10 @@ function assembleBlock(block: Block, ctx: ReaderContext): AssembledBlock | null 
       };
     }
     // Tableau et Catalogue : ni source, ni feuille, ni plage vers le lecteur.
+    // Non configurés (modèle instancié), ils sont masqués.
     case 'table': {
       const c = block.config;
+      if (!isDataConfigured(c)) return null;
       return {
         id: block.id,
         type: 'table',
@@ -135,6 +145,7 @@ function assembleBlock(block: Block, ctx: ReaderContext): AssembledBlock | null 
     }
     case 'catalog': {
       const c = block.config;
+      if (!isDataConfigured(c)) return null;
       return {
         id: block.id,
         type: 'catalog',
@@ -213,7 +224,7 @@ export interface References {
 }
 
 /** Première cellule de la plage d'un module. */
-function rangeProbe(ref: DataSourceRef): { row: number; col: number } | null {
+function rangeProbe(ref: ConfiguredDataSourceRef): { row: number; col: number } | null {
   const cols = rangeColumns(ref);
   const top =
     ref.range.mode === 'fixed'
@@ -229,7 +240,11 @@ export function collectReferences(rows: Row[]): References {
   const cells: CellNeed[] = [];
   const forms = new Map<string, string>();
   const spaceBlockIds = new Set<string>();
-  const headers = (ref: DataSourceRef, columns: { col: string; label: string }[]) => {
+  const headers = (
+    ref: TableBlockConfig | CatalogBlockConfig,
+    columns: { col: string; label: string }[],
+  ) => {
+    if (!isDataConfigured(ref)) return;
     sourceIds.add(ref.sourceId);
     // Sonde : une cellule de la plage est lue, pour savoir si la source répond
     // (une source connectée injoignable marque alors le module indisponible).

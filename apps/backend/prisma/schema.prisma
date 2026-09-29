@@ -142,6 +142,7 @@ model User {
   revisions          MessageRevision[]
   attachments        Attachment[]
   notes              UserNote[]
+  templates          Template[]
 
   @@map("users")
 }
@@ -688,4 +689,22 @@ model UserNote {
   user User @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("user_notes")
+}
+
+// 9. Modèles (14 §9). Suppression physique : les instances sont indépendantes.
+
+model Template {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  type      TemplateType
+  name      String
+  /// Copie de la structure, sans mappings ni plages.
+  payload   Json
+  createdBy String       @map("created_by") @db.Uuid
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@unique([type, name])
+  @@map("templates")
 }

@@ -15,7 +15,7 @@ Ce document découpe la réalisation de Strategos en étapes. Chaque étape est 
 - [x] [Étape 8 — Espaces de discussion](#étape-8--espaces-de-discussion)
 - [x] [Étape 9 — Chat temps réel](#étape-9--chat-temps-réel)
 - [x] [Étape 10 — Thèmes complets et notes](#étape-10--thèmes-complets-et-notes)
-- [ ] [Étape 11 — Modèles et duplication](#étape-11--modèles-et-duplication)
+- [x] [Étape 11 — Modèles et duplication](#étape-11--modèles-et-duplication)
 - [ ] [Étape 12 — Corbeille, sauvegardes et finitions](#étape-12--corbeille-sauvegardes-et-finitions)
 - [ ] [Étape 13 — Carte cliquable](#étape-13--carte-cliquable)
 
@@ -328,10 +328,10 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 - Enregistrer et instancier formulaires, pages et sujets, avec réinitialisation des mappings et des plages ; copies en brouillon, sans permission.
 
 **Critères d'acceptation**
-- [ ] Formulaire instancié : mappings réinitialisés (ajout : ligne de départ, colonnes, nombre max ; ligne : source, plage, clé, bloc relié).
-- [ ] Page instanciée : en brouillon, sans permission, formulaires et tableaux sans cible masqués, espaces et chats vides.
-- [ ] Sujet instancié : titre et message d'ouverture seulement.
-- [ ] Enregistrements et instanciations tracés au journal.
+- [x] Formulaire instancié : mappings réinitialisés (ajout : ligne de départ, colonnes, nombre max ; ligne : source, plage, clé, bloc relié).
+- [x] Page instanciée : en brouillon, sans permission, formulaires et tableaux sans cible masqués, espaces et chats vides.
+- [x] Sujet instancié : titre et message d'ouverture seulement.
+- [x] Enregistrements et instanciations tracés au journal.
 
 **Démo** : [Parcours D](conception/12-parcours.md#parcours-d--espace-privé-dun-joueur-modèles-profil).
 

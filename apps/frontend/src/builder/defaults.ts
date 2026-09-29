@@ -24,8 +24,8 @@ export function newBlock(type: AvailableBlockType): Block {
         id: newId(),
         type,
         config: {
-          sourceId: '',
-          sheet: '',
+          sourceId: null,
+          sheet: null,
           range: { mode: 'extensible', columns: 'A:C', startRow: 1 },
           headerRow: true,
           columns: ['A', 'B', 'C'].map((col) => ({
@@ -44,8 +44,8 @@ export function newBlock(type: AvailableBlockType): Block {
         id: newId(),
         type,
         config: {
-          sourceId: '',
-          sheet: '',
+          sourceId: null,
+          sheet: null,
           range: { mode: 'extensible', columns: 'A:D', startRow: 1 },
           headerRow: true,
           layout: 'image_top',

@@ -147,17 +147,21 @@ export class TableColumnSchema implements TableColumn {
  * vérifiées par le backend après ce schéma.
  */
 export class TableBlockConfigSchema implements TableBlockConfig {
+  // Source, feuille et plage vides : module non configuré, masqué (10).
+  @ValidateIf((_, value) => value !== null)
   @IsUUID()
-  sourceId: string;
+  sourceId: string | null;
 
+  @ValidateIf((_, value) => value !== null)
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  sheet: string;
+  sheet: string | null;
 
+  @ValidateIf((_, value) => value !== null)
   @ValidateNested()
   @Type(() => DataRangeSchema)
-  range: DataRangeSchema;
+  range: DataRangeSchema | null;
 
   @IsBoolean()
   headerRow: boolean;
@@ -191,17 +195,21 @@ export class CatalogDetailSchema implements CatalogDetail {
 }
 
 export class CatalogBlockConfigSchema implements CatalogBlockConfig {
+  // Source, feuille et plage vides : module non configuré, masqué (10).
+  @ValidateIf((_, value) => value !== null)
   @IsUUID()
-  sourceId: string;
+  sourceId: string | null;
 
+  @ValidateIf((_, value) => value !== null)
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  sheet: string;
+  sheet: string | null;
 
+  @ValidateIf((_, value) => value !== null)
   @ValidateNested()
   @Type(() => DataRangeSchema)
-  range: DataRangeSchema;
+  range: DataRangeSchema | null;
 
   @IsBoolean()
   headerRow: boolean;

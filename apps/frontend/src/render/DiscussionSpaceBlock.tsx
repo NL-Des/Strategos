@@ -18,6 +18,7 @@ import {
   uploadAttachment,
 } from '../api/discussions';
 import { useMe } from '../auth/useMe';
+import { SaveAsTemplate } from '../components/SaveAsTemplate';
 import { ErrorMessage } from '../components/ErrorMessage';
 
 /** Texte multi-ligne → HTML simple (le backend le nettoie à nouveau). */
@@ -224,6 +225,7 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
     mutationFn: () => patchTopic(topicId, { closed: true }),
     onSuccess: () => void refresh(),
   });
+  const { data: me } = useMe();
 
   if (query.error) return <ErrorMessage error={query.error} />;
   if (!query.data) return <p>{t('common.loading')}</p>;
@@ -240,6 +242,9 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
           <button type="button" className="secondary" onClick={() => close.mutate()}>
             {t('render.discussion.close')}
           </button>
+        )}
+        {me?.isAdmin && (
+          <SaveAsTemplate type="topic" sourceId={topic.id} defaultName={topic.title} />
         )}
       </div>
       <h3>

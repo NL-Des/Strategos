@@ -15,6 +15,11 @@ Pour éviter à l'administrateur de reconstruire formulaires, pages et sujets de
 
 ## Points techniques
 - **TemplatesModule** : bibliothèque de modèles (formulaires, pages, sujets) et instanciation avec réinitialisation des mappings.
+- **Réinitialisation à l'enregistrement** : le modèle est stocké déjà nettoyé (`templates.payload`), puis chaque instance en est une copie avec de nouveaux identifiants (blocs, rangées, formulaires).
+  - Formulaire : cellules et colonnes des champs, feuille, ligne de départ et nombre maximum de lignes (ajout), plage, colonne clé et bloc relié (ligne) sont vidés. La source est gardée, sauf pour un formulaire de ligne. Une liste déroulante lue dans une plage du document devient une liste vide à remplir.
+  - Page : on copie le **dernier brouillon enregistré**. Les Tableaux et Catalogues perdent leur source, leur feuille et leur plage ; ils gardent colonnes, libellés et réglages d'affichage, et restent masqués tant que les trois ne sont pas choisis. Les valeurs insérées d'un Contenu libre sont retirées, chacune remplacée par un simple repère texte (« {B2} »). Un bloc Formulaire dont le formulaire n'existe plus est retiré.
+  - Sujet : titre et premier message du sujet d'origine, sans pièces jointes. L'instance est ouverte par l'administrateur.
+- **Formulaire instancié** depuis un module Formulaire de l'éditeur de page : le bloc du brouillon et sa page sont donnés à l'instanciation (`pageId`, `pageBlockId`), comme à la création d'un formulaire vide.
 
 ## Dépendances
 - [06 — Page builder](06-page-builder.md), [07 — Discussions](07-discussions.md), [09 — Formulaires et soumissions](09-formulaires-soumissions.md) : ressources modélisables.

@@ -191,7 +191,7 @@ export class FormDataService {
           if (block.type !== 'table' && block.type !== 'catalog') continue;
           const c = block.config;
           if (c.sourceId !== form.def.sourceId || c.sheet !== form.def.sheet) continue;
-          if (c.range.mode !== 'fixed') continue;
+          if (c.range?.mode !== 'fixed') continue;
           const rect = parseRangeRef(c.range.ref ?? '');
           if (rect && (rect.top > zone.top || rect.bottom < zone.bottom)) {
             uncovered.push({ form: form.title, page: page.name });

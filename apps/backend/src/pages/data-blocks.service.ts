@@ -4,9 +4,11 @@ import {
   type CatalogBlockConfig,
   type CatalogCard,
   type CellFormat,
+  type ConfiguredDataSourceRef,
   columnNumber,
   ErrorCode,
   type FormDefinition,
+  isDataConfigured,
   type LayoutConfig,
   PAGE_SIZE_MAX,
   type PageConfig,
@@ -169,8 +171,13 @@ export class DataBlocksService {
         row.columns.forEach((column, j) => {
           const block = column.block;
           const path = `${prefix}${zone ? `.${zone}` : ''}[${i}].columns[${j}].block.config`;
-          if (block?.type === 'table' || block?.type === 'catalog') {
-            uses.push({ path, sourceId: block.config.sourceId, sheet: block.config.sheet });
+          // Un module non configuré (source vide) est accepté : il reste masqué.
+          if ((block?.type === 'table' || block?.type === 'catalog') && block.config.sourceId) {
+            uses.push({
+              path,
+              sourceId: block.config.sourceId,
+              sheet: block.config.sheet ?? undefined,
+            });
           }
           if (block?.type === 'rich_content') {
             for (const cell of richCells(block.config.html)) {
@@ -204,7 +211,9 @@ export class DataBlocksService {
     rowForms: RowForm[],
   ): Promise<Paginated<TableRow | CatalogCard>> {
     if (block.type !== 'table' && block.type !== 'catalog') throw notFound();
+    // Module non configuré (modèle instancié) : masqué, comme absent.
     const config = block.config;
+    if (!isDataConfigured(config)) throw notFound();
     const pageSize = Math.min(query.pageSize ?? config.pageSize, PAGE_SIZE_MAX);
     const columns = displayed(block);
 
@@ -293,7 +302,7 @@ export class DataBlocksService {
 
   /** Lignes de données de la plage (en-têtes exclus), lignes entièrement vides ignorées. */
   private async readLines(
-    config: TableBlockConfig | CatalogBlockConfig,
+    config: (TableBlockConfig | CatalogBlockConfig) & ConfiguredDataSourceRef,
     columns: { col: number }[],
     extra: { col: number }[] = [],
   ): Promise<StoredCell[][]> {

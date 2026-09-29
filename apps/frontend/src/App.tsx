@@ -33,6 +33,7 @@ const SourcesPage = admin(() => import('./pages/admin/SourcesPage'), 'SourcesPag
 const SubmissionsPage = admin(() => import('./pages/admin/SubmissionsPage'), 'SubmissionsPage');
 const SettingsPage = admin(() => import('./pages/admin/SettingsPage'), 'SettingsPage');
 const ThemeEditorPage = admin(() => import('./pages/admin/ThemeEditorPage'), 'ThemeEditorPage');
+const TemplatesPage = admin(() => import('./pages/admin/TemplatesPage'), 'TemplatesPage');
 const ThemesPage = admin(() => import('./pages/admin/ThemesPage'), 'ThemesPage');
 const UserPage = admin(() => import('./pages/admin/UserPage'), 'UserPage');
 const UsersPage = admin(() => import('./pages/admin/UsersPage'), 'UsersPage');
@@ -71,6 +72,7 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/pages/:id', <PageEditorPage />],
   ['/admin/layout/:kind', <LayoutEditorPage />],
   ['/admin/media', <MediaPage />],
+  ['/admin/templates', <TemplatesPage />],
   ['/admin/themes', <ThemesPage />],
   ['/admin/themes/:id', <ThemeEditorPage />],
   ['/admin/sources', <SourcesPage />],

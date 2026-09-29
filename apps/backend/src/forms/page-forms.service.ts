@@ -166,7 +166,7 @@ export class PageFormsService {
    */
   async draftWarnings(db: Db, page: { id: string; name: string }, draft: PageConfig) {
     const tables = pageBlocks(draft).filter(
-      (b) => (b.type === 'table' || b.type === 'catalog') && b.config.range.mode === 'fixed',
+      (b) => (b.type === 'table' || b.type === 'catalog') && b.config.range?.mode === 'fixed',
     );
     if (tables.length === 0) return [];
     const sources = tables.map((b) =>
