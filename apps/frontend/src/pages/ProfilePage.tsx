@@ -2,6 +2,7 @@ import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@strategos/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { changePassword, getProfile } from '../api/profile';
 import { useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
@@ -40,6 +41,9 @@ export function ProfilePage() {
           ) : (
             <RightsTable rights={profile.data.rights} linkTo={(r) => `/pages/${r.id}`} />
           )}
+          <p>
+            <Link to="/submissions">{t('account.submissions')}</Link>
+          </p>
         </div>
       )}
       <PasswordForm />

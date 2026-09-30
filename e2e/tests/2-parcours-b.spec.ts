@@ -1,6 +1,14 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { adminNav, clickAndWait, login, loginAsAdmin, openAdminPage, t } from './helpers.ts';
-import { PLAYER_PASSWORD } from '../stack.ts';
+import {
+  adminNav,
+  clickAndWait,
+  login,
+  loginAsAdmin,
+  openAdminPage,
+  selectByText,
+  t,
+} from './helpers.ts';
+import { ADMIN, PLAYER_PASSWORD } from '../stack.ts';
 
 /**
  * Parcours B — Tournoi de guilde (12) : page « Tournoi » avec valeur insérée,
@@ -155,6 +163,22 @@ test('4. Nadia valide : la ligne est écrite, Kira voit « validée »', async (
   await adminNav(page, 'submissions');
   const card = page.locator('.submission-item').filter({ hasText: 'kira' });
   await expect(card.getByText('Mage')).toBeVisible();
+
+  // Filtres de la file : formulaire choisi parmi ceux de la page, utilisateur par pseudo.
+  const filters = page.locator('.inline-fields');
+  // Nom accessible = libellé suivi de l'option affichée : on ancre le libellé au début.
+  const filter = (key: string) => filters.getByLabel(new RegExp(`^${t(key)}`));
+  await selectByText(filter('submissions.admin.page'), 'Tournoi');
+  const formFilter = filter('submissions.admin.form');
+  await expect(formFilter.locator('option', { hasText: 'Inscription au tournoi' })).toHaveCount(1);
+  await selectByText(formFilter, 'Inscription au tournoi');
+  await expect(card).toHaveCount(1);
+  const userFilter = filter('submissions.admin.user');
+  await userFilter.fill(ADMIN.username);
+  await expect(card).toHaveCount(0);
+  await page.getByRole('button', { name: t('submissions.admin.allUsers') }).click();
+  await userFilter.fill('kira');
+  await expect(card).toHaveCount(1);
   await clickAndWait(
     page,
     card.getByRole('button', { name: t('submissions.admin.validate') }),

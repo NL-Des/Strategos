@@ -18,6 +18,7 @@ Une seule branche, `main` : pas de branche par étape ni de PR.
 | Sujet | Référence |
 |---|---|
 | Vue d'ensemble, modules NestJS, déploiement | [architecture.md](references/architecture.md) |
+| Mise en production pas à pas | [deploiement.md](references/deploiement.md) |
 | Principe fondateur, profils | [01 — Vision](references/conception/01-vision.md) |
 | Sessions, mots de passe, CSRF, compte admin | [02](references/conception/02-comptes-authentification.md) |
 | Groupes, droits, visibilité, résolution des droits | [03](references/conception/03-droits-groupes.md) |

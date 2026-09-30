@@ -2,9 +2,40 @@
 
 Site web construit par un administrateur au-dessus de fichiers Excel, Google Sheets et OneDrive : les utilisateurs **lisent** via des pages et **écrivent** via des formulaires, jamais dans le document lui-même.
 
+Strategos s'adresse aussi bien aux communautés de jeux en ligne qu'aux entreprises. L'administrateur compose tout l'environnement (pages, navigation, formulaires, droits), et Strategos fait écran entre les utilisateurs et les fichiers : personne ne peut casser une structure ou une formule du document. Le site s'installe et se lance en une commande Docker.
+
 La conception complète est dans [references/](references/) ; l'ordre de réalisation est décrit dans [references/plan-realisation.md](references/plan-realisation.md).
 
-## Stack
+## Fonctionnalités
+
+### Pour les utilisateurs
+
+- **Pages** composées par l'admin avec des modules : image, boutons, contenu libre, tableau et catalogue alimentés par les sources de données ([06](references/conception/06-page-builder.md)).
+- **Formulaires** : une soumission est une proposition que l'admin valide avant qu'elle soit écrite dans le document. Sur un formulaire choisi, l'admin peut activer la validation automatique. Chaque utilisateur suit ses propositions dans « mes soumissions » ([09](references/conception/09-formulaires-soumissions.md)).
+- **Espaces de discussion** (sujets, messages, images jointes) et **chat en temps réel** placés sur les pages ([07](references/conception/07-discussions.md)).
+- **Profil** et **notes personnelles**, accessibles depuis un menu de compte toujours présent ([05](references/conception/05-profil-utilisateur.md)).
+
+### Pour l'administrateur (compte unique)
+
+- **Page builder** : brouillon puis publication, header et footer partagés, thèmes, médiathèque ([06](references/conception/06-page-builder.md)).
+- **Sources de données** : Excel uploadé, Google Sheets, OneDrive. Les données sont mises en cache et les fichiers peuvent être réimportés. Strategos écrit des valeurs brutes et ne calcule jamais de formule ([08](references/conception/08-sources-donnees.md)).
+- **Validation des soumissions** : les écritures sont sérialisées par source ([09](references/conception/09-formulaires-soumissions.md)).
+- **Comptes, groupes et droits de lecture** sur les pages et les espaces : une ressource illisible n'apparaît pas et renvoie `404` ([02](references/conception/02-comptes-authentification.md), [03](references/conception/03-droits-groupes.md)).
+- **Modération** des discussions et du chat ([07](references/conception/07-discussions.md)).
+- **Modèles** pour réutiliser pages, formulaires et sujets de discussion ([10](references/conception/10-modeles-duplication.md)).
+- **Journal des modifications**, **corbeille** (suppression douce et restauration) et **réglages** de l'instance : page d'arrivée, thème par défaut, rétention des sauvegardes ([04](references/conception/04-administration.md)).
+- **Sauvegardes** nocturnes (base et fichiers envoyés), téléchargement et restauration ([11](references/conception/11-transverse.md)).
+
+## Architecture et parties du projet
+
+Quatre conteneurs Docker Compose : le proxy **Caddy** (HTTPS automatique) sert le **frontend** React et le **backend** NestJS, qui s'appuie sur **PostgreSQL 18**. Seul le backend parle aux sources (Excel uploadés, API Google Sheets, Microsoft Graph). Le frontend l'appelle en REST et en WebSocket pour le chat. Les données persistent dans les volumes `db_data`, `uploads` et `backups`. Détails : [references/architecture.md](references/architecture.md).
+
+```
+navigateur ──HTTPS──> proxy (Caddy) ──> frontend (React)
+                                   └──> backend (NestJS) ──> PostgreSQL
+                                                         ├──> volumes uploads / backups
+                                                         └──> Google Sheets · OneDrive
+```
 
 Monorepo [pnpm](https://pnpm.io/) :
 
@@ -13,6 +44,21 @@ Monorepo [pnpm](https://pnpm.io/) :
 | `apps/backend` | API NestJS, Prisma 7, ESM |
 | `apps/frontend` | Interface React (Vite) |
 | `packages/shared` | Contrats partagés (schémas de blocs, codes d'erreur, enums, DTO) |
+| `e2e` | Tests navigateur Playwright (parcours de bout en bout, responsive) |
+
+Le backend (`apps/backend/src`) compte un module par domaine :
+
+| Domaine | Modules | Rôle |
+|---|---|---|
+| Comptes | `auth`, `users` | Sessions, CSRF, changement d'identifiants, gestion des comptes |
+| Droits | `groups`, `permissions` | Groupes, calcul unique des droits effectifs, `PermissionsGuard` |
+| Pages | `pages`, `themes`, `media` | Brouillon et publication, assemblage filtré par lecteur, thèmes, médiathèque |
+| Échanges | `discussions`, `chat` | Espaces de discussion, chat WebSocket (`/api/v1/ws`), modération |
+| Données | `sources`, `forms` | Lecture et écriture des sources, cache, réimport, formulaires et soumissions |
+| Instance | `settings`, `templates`, `audit`, `trash`, `backups`, `profile` | Réglages, modèles, journal, corbeille, sauvegardes, profil et notes |
+| Serveur | `cli` | Commandes `reset-admin`, `run-backup`, `restore-backup`, `openapi` |
+
+Le frontend (`apps/frontend/src`) sépare les pages utilisateur (`pages/`), les écrans admin (`pages/admin/`), l'éditeur de pages (`builder/`) et le rendu des modules (`render/`). Tous les textes sont dans `i18n/fr.json`.
 
 ## Prérequis
 
@@ -61,6 +107,7 @@ pnpm dev
 
 - Frontend : **http://localhost:5173**
 - Backend : **http://localhost:3000**
+- Documentation de l'API (Swagger) : **http://localhost:3000/api/docs**
 
 > Après un `docker compose up` (qui recrée la base sans exposer son port), relancer `pnpm db:up` pour retrouver Postgres en local.
 
@@ -91,6 +138,8 @@ pnpm check        # format:check + lint + typecheck + test + test:e2e + build
 | Spécification OpenAPI | `pnpm openapi` → `references/openapi.json` |
 
 ## Exploitation (Docker)
+
+Mise en production sur un serveur ou une machine à domicile (domaine, HTTPS, sauvegardes, mises à jour) : [references/deploiement.md](references/deploiement.md).
 
 | But | Commande |
 |---|---|

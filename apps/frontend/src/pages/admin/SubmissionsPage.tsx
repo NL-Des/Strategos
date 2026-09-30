@@ -1,23 +1,32 @@
 import {
+  type PageConfig,
   SubmissionStatus,
   type SubmissionQueueItem,
   type SubmissionValue,
   type SubmissionValues,
   type Warning,
 } from '@strategos/shared';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../../api/client';
 import {
+  getAdminForm,
   listSubmissions,
   modifySubmission,
   type QueueFilters,
   rejectSubmission,
   validateSubmission,
 } from '../../api/forms';
-import { listPages } from '../../api/pages';
+import { getAdminPage, listPages } from '../../api/pages';
+import { listUsers } from '../../api/users';
 import { Warnings } from '../../builder/FormEditor';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { Pagination } from '../../components/Pagination';
@@ -35,6 +44,14 @@ const show = (value: SubmissionValue | undefined) =>
 const signed = (value: SubmissionValue) =>
   typeof value === 'number' ? (value > 0 ? `+${value}` : `−${Math.abs(value)}`) : show(value);
 
+/** Identifiants des formulaires placés dans une configuration de page. */
+function formIdsOf(config: PageConfig | null): string[] {
+  if (!config) return [];
+  return [...(config.zones.main ?? []), ...(config.zones.sidebar ?? [])].flatMap((row) =>
+    row.columns.flatMap((c) => (c.block?.type === 'form' ? [c.block.config.formId] : [])),
+  );
+}
+
 /**
  * Tableau de bord des soumissions (04) : file triable et filtrable, cellules
  * visées avec leur valeur actuelle, conflits mis en évidence.
@@ -47,13 +64,50 @@ export function SubmissionsPage() {
   });
   const [page, setPage] = useState(1);
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: listPages });
+  // Formulaires de la page filtrée (brouillon et version publiée), pour le filtre « Formulaire ».
+  const filteredPage = useQuery({
+    queryKey: ['admin', 'page', filters.pageId],
+    queryFn: () => getAdminPage(filters.pageId!),
+    enabled: !!filters.pageId,
+  });
+  const formIds = filteredPage.data
+    ? [
+        ...new Set([
+          ...formIdsOf(filteredPage.data.draft),
+          ...formIdsOf(filteredPage.data.published),
+        ]),
+      ]
+    : [];
+  const forms = useQueries({
+    queries: formIds.map((id) => ({
+      queryKey: ['admin', 'form', id],
+      queryFn: () => getAdminForm(id),
+    })),
+  });
+  // Recherche d'un utilisateur par pseudo : les suggestions viennent de `/admin/users?q=`.
+  // La file n'est filtrée que lorsque le pseudo saisi correspond exactement à un compte.
+  const [userQuery, setUserQuery] = useState('');
+  const users = useQuery({
+    queryKey: ['admin', 'users', 'search', userQuery],
+    queryFn: () => listUsers({ page: 1, pageSize: 10, q: userQuery }),
+    enabled: userQuery.trim().length > 0,
+    placeholderData: keepPreviousData,
+  });
+  const userId = userQuery.trim()
+    ? users.data?.items.find((u) => u.username.toLowerCase() === userQuery.trim().toLowerCase())?.id
+    : undefined;
+  const query = { ...filters, userId };
   const queue = useQuery({
-    queryKey: ['admin', 'submissions', filters, page],
-    queryFn: () => listSubmissions(filters, page),
+    queryKey: ['admin', 'submissions', query, page],
+    queryFn: () => listSubmissions(query, page),
     placeholderData: keepPreviousData,
   });
   const set = (patch: Partial<QueueFilters>) => {
     setFilters({ ...filters, ...patch });
+    setPage(1);
+  };
+  const searchUser = (username: string) => {
+    setUserQuery(username);
     setPage(1);
   };
   const conflicting = new Set(queue.data?.items.flatMap((i) => i.conflicts) ?? []);
@@ -79,7 +133,10 @@ export function SubmissionsPage() {
         </label>
         <label>
           {t('submissions.admin.page')}
-          <select value={filters.pageId ?? ''} onChange={(e) => set({ pageId: e.target.value })}>
+          <select
+            value={filters.pageId ?? ''}
+            onChange={(e) => set({ pageId: e.target.value, formId: undefined })}
+          >
             <option value="">{t('submissions.admin.all')}</option>
             {pages.data?.map((p) => (
               <option key={p.id} value={p.id}>
@@ -87,6 +144,40 @@ export function SubmissionsPage() {
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          {t('submissions.admin.form')}
+          <select
+            value={filters.formId ?? ''}
+            disabled={!filters.pageId}
+            onChange={(e) => set({ formId: e.target.value || undefined })}
+          >
+            <option value="">
+              {filters.pageId ? t('submissions.admin.all') : t('submissions.admin.formNone')}
+            </option>
+            {forms.map(({ data: form }) =>
+              form ? (
+                <option key={form.id} value={form.id}>
+                  {(form.published ?? form.draft).title || t('submissions.admin.untitledForm')}
+                </option>
+              ) : null,
+            )}
+          </select>
+        </label>
+        <label>
+          {t('submissions.admin.user')}
+          <input
+            type="search"
+            list="submission-users"
+            placeholder={t('submissions.admin.userSearch')}
+            value={userQuery}
+            onChange={(e) => searchUser(e.target.value)}
+          />
+          <datalist id="submission-users">
+            {users.data?.items.map((u) => (
+              <option key={u.id} value={u.username} />
+            ))}
+          </datalist>
         </label>
         <label>
           {t('submissions.admin.from')}
@@ -129,11 +220,11 @@ export function SubmissionsPage() {
           key={item.submission.id}
           item={item}
           inConflict={item.conflicts.length > 0 || conflicting.has(item.submission.id)}
-          filterByUser={() => set({ userId: item.user.id })}
+          filterByUser={() => searchUser(item.user.username)}
         />
       ))}
-      {filters.userId && (
-        <button type="button" className="secondary" onClick={() => set({ userId: undefined })}>
+      {userId && (
+        <button type="button" className="secondary" onClick={() => searchUser('')}>
           {t('submissions.admin.allUsers')}
         </button>
       )}

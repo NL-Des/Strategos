@@ -31,7 +31,7 @@ Lecture seule, calculée selon la règle d'union des groupes :
 ### Tableau de bord des soumissions
 Sans notifications (voir [Transverse](11-transverse.md#notifications)), l'espace admin rend les soumissions en attente impossibles à manquer :
 - un **compteur** des soumissions en attente, visible en permanence dans l'espace admin ;
-- une **file** triable et filtrable par formulaire, page, utilisateur et date ;
+- une **file** triable et filtrable par formulaire, page, utilisateur et date : le formulaire se choisit parmi ceux de la page filtrée, l'utilisateur se cherche par pseudo (ou d'un clic sur une soumission) ;
 - les **conflits** mis en évidence, c'est-à-dire plusieurs soumissions en attente sur une même cellule (voir [Formulaires et soumissions](09-formulaires-soumissions.md#soumissions)).
 
 ### Corbeille
