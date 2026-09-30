@@ -752,7 +752,66 @@
       "colsRight": "→ Colonnes suivantes",
       "extent": "Dernière cellule remplie : {{ref}}",
       "content": "Contenu de la cellule",
-      "editHelp": "Cliquez une cellule, puis modifiez son contenu comme dans Excel : « =B2*C2 » pour une formule, « 1 234,5 », « 26/09/2026 », « VRAI ». Une apostrophe en tête garde le texte tel quel. Une formule saisie ici n'est pas calculée : elle le sera à l'ouverture du fichier téléchargé dans Excel."
+      "editHelp": "Cliquez une cellule, puis modifiez son contenu comme dans Excel : « =SOMME(B2:B10) » ou « =B2*C2 » pour une formule, « 1 234,5 », « 26/09/2026 », « VRAI ». Une apostrophe en tête garde le texte tel quel. Une formule saisie ici n'est pas calculée : elle le sera à l'ouverture du fichier téléchargé dans Excel.",
+      "formula": {
+        "title": "Formule",
+        "tabs": "Assistant de formules",
+        "decompose": "Décomposition",
+        "functions": "Fonctions",
+        "noCell": "Choisissez une cellule pour voir sa formule.",
+        "noFormula": "Cette cellule contient une valeur. Pour écrire une formule, commencez la saisie par « = » ou choisissez une fonction dans l'onglet Fonctions.",
+        "notComputed": "Rien n'est calculé ici : les valeurs indiquées sont celles enregistrées dans le classeur.",
+        "incomplete": "Formule incomplète ou mal formée : vérifiez les parenthèses et les séparateurs « ; ».",
+        "refMode": "Cliquez une cellule de la grille pour insérer sa référence ; Maj+clic ou glisser pour une plage.",
+        "arguments": "Arguments de {{name}}",
+        "optional": "Entre crochets : facultatif.",
+        "extraArg": "Argument en trop",
+        "unknownFunction": "Fonction non décrite ici : elle reste utilisable telle quelle.",
+        "search": "Rechercher une fonction",
+        "category": "Catégorie",
+        "allCategories": "Toutes",
+        "insertHelp": "Cliquez une fonction pour l'insérer à la position du curseur.",
+        "needCell": "Choisissez d'abord une cellule.",
+        "noResult": "Aucune fonction ne correspond.",
+        "insert": "Insérer {{name}}",
+        "ops": {
+          "add": "Addition",
+          "subtract": "Soustraction",
+          "multiply": "Multiplication",
+          "divide": "Division",
+          "power": "Puissance",
+          "concat": "Concaténation (texte mis bout à bout)",
+          "eq": "Comparaison : égal à",
+          "ne": "Comparaison : différent de",
+          "lt": "Comparaison : inférieur à",
+          "le": "Comparaison : inférieur ou égal à",
+          "gt": "Comparaison : supérieur à",
+          "ge": "Comparaison : supérieur ou égal à"
+        },
+        "nodes": {
+          "negate": "Opposé",
+          "plus": "Signe plus",
+          "percent": "Pourcentage (divisé par 100)",
+          "group": "Parenthèses : évalué en premier",
+          "number": "Nombre",
+          "string": "Texte",
+          "bool": "Valeur logique",
+          "error": "Valeur d'erreur",
+          "name": "Nom défini : non suivi ici",
+          "array": "Constante tableau",
+          "empty": "Argument vide",
+          "missing": "À compléter",
+          "cell": "Cellule",
+          "range": "Plage de {{rows}} × {{cols}} cellules",
+          "columns": "Colonnes entières",
+          "rows": "Lignes entières",
+          "external": "Référence à un autre classeur : non suivie ici",
+          "sheetNotFound": "Feuille introuvable",
+          "value": "Valeur enregistrée : {{value}}",
+          "emptyValue": "cellule vide",
+          "reference": "Référence"
+        }
+      }
     }
   },
   "render": {
@@ -1040,6 +1099,410 @@
       "running": "En cours",
       "ok": "Réussie",
       "failed": "Échec"
+    }
+  },
+  "formulas": {
+    "categories": {
+      "math": "Maths",
+      "stats": "Statistiques",
+      "logic": "Logique",
+      "text": "Texte",
+      "date": "Dates et heures",
+      "lookup": "Recherche",
+      "info": "Informations"
+    },
+    "functions": {
+      "SUM": "Additionne des nombres, des cellules ou des plages.",
+      "SUMIF": "Additionne les cellules qui remplissent une condition.",
+      "SUMIFS": "Additionne les cellules qui remplissent plusieurs conditions.",
+      "SUMPRODUCT": "Multiplie les plages terme à terme, puis additionne les produits.",
+      "PRODUCT": "Multiplie des nombres entre eux.",
+      "ROUND": "Arrondit un nombre au nombre de décimales indiqué.",
+      "ROUNDUP": "Arrondit un nombre vers le haut (en s'éloignant de zéro).",
+      "ROUNDDOWN": "Arrondit un nombre vers le bas (en se rapprochant de zéro).",
+      "INT": "Garde la partie entière d'un nombre (arrondi vers le bas).",
+      "ABS": "Valeur absolue : le nombre sans son signe.",
+      "MOD": "Reste de la division d'un nombre par un diviseur.",
+      "POWER": "Élève un nombre à une puissance.",
+      "SQRT": "Racine carrée d'un nombre.",
+      "RAND": "Nombre aléatoire entre 0 et 1, tiré à chaque recalcul.",
+      "RANDBETWEEN": "Entier aléatoire entre deux bornes, tiré à chaque recalcul.",
+      "AVERAGE": "Moyenne des nombres.",
+      "AVERAGEIF": "Moyenne des cellules qui remplissent une condition.",
+      "AVERAGEIFS": "Moyenne des cellules qui remplissent plusieurs conditions.",
+      "COUNT": "Compte les cellules qui contiennent un nombre.",
+      "COUNTA": "Compte les cellules non vides.",
+      "COUNTBLANK": "Compte les cellules vides d'une plage.",
+      "COUNTIF": "Compte les cellules qui remplissent une condition.",
+      "COUNTIFS": "Compte les cellules qui remplissent plusieurs conditions.",
+      "MAX": "Plus grande valeur.",
+      "MIN": "Plus petite valeur.",
+      "MAXIFS": "Plus grande valeur parmi les cellules qui remplissent des conditions.",
+      "MINIFS": "Plus petite valeur parmi les cellules qui remplissent des conditions.",
+      "MEDIAN": "Valeur médiane : celle du milieu une fois les nombres triés.",
+      "LARGE": "k-ième plus grande valeur.",
+      "SMALL": "k-ième plus petite valeur.",
+      "IF": "Renvoie une valeur si la condition est vraie, une autre sinon.",
+      "IFS": "Teste des conditions dans l'ordre et renvoie le résultat de la première vraie.",
+      "AND": "VRAI si toutes les conditions sont vraies.",
+      "OR": "VRAI si au moins une condition est vraie.",
+      "XOR": "VRAI si un nombre impair de conditions sont vraies.",
+      "NOT": "Inverse une condition : VRAI devient FAUX et inversement.",
+      "IFERROR": "Renvoie la valeur, ou un résultat de remplacement si elle est en erreur.",
+      "IFNA": "Renvoie la valeur, ou un résultat de remplacement si elle vaut #N/A.",
+      "SWITCH": "Compare une expression à une liste de cas et renvoie le résultat du cas trouvé.",
+      "CONCATENATE": "Met des textes bout à bout.",
+      "CONCAT": "Met des textes et des plages bout à bout.",
+      "TEXTJOIN": "Met des textes bout à bout en insérant un délimiteur entre eux.",
+      "LEFT": "Premiers caractères d'un texte.",
+      "RIGHT": "Derniers caractères d'un texte.",
+      "MID": "Caractères pris au milieu d'un texte.",
+      "LEN": "Nombre de caractères d'un texte.",
+      "LOWER": "Met un texte en minuscules.",
+      "UPPER": "Met un texte en majuscules.",
+      "PROPER": "Met une majuscule au début de chaque mot.",
+      "TRIM": "Retire les espaces en trop d'un texte.",
+      "SUBSTITUTE": "Remplace un texte par un autre dans un texte.",
+      "FIND": "Position d'un texte dans un autre (majuscules distinguées).",
+      "SEARCH": "Position d'un texte dans un autre (majuscules non distinguées).",
+      "TEXT": "Met une valeur en forme de texte selon un format.",
+      "VALUE": "Convertit un texte en nombre.",
+      "REPT": "Répète un texte un certain nombre de fois.",
+      "EXACT": "VRAI si deux textes sont identiques, majuscules comprises.",
+      "TODAY": "Date du jour, mise à jour à chaque recalcul.",
+      "NOW": "Date et heure actuelles, mises à jour à chaque recalcul.",
+      "DATE": "Construit une date à partir de l'année, du mois et du jour.",
+      "YEAR": "Année d'une date.",
+      "MONTH": "Mois d'une date (1 à 12).",
+      "DAY": "Jour du mois d'une date (1 à 31).",
+      "WEEKDAY": "Jour de la semaine d'une date, sous forme de numéro.",
+      "EDATE": "Date décalée d'un nombre de mois.",
+      "EOMONTH": "Dernier jour du mois, décalé d'un nombre de mois.",
+      "DATEDIF": "Écart entre deux dates, en années, mois ou jours.",
+      "NETWORKDAYS": "Nombre de jours ouvrés entre deux dates.",
+      "WORKDAY": "Date située un nombre de jours ouvrés plus loin.",
+      "HOUR": "Heure d'une valeur horaire (0 à 23).",
+      "MINUTE": "Minutes d'une valeur horaire (0 à 59).",
+      "VLOOKUP": "Cherche une valeur dans la première colonne d'un tableau et renvoie celle d'une autre colonne de la même ligne.",
+      "HLOOKUP": "Cherche une valeur dans la première ligne d'un tableau et renvoie celle d'une autre ligne de la même colonne.",
+      "XLOOKUP": "Cherche une valeur dans une plage et renvoie la valeur correspondante d'une autre plage.",
+      "INDEX": "Valeur située à une ligne et une colonne données d'une plage.",
+      "MATCH": "Position d'une valeur dans une plage.",
+      "XMATCH": "Position d'une valeur dans une plage, avec plus d'options de recherche.",
+      "CHOOSE": "Choisit une valeur dans une liste d'après son numéro.",
+      "OFFSET": "Référence décalée d'un nombre de lignes et de colonnes.",
+      "INDIRECT": "Référence désignée par un texte.",
+      "ROW": "Numéro de ligne d'une référence (celle de la cellule si omise).",
+      "COLUMN": "Numéro de colonne d'une référence (celle de la cellule si omise).",
+      "ROWS": "Nombre de lignes d'une plage.",
+      "COLUMNS": "Nombre de colonnes d'une plage.",
+      "FILTER": "Lignes d'une plage qui remplissent une condition.",
+      "SORT": "Trie le contenu d'une plage.",
+      "UNIQUE": "Valeurs d'une plage, sans les doublons.",
+      "ISBLANK": "VRAI si la cellule est vide.",
+      "ISNUMBER": "VRAI si la valeur est un nombre.",
+      "ISTEXT": "VRAI si la valeur est un texte.",
+      "ISERROR": "VRAI si la valeur est une erreur.",
+      "ISNA": "VRAI si la valeur est #N/A.",
+      "NA": "Renvoie l'erreur #N/A : « valeur non disponible »."
+    },
+    "args": {
+      "number": {
+        "label": "nombre",
+        "help": "Un nombre, une cellule ou une plage de nombres."
+      },
+      "digits": {
+        "label": "no_chiffres",
+        "help": "Nombre de décimales à garder (0 : un entier)."
+      },
+      "divisor": {
+        "label": "diviseur",
+        "help": "Nombre par lequel diviser."
+      },
+      "power": {
+        "label": "puissance",
+        "help": "Exposant auquel élever le nombre."
+      },
+      "range": {
+        "label": "plage",
+        "help": "Plage de cellules examinée."
+      },
+      "criteria": {
+        "label": "critère",
+        "help": "Condition à remplir : \">10\", \"Paris\", une cellule…"
+      },
+      "sumRange": {
+        "label": "plage_somme",
+        "help": "Cellules à additionner."
+      },
+      "criteriaRange": {
+        "label": "plage_critères",
+        "help": "Plage où le critère suivant est testé."
+      },
+      "averageRange": {
+        "label": "plage_moyenne",
+        "help": "Cellules dont faire la moyenne."
+      },
+      "maxRange": {
+        "label": "plage_max",
+        "help": "Cellules parmi lesquelles chercher le maximum."
+      },
+      "minRange": {
+        "label": "plage_min",
+        "help": "Cellules parmi lesquelles chercher le minimum."
+      },
+      "array": {
+        "label": "matrice",
+        "help": "Plage ou tableau de valeurs."
+      },
+      "k": {
+        "label": "k",
+        "help": "Rang de la valeur cherchée (1 : la première)."
+      },
+      "bottom": {
+        "label": "min",
+        "help": "Plus petit entier possible."
+      },
+      "top": {
+        "label": "max",
+        "help": "Plus grand entier possible."
+      },
+      "value": {
+        "label": "valeur",
+        "help": "Une valeur, une cellule ou une expression."
+      },
+      "logicalTest": {
+        "label": "test_logique",
+        "help": "Condition vraie ou fausse, par exemple A1>0."
+      },
+      "valueIfTrue": {
+        "label": "valeur_si_vrai",
+        "help": "Résultat si la condition est vraie."
+      },
+      "valueIfFalse": {
+        "label": "valeur_si_faux",
+        "help": "Résultat si la condition est fausse (FAUX si omis)."
+      },
+      "logical": {
+        "label": "valeur_logique",
+        "help": "Condition à tester."
+      },
+      "valueIfError": {
+        "label": "valeur_si_erreur",
+        "help": "Résultat si la valeur est une erreur."
+      },
+      "valueIfNa": {
+        "label": "valeur_si_na",
+        "help": "Résultat si la valeur vaut #N/A."
+      },
+      "expression": {
+        "label": "expression",
+        "help": "Valeur comparée aux cas qui suivent."
+      },
+      "result": {
+        "label": "résultat",
+        "help": "Résultat renvoyé pour ce cas."
+      },
+      "text": {
+        "label": "texte",
+        "help": "Texte, cellule ou expression."
+      },
+      "delimiter": {
+        "label": "délimiteur",
+        "help": "Texte inséré entre les éléments, par exemple \", \"."
+      },
+      "ignoreEmpty": {
+        "label": "ignorer_vide",
+        "help": "VRAI pour sauter les cellules vides."
+      },
+      "numChars": {
+        "label": "no_car",
+        "help": "Nombre de caractères (1 si omis)."
+      },
+      "start": {
+        "label": "no_départ",
+        "help": "Position du premier caractère (1 : le début)."
+      },
+      "oldText": {
+        "label": "ancien_texte",
+        "help": "Texte à remplacer."
+      },
+      "newText": {
+        "label": "nouveau_texte",
+        "help": "Texte de remplacement."
+      },
+      "instance": {
+        "label": "no_position",
+        "help": "Occurrence à remplacer (toutes si omis)."
+      },
+      "findText": {
+        "label": "texte_cherché",
+        "help": "Texte à trouver."
+      },
+      "withinText": {
+        "label": "texte",
+        "help": "Texte dans lequel chercher."
+      },
+      "format": {
+        "label": "format_texte",
+        "help": "Format entre guillemets, par exemple \"0,00\" ou \"jj/mm/aaaa\"."
+      },
+      "times": {
+        "label": "no_fois",
+        "help": "Nombre de répétitions."
+      },
+      "year": {
+        "label": "année",
+        "help": "Année sur quatre chiffres."
+      },
+      "month": {
+        "label": "mois",
+        "help": "Mois (1 à 12)."
+      },
+      "day": {
+        "label": "jour",
+        "help": "Jour du mois (1 à 31)."
+      },
+      "date": {
+        "label": "date",
+        "help": "Une date : cellule ou DATE(…)."
+      },
+      "returnType": {
+        "label": "type_retour",
+        "help": "Premier jour de la semaine : 1 dimanche (par défaut), 2 lundi."
+      },
+      "startDate": {
+        "label": "date_départ",
+        "help": "Date de départ."
+      },
+      "endDate": {
+        "label": "date_fin",
+        "help": "Date de fin."
+      },
+      "months": {
+        "label": "mois",
+        "help": "Nombre de mois (négatif pour reculer)."
+      },
+      "unit": {
+        "label": "unité",
+        "help": "\"y\" années, \"m\" mois, \"d\" jours."
+      },
+      "holidays": {
+        "label": "jours_fériés",
+        "help": "Plage de dates à exclure."
+      },
+      "days": {
+        "label": "nb_jours",
+        "help": "Nombre de jours ouvrés à ajouter."
+      },
+      "time": {
+        "label": "heure",
+        "help": "Une valeur horaire : cellule ou heure."
+      },
+      "lookupValue": {
+        "label": "valeur_cherchée",
+        "help": "Valeur à trouver."
+      },
+      "tableArray": {
+        "label": "table_matrice",
+        "help": "Tableau où chercher : la valeur est cherchée dans sa première colonne (ou ligne)."
+      },
+      "colIndex": {
+        "label": "no_index_col",
+        "help": "Numéro de la colonne du tableau à renvoyer (1 : la première)."
+      },
+      "rowIndex": {
+        "label": "no_index_lig",
+        "help": "Numéro de la ligne du tableau à renvoyer (1 : la première)."
+      },
+      "rangeLookup": {
+        "label": "valeur_proche",
+        "help": "FAUX pour une correspondance exacte (conseillé)."
+      },
+      "lookupArray": {
+        "label": "tableau_recherche",
+        "help": "Plage où chercher la valeur."
+      },
+      "returnArray": {
+        "label": "tableau_renvoyé",
+        "help": "Plage dont renvoyer la valeur correspondante."
+      },
+      "ifNotFound": {
+        "label": "si_non_trouvé",
+        "help": "Résultat si rien n'est trouvé."
+      },
+      "matchMode": {
+        "label": "mode_correspondance",
+        "help": "0 exacte (par défaut), -1 ou 1 valeur la plus proche."
+      },
+      "searchMode": {
+        "label": "mode_recherche",
+        "help": "1 depuis le début (par défaut), -1 depuis la fin."
+      },
+      "rowNum": {
+        "label": "no_lig",
+        "help": "Numéro de ligne dans la plage."
+      },
+      "colNum": {
+        "label": "no_col",
+        "help": "Numéro de colonne dans la plage."
+      },
+      "matchType": {
+        "label": "type",
+        "help": "0 pour une correspondance exacte (conseillé)."
+      },
+      "indexNum": {
+        "label": "no_index",
+        "help": "Numéro de la valeur à choisir (1 : la première)."
+      },
+      "reference": {
+        "label": "réf",
+        "help": "Cellule ou plage de départ."
+      },
+      "rows": {
+        "label": "lignes",
+        "help": "Décalage en lignes (négatif vers le haut)."
+      },
+      "cols": {
+        "label": "colonnes",
+        "help": "Décalage en colonnes (négatif vers la gauche)."
+      },
+      "height": {
+        "label": "hauteur",
+        "help": "Nombre de lignes de la référence renvoyée."
+      },
+      "width": {
+        "label": "largeur",
+        "help": "Nombre de colonnes de la référence renvoyée."
+      },
+      "refText": {
+        "label": "réf_texte",
+        "help": "Adresse sous forme de texte, par exemple \"B2\"."
+      },
+      "include": {
+        "label": "inclure",
+        "help": "Condition sur chaque ligne, par exemple A1:A9>0."
+      },
+      "ifEmpty": {
+        "label": "si_vide",
+        "help": "Résultat si aucune ligne ne correspond."
+      },
+      "sortIndex": {
+        "label": "index_tri",
+        "help": "Numéro de la colonne de tri."
+      },
+      "sortOrder": {
+        "label": "ordre_tri",
+        "help": "1 croissant (par défaut), -1 décroissant."
+      },
+      "byCol": {
+        "label": "par_col",
+        "help": "VRAI pour travailler par colonnes."
+      },
+      "exactlyOnce": {
+        "label": "exactement_une_fois",
+        "help": "VRAI pour ne garder que les valeurs présentes une seule fois."
+      }
     }
   }
 }

@@ -1139,6 +1139,18 @@ a.usage {
   overflow-wrap: anywhere;
 }
 
+.grid-formula-bar {
+  flex-wrap: wrap;
+}
+
+.grid-recalc-note {
+  flex-basis: 100%;
+  min-height: 1.5em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .grid-formula-bar input {
   flex: 1 1 12rem;
   font-family: ui-monospace, monospace;
@@ -1183,4 +1195,199 @@ a.usage {
 .source-grid td.selected {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+/* Assistant de formules (04 — Sources) : à droite de la grille, dessous sur écran étroit. */
+:root {
+  --ref-0: #2563eb;
+  --ref-1: #c2410c;
+  --ref-2: #15803d;
+  --ref-3: #9333ea;
+  --ref-4: #be123c;
+  --ref-5: #0e7490;
+}
+
+.ref-color-0 {
+  --ref: var(--ref-0);
+}
+.ref-color-1 {
+  --ref: var(--ref-1);
+}
+.ref-color-2 {
+  --ref: var(--ref-2);
+}
+.ref-color-3 {
+  --ref: var(--ref-3);
+}
+.ref-color-4 {
+  --ref: var(--ref-4);
+}
+.ref-color-5 {
+  --ref: var(--ref-5);
+}
+
+.grid-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.grid-main {
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .grid-layout {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+  }
+
+  .formula-panel {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+
+.source-grid td.ref-cell {
+  background: color-mix(in srgb, var(--ref) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--ref);
+}
+
+.source-grid td.ref-hover {
+  background: color-mix(in srgb, var(--ref) 30%, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--ref);
+}
+
+.source-grid.ref-mode td {
+  cursor: crosshair;
+}
+
+.formula-panel {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.formula-panel p {
+  margin: 0;
+}
+
+.formula-panel code,
+.formula-colored {
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+.formula-panel [class^='ref-color-'] {
+  color: var(--ref);
+  font-weight: 600;
+}
+
+.formula-guide {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+}
+
+.formula-guide .current {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.formula-hint {
+  color: var(--accent);
+}
+
+.formula-extra {
+  color: var(--danger);
+}
+
+.formula-tree,
+.formula-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.formula-tree ul {
+  margin-left: 0.6rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--border);
+}
+
+.formula-node {
+  margin: 0.3rem 0;
+}
+
+.formula-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+}
+
+summary.formula-head {
+  cursor: pointer;
+}
+
+.formula-head code {
+  color: var(--muted);
+}
+
+.formula-role {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.formula-role::after {
+  content: ' :';
+}
+
+.formula-catalog {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.formula-catalog-filters {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.formula-catalog-filters label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.formula-catalog ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.formula-catalog li button {
+  display: grid;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.formula-catalog li button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.formula-catalog li button span {
+  color: var(--muted);
+  font-size: 0.85rem;
 }

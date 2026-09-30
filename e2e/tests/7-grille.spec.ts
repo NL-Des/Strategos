@@ -83,3 +83,58 @@ test('1. l’admin uploade inventaire.xlsx et ouvre ses cellules', async ({ page
   await expect(grid.getByRole('cell', { name: 'Rien' })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/grille-desktop.png`, fullPage: true });
 });
+
+test('2. l’assistant de formules décompose et aide à écrire, en français', async ({ page }) => {
+  await loginAsAdmin(page);
+  await adminNav(page, 'sources');
+  await page
+    .getByRole('row', { name: /inventaire\.xlsx/ })
+    .getByRole('link', { name: t('sources.grid.open') })
+    .click();
+  const grid = page.locator('table.source-grid');
+  const panel = page.getByRole('complementary', { name: t('sources.grid.formula.tabs') });
+  const content = page.getByLabel(t('sources.grid.content'));
+  const row = (n: number) =>
+    grid.locator('tr', { has: page.getByRole('rowheader', { name: String(n), exact: true }) });
+
+  // Lecture : D2 = B2*C2, décomposée avec les valeurs enregistrées des cellules citées.
+  await grid.getByRole('cell', { name: /^12/ }).click();
+  await expect(content).toHaveValue('=B2*C2');
+  await expect(panel).toContainText(t('sources.grid.formula.ops.multiply'));
+  await expect(panel).toContainText(t('sources.grid.formula.nodes.value', { value: '5' }));
+  await expect(panel).toContainText(t('sources.grid.formula.nodes.value', { value: '4' }));
+  await expect(row(2).locator('td').nth(1)).toHaveClass(/ref-cell/);
+
+  // Construction en F2 : guide des arguments, références par clic, catalogue.
+  await row(2).locator('td').nth(5).dblclick();
+  await expect(page.locator('.grid-formula-bar')).toContainText('F2');
+  await expect(content).toBeFocused();
+  await content.fill('=SOMME(');
+  await expect(panel).toContainText(t('sources.grid.formula.arguments', { name: 'SOMME' }));
+  await row(2).locator('td').nth(1).click();
+  await row(3)
+    .locator('td')
+    .nth(1)
+    .click({ modifiers: ['Shift'] });
+  await expect(content).toHaveValue('=SOMME(B2:B3');
+  await content.pressSequentially(')+');
+  await panel.getByRole('button', { name: t('sources.grid.formula.functions') }).click();
+  await panel.getByLabel(t('sources.grid.formula.search')).fill('moyenne');
+  await panel
+    .getByRole('button', {
+      name: t('sources.grid.formula.insert', { name: 'MOYENNE' }),
+      exact: true,
+    })
+    .click();
+  await expect(content).toHaveValue('=SOMME(B2:B3)+MOYENNE()');
+  await content.pressSequentially('C2;1,5');
+  await expect(content).toHaveValue('=SOMME(B2:B3)+MOYENNE(C2;1,5)');
+  await page.screenshot({ path: `${SHOTS}/grille-formule.png`, fullPage: true });
+
+  // Stockée dans la syntaxe du fichier, relue en français.
+  const saved = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok());
+  await content.press('Enter');
+  const cell = await (await saved).json();
+  expect(cell.formula).toBe('SUM(B2:B3)+AVERAGE(C2,1.5)');
+  await expect(content).toHaveValue('=SOMME(B2:B3)+MOYENNE(C2;1,5)');
+});

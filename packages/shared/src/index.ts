@@ -4,6 +4,7 @@ export * from './backups.js';
 export * from './discussions/index.js';
 export * from './enums.js';
 export * from './errors.js';
+export * from './formulas/index.js';
 export * from './forms/index.js';
 export * from './notes.js';
 export * from './templates.js';

@@ -1,6 +1,7 @@
 import {
   EXCEL_MAX_BYTES,
   EXCEL_MIME,
+  formulaToFr,
   type ReimportMode,
   type ReimportPreview,
   type SourceSummary,
@@ -28,6 +29,10 @@ interface InUse {
 }
 
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString('fr-FR') : '—');
+
+/** Contenu d'une cellule au réimport ; la formule d'une modification de la grille, en français. */
+const shownValue = (value: string | null, edit: boolean) =>
+  value === null ? '∅' : edit && value.startsWith('=') ? `=${formulaToFr(value.slice(1))}` : value;
 
 /**
  * Admin › Sources (04) : Excel uploadés, avec leur état, leurs dates et les
@@ -158,8 +163,8 @@ export function SourcesPage() {
                   <li key={`${l.submissionId ?? l.editId}${l.cell}`}>
                     {t(l.editId ? 'sources.reimport.itemEdit' : 'sources.reimport.item', {
                       cell: l.cell,
-                      before: l.valueInNewFile ?? '∅',
-                      after: l.validatedValue ?? '∅',
+                      before: shownValue(l.valueInNewFile, !!l.editId),
+                      after: shownValue(l.validatedValue, !!l.editId),
                       date: date(l.validatedAt),
                     })}
                   </li>

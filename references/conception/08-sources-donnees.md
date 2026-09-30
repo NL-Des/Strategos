@@ -27,7 +27,7 @@ Strategos lit des valeurs et en écrit, mais **n'exécute aucune formule**.
 > **Exemple** : `D2 = B2 × C2` (prix × quantité). Un joueur propose C2 = 5 au lieu de 3, et l'admin valide. Sur un Google Sheet, D2 est recalculé par Google et relu. Sur un Excel uploadé, D2 garde son ancienne valeur et apparaît avec l'indicateur « à recalculer ».
 
 ### Excel uploadé : version de référence et réimport
-- Une fois uploadé, la **copie dans Strategos est la version de référence** : c'est elle qui reçoit les validations, et les modifications que l'admin fait dans la **grille** de l'écran Sources ([04](04-administration.md#sources)) : valeurs et formules, jamais calculées.
+- Une fois uploadé, la **copie dans Strategos est la version de référence** : c'est elle qui reçoit les validations, et les modifications que l'admin fait dans la **grille** de l'écran Sources ([04](04-administration.md#sources)) : valeurs et formules, jamais calculées. Les formules restent stockées dans la syntaxe du fichier (noms anglais, `,` entre arguments) ; la grille les affiche et les reçoit en français, la conversion se fait dans l'interface.
 - L'administrateur **télécharge** la version à jour depuis Strategos avant de retravailler le fichier sur son poste. C'est le fichier importé, dont les cellules écrites depuis par Strategos (validations, valeurs et formules saisies dans la grille) sont remplacées directement dans le XML des feuilles (le reste du classeur est gardé tel quel) ; il est marqué pour être entièrement recalculé à l'ouverture dans Excel.
 - **Réimport** : s'il y a eu des validations ou des modifications dans la grille depuis le dernier téléchargement, Strategos liste ce qui serait perdu et propose :
   - **annuler** ;
