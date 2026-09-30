@@ -74,7 +74,7 @@ mkdir -p secrets
 | `POSTGRES_USER`, `POSTGRES_DB` | Garder les valeurs proposées |
 | `AZURE_*`, `TOKEN_ENCRYPTION_KEY` | Laisser vides (OneDrive désactivé) |
 
-Le dossier `secrets/` peut rester vide (Google Sheets désactivé). Le fichier `.env` et `secrets/` ne sont jamais versionnés ; gardez une copie de `.env` en lieu sûr.
+Le dossier `secrets/` peut rester vide (Google Sheets désactivé) ; la clé Google peut y être déposée plus tard, sans redémarrer. Le fichier `.env` et `secrets/` ne sont jamais versionnés ; gardez une copie de `.env` en lieu sûr.
 
 > Choisissez `POSTGRES_PASSWORD` **avant** le premier lancement : la base est initialisée avec lui. Le changer ensuite demande de le changer aussi dans PostgreSQL.
 

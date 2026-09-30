@@ -41,10 +41,14 @@ export function RightsPage() {
   return (
     <section>
       <h1>{t('rights.title')}</h1>
-      <p className="muted">
-        {t('rights.intro')}{' '}
-        {letters.map(([right, l]) => `${l} : ${t(`rights.names.${right}`)}`).join(' · ')}
-      </p>
+      <p className="muted">{t('rights.intro')}</p>
+      <ul className="muted rights-legend">
+        {letters.map(([right, l]) => (
+          <li key={right}>
+            {l} : {t(`rights.names.${right}`)}
+          </li>
+        ))}
+      </ul>
       <div className="filters">
         <input
           type="search"

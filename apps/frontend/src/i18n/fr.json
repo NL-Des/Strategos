@@ -356,7 +356,7 @@
     "title": "Réglages de l’instance",
     "landingPage": "Page d’arrivée",
     "noLandingPage": "Aucune",
-    "landingPageHint": "La page affichée après la connexion. Elle doit être publiée pour être visible.",
+    "landingPageHint": "La page affichée après la connexion de tout utilisateur. Elle doit être publiée pour être visible !",
     "defaultTheme": "Thème par défaut",
     "backupRetention": "Conservation des sauvegardes (jours)",
     "saved": "Réglages enregistrés."
@@ -374,7 +374,10 @@
     "previewAs": "Voir comme",
     "previewAsAdmin": "Administrateur",
     "closePreview": "Fermer l’aperçu",
-    "layoutIntro": "Partagé par toutes les pages qui l’affichent.",
+    "layoutIntro": {
+      "header": "Haut de page partagé par toutes les pages.",
+      "footer": "Bas de page partagé par toutes les pages."
+    },
     "theme": "Thème",
     "defaultTheme": "Thème par défaut",
     "zones": "Zones affichées",
@@ -403,7 +406,7 @@
       "catalog": "Catalogue",
       "rich_content": "Contenu libre",
       "form": "Formulaire",
-      "discussion_space": "Espace de discussion",
+      "discussion_space": "Sujets et messages",
       "chat": "Chat"
     },
     "align": {
@@ -633,7 +636,7 @@
   },
   "rights": {
     "title": "Droits",
-    "intro": "Droits effectifs, calculés comme ils sont appliqués. Lettres :",
+    "intro": "Liste des droits :",
     "effective": "Droits effectifs",
     "none": "Aucun droit : cet utilisateur n’a accès à aucune page.",
     "adminHasAll": "L’administrateur a tous les droits, sans passer par les groupes.",
@@ -677,7 +680,7 @@
   },
   "sources": {
     "title": "Sources",
-    "intro": "Les documents dont les pages lisent les données : Excel uploadés, Google Sheets et fichiers OneDrive. Les utilisateurs ne voient jamais ces documents : seulement les valeurs affichées par les modules.",
+    "intro": "Les documents dont les pages lisent les données : Excel uploadés, Google Sheets et fichiers OneDrive. Les utilisateurs ne voient jamais ces documents : seulement les valeurs affichées par les modules dans les pages que vous avez construit.",
     "upload": "Ajouter un fichier Excel",
     "uploadSubmit": "Importer",
     "limits": "Classeur .xlsx, {{mb}} Mo au plus. La copie importée devient la version de référence.",
@@ -822,6 +825,8 @@
     "noRows": "Aucune ligne.",
     "image": "Image",
     "discussion": {
+      "messageOptions": "Options du message",
+      "topicOptions": "Options du sujet",
       "noTopics": "Aucun sujet pour le moment.",
       "newTopic": "Ouvrir un sujet",
       "openTopic": "Publier le sujet",
@@ -852,6 +857,7 @@
       "send": "Envoyer",
       "edited": "modifié",
       "confirmDelete": "Supprimer ce message ?",
+      "options": "Options du message",
       "hidden": "Masqué",
       "hide": "Masquer",
       "unhide": "Rétablir"
@@ -1065,7 +1071,7 @@
   },
   "trash": {
     "title": "Corbeille",
-    "intro": "Éléments supprimés : ils restent en base et peuvent être restaurés. Les notes personnelles n’y figurent pas.",
+    "intro": "Éléments supprimés : ils restent en base et peuvent être restaurés. Les notes personnelles des utilisateurs n’y figurent pas.",
     "type": "Type",
     "allTypes": "Tous les types",
     "item": "Élément",

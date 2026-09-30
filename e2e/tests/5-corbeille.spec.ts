@@ -13,10 +13,11 @@ test('1. l’admin supprime un sujet et un groupe', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Tournoi' }).click();
   await page.getByRole('button', { name: /Qui fait équipe avec moi/ }).click();
+  await page.getByRole('button', { name: t('render.discussion.topicOptions') }).click();
   page.once('dialog', (dialog) => void dialog.accept());
   await clickAndWait(
     page,
-    page.getByRole('button', { name: t('render.discussion.deleteTopic') }),
+    page.getByRole('menuitem', { name: t('render.discussion.deleteTopic') }),
     '/admin/topics/',
   );
   await expect(page.getByRole('button', { name: /Qui fait équipe avec moi/ })).toHaveCount(0);

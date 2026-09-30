@@ -18,6 +18,7 @@ import {
   uploadAttachment,
 } from '../api/discussions';
 import { useMe } from '../auth/useMe';
+import { ActionMenu } from '../components/ActionMenu';
 import { SaveAsTemplate } from '../components/SaveAsTemplate';
 import { ErrorMessage } from '../components/ErrorMessage';
 
@@ -183,29 +184,42 @@ function Message({
       </header>
       <div className="message-body" dangerouslySetInnerHTML={{ __html: message.content }} />
       <Attachments items={message.attachments} />
-      <div className="actions">
-        {message.mine && (
-          <>
-            <button type="button" className="secondary" onClick={() => setEditing(true)}>
-              {t('common.edit')}
-            </button>
+      {(message.mine || me?.isAdmin) && (
+        <ActionMenu label={t('render.discussion.messageOptions')}>
+          {message.mine && (
+            <>
+              <button
+                type="button"
+                className="menu-item"
+                role="menuitem"
+                onClick={() => setEditing(true)}
+              >
+                {t('common.edit')}
+              </button>
+              <button
+                type="button"
+                className="menu-item"
+                role="menuitem"
+                onClick={() => {
+                  if (confirm(t('render.discussion.confirmDelete'))) remove.mutate();
+                }}
+              >
+                {t('common.delete')}
+              </button>
+            </>
+          )}
+          {me?.isAdmin && (
             <button
               type="button"
-              className="secondary"
-              onClick={() => {
-                if (confirm(t('render.discussion.confirmDelete'))) remove.mutate();
-              }}
+              className="menu-item"
+              role="menuitem"
+              onClick={() => moderate.mutate()}
             >
-              {t('common.delete')}
+              {message.hidden ? t('render.discussion.unhide') : t('render.discussion.hide')}
             </button>
-          </>
-        )}
-        {me?.isAdmin && (
-          <button type="button" className="secondary" onClick={() => moderate.mutate()}>
-            {message.hidden ? t('render.discussion.unhide') : t('render.discussion.hide')}
-          </button>
-        )}
-      </div>
+          )}
+        </ActionMenu>
+      )}
     </article>
   );
 }
@@ -245,32 +259,44 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
         <button type="button" className="secondary" onClick={onBack}>
           {t('render.discussion.backToTopics')}
         </button>
-        {topic.canManage && !topic.closed && (
-          <button type="button" className="secondary" onClick={() => close.mutate()}>
-            {t('render.discussion.close')}
-          </button>
-        )}
         {me?.isAdmin && (
           <SaveAsTemplate type="topic" sourceId={topic.id} defaultName={topic.title} />
         )}
-        {me?.isAdmin && (
-          <button
-            type="button"
-            className="danger"
-            disabled={remove.isPending}
-            onClick={() => {
-              if (window.confirm(t('render.discussion.confirmDeleteTopic'))) remove.mutate();
-            }}
-          >
-            {t('render.discussion.deleteTopic')}
-          </button>
-        )}
       </div>
       <ErrorMessage error={remove.error} />
-      <h3>
-        {topic.title}
-        {topic.closed && <span className="badge"> {t('render.discussion.closed')}</span>}
-      </h3>
+      <div className="topic-heading">
+        <h3>
+          {topic.title}
+          {topic.closed && <span className="badge"> {t('render.discussion.closed')}</span>}
+        </h3>
+        {((topic.canManage && !topic.closed) || me?.isAdmin) && (
+          <ActionMenu label={t('render.discussion.topicOptions')}>
+            {topic.canManage && !topic.closed && (
+              <button
+                type="button"
+                className="menu-item"
+                role="menuitem"
+                onClick={() => close.mutate()}
+              >
+                {t('render.discussion.close')}
+              </button>
+            )}
+            {me?.isAdmin && (
+              <button
+                type="button"
+                className="menu-item danger"
+                role="menuitem"
+                disabled={remove.isPending}
+                onClick={() => {
+                  if (window.confirm(t('render.discussion.confirmDeleteTopic'))) remove.mutate();
+                }}
+              >
+                {t('render.discussion.deleteTopic')}
+              </button>
+            )}
+          </ActionMenu>
+        )}
+      </div>
       {messages.items.map((message) => (
         <Message key={message.id} message={message} onEdited={refresh} onDeleted={refresh} />
       ))}
@@ -358,13 +384,16 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
               {topic.closed && ` · ${t('render.discussion.closed')}`}
             </span>
             {me?.isAdmin && (
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => pin.mutate({ id: topic.id, pinned: !topic.pinned })}
-              >
-                {topic.pinned ? t('render.discussion.unpin') : t('render.discussion.pin')}
-              </button>
+              <ActionMenu label={t('render.discussion.topicOptions')}>
+                <button
+                  type="button"
+                  className="menu-item"
+                  role="menuitem"
+                  onClick={() => pin.mutate({ id: topic.id, pinned: !topic.pinned })}
+                >
+                  {topic.pinned ? t('render.discussion.unpin') : t('render.discussion.pin')}
+                </button>
+              </ActionMenu>
             )}
           </li>
         ))}

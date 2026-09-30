@@ -10,6 +10,7 @@ import {
   unhideChatMessage,
 } from '../api/chat';
 import { useMe } from '../auth/useMe';
+import { ActionMenu } from '../components/ActionMenu';
 
 /** Texte multi-ligne → HTML simple (le backend le nettoie à nouveau). */
 function toHtml(text: string): string {
@@ -79,35 +80,39 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
       ) : (
         <div className="message-body" dangerouslySetInnerHTML={{ __html: message.content }} />
       )}
-      <div className="actions">
-        {message.mine && !editing && (
-          <>
-            <button type="button" className="secondary" onClick={startEdit}>
-              {t('common.edit')}
-            </button>
+      {(message.mine || isAdmin) && !editing && (
+        <ActionMenu label={t('render.chat.options')}>
+          {message.mine && (
+            <>
+              <button type="button" className="menu-item" role="menuitem" onClick={startEdit}>
+                {t('common.edit')}
+              </button>
+              <button
+                type="button"
+                className="menu-item"
+                role="menuitem"
+                onClick={() => {
+                  if (confirm(t('render.chat.confirmDelete'))) void deleteChatMessage(message.id);
+                }}
+              >
+                {t('common.delete')}
+              </button>
+            </>
+          )}
+          {isAdmin && (
             <button
               type="button"
-              className="secondary"
-              onClick={() => {
-                if (confirm(t('render.chat.confirmDelete'))) void deleteChatMessage(message.id);
-              }}
+              className="menu-item"
+              role="menuitem"
+              onClick={() =>
+                void (message.hidden ? unhideChatMessage(message.id) : hideChatMessage(message.id))
+              }
             >
-              {t('common.delete')}
+              {message.hidden ? t('render.chat.unhide') : t('render.chat.hide')}
             </button>
-          </>
-        )}
-        {isAdmin && (
-          <button
-            type="button"
-            className="secondary"
-            onClick={() =>
-              void (message.hidden ? unhideChatMessage(message.id) : hideChatMessage(message.id))
-            }
-          >
-            {message.hidden ? t('render.chat.unhide') : t('render.chat.hide')}
-          </button>
-        )}
-      </div>
+          )}
+        </ActionMenu>
+      )}
     </article>
   );
 }

@@ -89,12 +89,11 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
       <div className="editor-header">
         <h1>{t(`builder.zoneNames.${kind}`)}</h1>
         <p className="muted">
-          {t('builder.layoutIntro')}{' '}
-          {saved.publishedAt
-            ? t('builder.lastPublished', {
-                date: new Date(saved.publishedAt).toLocaleString('fr-FR'),
-              })
-            : t('builder.pages.neverPublished')}
+          {t(`builder.layoutIntro.${kind}`)}
+          {saved.publishedAt &&
+            ` ${t('builder.lastPublished', {
+              date: new Date(saved.publishedAt).toLocaleString('fr-FR'),
+            })}`}
           {dirty && ` · ${t('builder.unsaved')}`}
         </p>
         <div className="actions">

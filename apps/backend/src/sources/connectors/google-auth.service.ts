@@ -19,11 +19,15 @@ const base64url = (data: string | Buffer) => Buffer.from(data).toString('base64u
  * Compte de service Google (08) : sa clé est un fichier secret monté dans le
  * conteneur (`GOOGLE_SERVICE_ACCOUNT_FILE`), jamais en base. Le jeton d'accès
  * est obtenu par un JWT signé (RS256) et gardé en mémoire jusqu'à son expiration.
+ * Tant qu'aucune clé valide n'est trouvée, le fichier est relu à chaque besoin :
+ * il peut être déposé sans redémarrer le backend.
  */
 @Injectable()
 export class GoogleAuthService {
   private readonly logger = new Logger(GoogleAuthService.name);
-  private key: ServiceAccountKey | null | undefined;
+  private key: ServiceAccountKey | null = null;
+  /** Évite de journaliser la même clé illisible à chaque relecture. */
+  private reportedInvalid = false;
   private token: { value: string; expiresAt: number } | null = null;
 
   /** Adresse avec laquelle partager les Sheets ; `null` si la clé n'est pas configurée. */
@@ -69,18 +73,28 @@ export class GoogleAuthService {
   }
 
   private readKey(): ServiceAccountKey | null {
-    if (this.key !== undefined) return this.key;
+    if (this.key) return this.key;
     const file = config.googleServiceAccountFile;
-    this.key = null;
     if (!file) return null;
+    let content: string;
     try {
-      const parsed = JSON.parse(readFileSync(file, 'utf8')) as Partial<ServiceAccountKey>;
+      content = readFileSync(file, 'utf8');
+    } catch {
+      return null; // pas encore déposée
+    }
+    try {
+      const parsed = JSON.parse(content) as Partial<ServiceAccountKey>;
       if (parsed.client_email && parsed.private_key) {
         this.key = { client_email: parsed.client_email, private_key: parsed.private_key };
+        return this.key;
       }
-    } catch (error) {
-      this.logger.error(`Clé du compte de service illisible : ${file}`, error as Error);
+    } catch {
+      // traité comme une clé incomplète
     }
-    return this.key;
+    if (!this.reportedInvalid) {
+      this.logger.error(`Clé du compte de service illisible : ${file}`);
+      this.reportedInvalid = true;
+    }
+    return null;
   }
 }

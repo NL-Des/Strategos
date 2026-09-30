@@ -361,7 +361,7 @@ label.inline {
 }
 
 /* Boutons des modules (formulaires, discussions, chat) : style du thème. */
-.themed .layout-column button:not(.link, .secondary) {
+.themed .layout-column button:not(.link, .secondary, .menu-item) {
   background: var(--t-btn-bg);
   border-color: var(--t-btn-border);
   color: var(--t-btn-color);
@@ -671,10 +671,14 @@ a.button.secondary {
 
 /* Matrice des droits : lettres L, S, P. */
 .rights-matrix th.resource {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
   white-space: nowrap;
+  text-align: center;
   font-weight: 500;
+}
+
+.rights-legend {
+  margin: 0.25rem 0 1rem;
+  padding-left: 1.25rem;
 }
 
 .rights-matrix td.cell {
@@ -1027,6 +1031,80 @@ a.usage {
   background: var(--t-disc-bg, var(--surface));
   border: 1px solid var(--t-disc-border, var(--border));
   border-radius: var(--t-disc-radius, 8px);
+}
+
+.chat-messages {
+  overflow-y: auto;
+}
+
+.chat-message,
+.topic-message {
+  position: relative;
+  padding-right: 2.25rem;
+}
+
+.topic-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Rouage des messages et des sujets : actions dans un menu déroulant. */
+.action-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.chat-message > .action-menu,
+.topic-message > .action-menu {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+}
+
+.action-menu-button {
+  padding: 0.25rem 0.4rem;
+  color: inherit;
+  text-decoration: none;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.action-menu-button:hover,
+.action-menu-button[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.action-menu-dropdown {
+  position: absolute;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 10rem;
+  padding: 0.25rem 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+}
+
+.action-menu-dropdown button {
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: inherit;
+}
+
+.action-menu-dropdown button:hover {
+  background: var(--bg);
+}
+
+.action-menu-dropdown button.danger {
+  color: var(--danger);
 }
 
 .topic-message,
