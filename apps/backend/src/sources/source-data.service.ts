@@ -279,6 +279,44 @@ export class SourceDataService {
   }
 
   /**
+   * Grille de l'admin (04 — Sources) : cellules brutes du staging d'un Excel
+   * uploadé, formules comprises, sans suivre les liaisons ; plus les dimensions
+   * de la feuille (dernière ligne et dernière colonne non vides).
+   */
+  async stagingWindow(sourceId: string, sheet: string, rect: Rect) {
+    const [cells, extent] = await Promise.all([
+      this.prisma.stagingCell.findMany({
+        where: {
+          sourceId,
+          sheet,
+          row: { gte: rect.top, lte: rect.bottom },
+          col: { gte: rect.left, lte: rect.right },
+        },
+        orderBy: [{ row: 'asc' }, { col: 'asc' }],
+      }),
+      this.prisma.stagingCell.aggregate({
+        where: { sourceId, sheet },
+        _max: { row: true, col: true },
+      }),
+    ]);
+    return {
+      cells: cells.map((r) => ({
+        row: r.row,
+        col: r.col,
+        formula: r.formula,
+        stored: {
+          type: r.valueType,
+          text: r.valueText,
+          number: r.valueNumber === null ? null : Number(r.valueNumber),
+          needsRecalc: r.needsRecalc,
+        } satisfies StoredCell,
+      })),
+      maxRow: extent._max.row ?? 0,
+      maxCol: extent._max.col ?? 0,
+    };
+  }
+
+  /**
    * Lit le staging, puis suit les liaisons : une cellule dont la formule n'est
    * qu'une référence à un autre classeur prend la valeur de la cellule liée,
    * retrouvée par `cell_references` (source, feuille, plage), jamais par chemin.

@@ -3,3 +3,4 @@ pnpm-lock.yaml
 **/dist/
 **/generated/
 *.md
+e2e/results/

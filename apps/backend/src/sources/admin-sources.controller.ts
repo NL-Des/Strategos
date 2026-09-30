@@ -8,6 +8,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Res,
   UploadedFile,
   UseInterceptors,
@@ -19,19 +20,24 @@ import {
   EXCEL_MIME,
   ErrorCode,
   type ServiceAccountInfo,
+  type SourceGrid,
   type SourceSummary,
 } from '@strategos/shared';
 import type { Response } from 'express';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { AppException } from '../common/app-exception.js';
 import { ConfirmDto } from '../common/confirm.dto.js';
-import { AddSourceDto } from './sources.dto.js';
+import { SourceGridService } from './source-grid.service.js';
+import { AddSourceDto, GridQueryDto } from './sources.dto.js';
 import { SourcesService } from './sources.service.js';
 
 /** Sources de données, côté admin (13 — Sources). Protégé globalement par `AdminGuard`. */
 @Controller('admin/sources')
 export class AdminSourcesController {
-  constructor(private readonly sources: SourcesService) {}
+  constructor(
+    private readonly sources: SourcesService,
+    private readonly grid: SourceGridService,
+  ) {}
 
   @Get()
   list(): Promise<SourceSummary[]> {
@@ -80,6 +86,12 @@ export class AdminSourcesController {
   ): Promise<void> {
     const { content, name } = await this.sources.download(id, actor);
     res.attachment(name).type(EXCEL_MIME).send(content);
+  }
+
+  /** Fenêtre de la grille d'un Excel uploadé (valeurs, formules, « à recalculer »). */
+  @Get(':id/cells')
+  cells(@Param('id', ParseUUIDPipe) id: string, @Query() query: GridQueryDto): Promise<SourceGrid> {
+    return this.grid.window(id, query);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

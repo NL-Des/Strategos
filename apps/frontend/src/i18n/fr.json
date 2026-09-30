@@ -734,6 +734,20 @@
       "up": "↑ Dossier parent",
       "add": "Ajouter",
       "emptyFolder": "Aucun fichier Excel dans ce dossier."
+    },
+    "grid": {
+      "open": "Voir les cellules",
+      "title": "Cellules",
+      "back": "← Retour aux sources",
+      "intro": "La version de référence du classeur, telle que Strategos la conserve. Une formule n'est jamais calculée ici : sa valeur est celle du dernier enregistrement dans Excel, marquée * si une cellule dont elle dépend a changé depuis.",
+      "sheets": "Feuilles",
+      "goTo": "Aller à",
+      "goToSubmit": "Afficher",
+      "rowsUp": "↑ Lignes précédentes",
+      "rowsDown": "↓ Lignes suivantes",
+      "colsLeft": "← Colonnes précédentes",
+      "colsRight": "→ Colonnes suivantes",
+      "extent": "Dernière cellule remplie : {{ref}}"
     }
   },
   "render": {

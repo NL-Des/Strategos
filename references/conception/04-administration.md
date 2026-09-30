@@ -16,6 +16,7 @@ Un écran liste les sources de données et permet de les gérer (voir [Sources d
 - **ajouter** un Google Sheet par son lien : l'écran affiche l'**adresse du compte de service** avec laquelle partager le Sheet, puis teste l'accès ;
 - **connecter ou reconnecter** le compte OneDrive, puis ajouter un fichier ;
 - **uploader** un Excel, le **télécharger** et le **réimporter** (avec l'avertissement prévu) ;
+- **voir les cellules** d'un Excel uploadé : sa version de référence présentée comme un tableur (feuilles, fenêtres de 50 lignes × 26 colonnes, « aller à » une cellule). Un clic sur une cellule affiche sa formule ou sa valeur. Les valeurs sont celles du staging, sans calcul ; une valeur « à recalculer » porte sa marque. Les sources connectées se consultent dans Google Sheets ou OneDrive ;
 - pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages qui l'utilisent, par un module ou par un formulaire (le header et le footer compris). Retirer une source encore utilisée déclenche un avertissement.
 
 ### Réglages de l'instance

@@ -1,4 +1,4 @@
-import type { SourceStatus, SourceType } from '../enums.js';
+import type { CellType, SourceStatus, SourceType } from '../enums.js';
 
 /** Sources de données (08, 13 — routes Sources) : réservé à l'admin. */
 
@@ -51,4 +51,34 @@ export interface OneDriveItem {
   folder: boolean;
   /** Chemin à passer à `browse` pour ouvrir un dossier. */
   path: string;
+}
+
+/** Fenêtre maximale de la grille d'un Excel uploadé (`GET /admin/sources/:id/cells`). */
+export const GRID_MAX_ROWS = 200;
+export const GRID_MAX_COLS = 50;
+
+/** Cellule non vide de la grille : valeur affichée, formule et marque « à recalculer ». */
+export interface GridCell {
+  row: number;
+  col: number;
+  type: CellType;
+  display: string;
+  formula: string | null;
+  needsRecalc: boolean;
+}
+
+/**
+ * Fenêtre de la grille d'un Excel uploadé, réservée à l'admin (04 — Sources).
+ * `maxRow` / `maxCol` : dernière ligne et dernière colonne non vides de la feuille.
+ */
+export interface SourceGrid {
+  sheets: string[];
+  sheet: string;
+  maxRow: number;
+  maxCol: number;
+  top: number;
+  left: number;
+  rows: number;
+  cols: number;
+  cells: GridCell[];
 }

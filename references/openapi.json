@@ -1495,6 +1495,91 @@
         ]
       }
     },
+    "/api/v1/admin/sources/{id}/cells": {
+      "get": {
+        "operationId": "AdminSources_cells",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sheet",
+            "required": false,
+            "in": "query",
+            "description": "Feuille ; la première par défaut",
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "name": "top",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 1048576,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "left",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 16384,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "rows",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cols",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 26,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Fenêtre de la grille d'un Excel uploadé (valeurs, formules, « à recalculer »).",
+        "tags": [
+          "AdminSources"
+        ]
+      }
+    },
     "/api/v1/admin/sources/{id}": {
       "delete": {
         "operationId": "AdminSources_remove",

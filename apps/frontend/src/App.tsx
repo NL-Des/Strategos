@@ -30,6 +30,7 @@ const ResourceRightsPage = admin(
   'ResourceRightsPage',
 );
 const RightsPage = admin(() => import('./pages/admin/RightsPage'), 'RightsPage');
+const SourceGridPage = admin(() => import('./pages/admin/SourceGridPage'), 'SourceGridPage');
 const SourcesPage = admin(() => import('./pages/admin/SourcesPage'), 'SourcesPage');
 const SubmissionsPage = admin(() => import('./pages/admin/SubmissionsPage'), 'SubmissionsPage');
 const SettingsPage = admin(() => import('./pages/admin/SettingsPage'), 'SettingsPage');
@@ -77,6 +78,7 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/themes', <ThemesPage />],
   ['/admin/themes/:id', <ThemeEditorPage />],
   ['/admin/sources', <SourcesPage />],
+  ['/admin/sources/:id/cells', <SourceGridPage />],
   ['/admin/submissions', <SubmissionsPage />],
   ['/admin/users', <UsersPage />],
   ['/admin/users/:id', <UserPage />],

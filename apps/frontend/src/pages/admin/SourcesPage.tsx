@@ -241,6 +241,11 @@ export function SourcesPage() {
                 <td>
                   <div className="actions">
                     {source.type === 'upload' && (
+                      <Link className="button secondary" to={`/admin/sources/${source.id}/cells`}>
+                        {t('sources.grid.open')}
+                      </Link>
+                    )}
+                    {source.type === 'upload' && (
                       <a
                         className="button secondary"
                         href={sourceDownloadUrl(source.id)}

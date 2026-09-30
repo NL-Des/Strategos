@@ -6,9 +6,11 @@ import type {
   CatalogCard,
   Paginated,
   Row,
+  SourceGrid,
   SourceSummary,
   TableRow,
 } from '@strategos/shared';
+import { cellRef } from '@strategos/shared';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import {
@@ -207,6 +209,23 @@ describe('Sources et modules de données (e2e)', () => {
         where: { action: 'source.download' },
       });
       expect(entry.targetId).toBe(source.id);
+    });
+
+    it('grille : fenêtre du staging, formules et dimensions ; bornes et 404', async () => {
+      const res = await admin.get(`/admin/sources/${source.id}/cells?top=2&left=2&rows=2&cols=4`);
+      expectStatus(res, 200);
+      const grid = res.body as SourceGrid;
+      expect(grid).toMatchObject({ sheets: [SHEET], sheet: SHEET, maxRow: 5, maxCol: 5, top: 2 });
+      expect(grid.cells.map((c) => cellRef(c))).toEqual(['B2', 'C2', 'D2', 'E2', 'B3', 'C3', 'D3']);
+      expect(grid.cells.find((c) => c.col === 5)).toMatchObject({
+        display: '99',
+        formula: 'B2*C2',
+        needsRecalc: false,
+      });
+      expect((await admin.get(`/admin/sources/${source.id}/cells?rows=201`)).status).toBe(400);
+      expect((await admin.get(`/admin/sources/${source.id}/cells?sheet=Absente`)).status).toBe(404);
+      expect((await admin.get(`/admin/sources/${uid()}/cells`)).status).toBe(404);
+      expect((await kira.get(`/admin/sources/${source.id}/cells`)).status).toBe(404);
     });
 
     it('retirer une source utilisée → 409 CONFIRMATION_REQUIRED, puis confirm: true', async () => {
