@@ -1,5 +1,7 @@
 import type {
   AddSourceInput,
+  CellEditInput,
+  GridCell,
   OneDriveItem,
   OneDriveStatus,
   ServiceAccountInfo,
@@ -33,6 +35,10 @@ export function getSourceGrid(
   if (w.sheet !== undefined) query.set('sheet', w.sheet);
   return apiFetch(`/admin/sources/${id}/cells?${query.toString()}`);
 }
+
+/** Modifier une cellule de la grille : valeur, ou formule (`=…`) non calculée. */
+export const editSourceCell = (id: string, body: CellEditInput) =>
+  apiFetch<GridCell>(`/admin/sources/${id}/cells`, { method: 'PATCH', body });
 
 /** Sans `confirm`, une source encore utilisée renvoie `409 CONFIRMATION_REQUIRED`. */
 export const deleteSource = (id: string, confirm = false) =>

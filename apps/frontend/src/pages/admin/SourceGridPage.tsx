@@ -5,11 +5,11 @@ import {
   columnLetters,
   parseCellRef,
 } from '@strategos/shared';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type FormEvent, type RefObject, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
-import { getSourceGrid, listSources } from '../../api/sources';
+import { editSourceCell, getSourceGrid, listSources } from '../../api/sources';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { RecalcMark } from '../../render/DataBlocks';
 
@@ -19,9 +19,14 @@ const COLS = 26;
 /** Première ligne ou colonne de la fenêtre qui contient `n`. */
 const windowStart = (n: number, size: number) => Math.floor((n - 1) / size) * size + 1;
 
+/** Contenu d'une cellule tel qu'on le saisit : la formule, sinon la valeur. */
+const inputOf = (cell: GridCell | undefined) =>
+  cell ? (cell.formula ? `=${cell.formula}` : cell.display) : '';
+
 /**
  * Admin › Sources › cellules (04) : la copie de référence d'un Excel uploadé,
- * vue comme un tableur, par fenêtres de 50 lignes × 26 colonnes.
+ * vue et modifiée comme un tableur, par fenêtres de 50 lignes × 26 colonnes.
+ * Une formule saisie n'est pas calculée : elle le sera à l'ouverture dans Excel.
  */
 export function SourceGridPage() {
   const { t } = useTranslation();
@@ -32,6 +37,7 @@ export function SourceGridPage() {
   const [selected, setSelected] = useState<CellPosition | null>(null);
   const [goTo, setGoTo] = useState('');
   const [goToError, setGoToError] = useState(false);
+  const editor = useRef<HTMLInputElement>(null);
 
   const sources = useQuery({ queryKey: ['admin', 'sources'], queryFn: listSources });
   const grid = useQuery({
@@ -73,6 +79,7 @@ export function SourceGridPage() {
       </p>
       <h1>{name ?? t('sources.grid.title')}</h1>
       <p className="muted">{t('sources.grid.intro')}</p>
+      <p className="muted">{t('sources.grid.editHelp')}</p>
       <ErrorMessage error={grid.error} />
 
       {data && (
@@ -148,13 +155,14 @@ export function SourceGridPage() {
             </span>
           </div>
 
-          <div className="grid-formula-bar" aria-live="polite">
-            <strong>{selected ? cellRef(selected) : '—'}</strong>
-            <code>
-              {current ? (current.formula ? `=${current.formula}` : current.display) : ''}
-            </code>
-            {current?.needsRecalc && <span className="muted">{t('render.needsRecalc')}</span>}
-          </div>
+          <FormulaBar
+            key={`${data.sheet}|${selected ? cellRef(selected) : ''}`}
+            sourceId={id}
+            sheet={data.sheet}
+            position={selected}
+            cell={current}
+            inputRef={editor}
+          />
 
           <div className="table-wrap">
             <table className="source-grid">
@@ -185,6 +193,7 @@ export function SourceGridPage() {
                           ].join(' ')}
                           aria-selected={isSelected}
                           onClick={() => setSelected({ row, col })}
+                          onDoubleClick={() => editor.current?.focus()}
                         >
                           {cell?.display}
                           {cell?.needsRecalc && <RecalcMark />}
@@ -199,5 +208,79 @@ export function SourceGridPage() {
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Barre de formule : adresse et contenu de la cellule choisie, modifiable.
+ * Entrée enregistre, Échap rétablit le contenu. `expected` est le contenu vu :
+ * si une validation l'a changé entre-temps, `409 EDIT_CONFLICT`.
+ */
+function FormulaBar({
+  sourceId,
+  sheet,
+  position,
+  cell,
+  inputRef,
+}: {
+  sourceId: string;
+  sheet: string;
+  position: CellPosition | null;
+  cell: GridCell | undefined;
+  inputRef: RefObject<HTMLInputElement | null>;
+}) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const initial = inputOf(cell);
+  const [draft, setDraft] = useState(initial);
+  // Contenu rechargé (enregistré, ou changé par une validation) : la saisie repart de lui.
+  const [base, setBase] = useState(initial);
+  if (base !== initial) {
+    setBase(initial);
+    setDraft(initial);
+  }
+  const save = useMutation({
+    mutationFn: (at: CellPosition) =>
+      editSourceCell(sourceId, {
+        sheet,
+        ...at,
+        expected: { display: cell?.display ?? '', formula: cell?.formula ?? null },
+        input: draft,
+      }),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ['admin', 'sources', sourceId, 'cells'] }),
+  });
+
+  return (
+    <>
+      <form
+        className="grid-formula-bar"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          if (position && draft !== initial) save.mutate(position);
+        }}
+      >
+        <strong>{position ? cellRef(position) : '—'}</strong>
+        <input
+          ref={inputRef}
+          aria-label={t('sources.grid.content')}
+          value={draft}
+          disabled={!position || save.isPending}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setDraft(initial);
+          }}
+        />
+        <button
+          type="submit"
+          className="button secondary"
+          disabled={!position || save.isPending || draft === initial}
+        >
+          {t('common.save')}
+        </button>
+        {cell?.needsRecalc && <span className="muted">{t('render.needsRecalc')}</span>}
+      </form>
+      <ErrorMessage error={save.error} />
+    </>
   );
 }

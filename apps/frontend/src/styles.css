@@ -1139,6 +1139,11 @@ a.usage {
   overflow-wrap: anywhere;
 }
 
+.grid-formula-bar input {
+  flex: 1 1 12rem;
+  font-family: ui-monospace, monospace;
+}
+
 .source-grid {
   width: auto;
   font-size: 0.85rem;

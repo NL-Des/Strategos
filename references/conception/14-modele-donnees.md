@@ -310,6 +310,18 @@ La PK `(source_id, sheet, row, col)` sert aussi d'index pour lire une plage (lig
 
 Index : `(source_id, sheet, row, col)` et `(referenced_source_id, referenced_sheet)`, qui permet de retrouver les dépendants d'une cellule écrite pour `needs_recalc`.
 
+### `source_cell_edits` — modifications de l'admin dans la grille
+| Colonne | Type | N | Défaut | Contrainte / rôle |
+|---|---|---|---|---|
+| `id` | uuid | | — | PK |
+| `source_id` | uuid | | — | FK `sources`, `on delete cascade` |
+| `sheet`, `row`, `col` | text, integer, integer | | — | Cellule modifiée |
+| `before`, `after` | jsonb | | — | `{ type, text, number, formula }` |
+| `created_by` | uuid | | — | FK `users` |
+| `created_at` | timestamptz | | `now()` | Comparé à `sources.last_downloaded_at` au réimport |
+
+Index : `(source_id, created_at)`. Les lignes sont gardées après un réimport ; seules celles postérieures au dernier téléchargement comptent.
+
 ### `onedrive_credentials`
 Table à **une seule ligne** (`id` integer, `id = 1`, `CHECK`) : `account_label` (compte Microsoft connecté), `refresh_token_encrypted` (bytea, chiffré avec une clé fournie au déploiement), `access_expires_at`, `expired_at` (rafraîchissement refusé : l'admin doit se reconnecter), `updated_at`.
 
@@ -461,6 +473,7 @@ erDiagram
     sources ||--o{ staging_cells : ""
     sources ||--o{ cell_references : ""
     sources ||--o{ reimport_previews : ""
+    sources ||--o{ source_cell_edits : ""
 ```
 
 Les références d'un formulaire ou d'un bloc vers une source (`sourceId` dans les JSON) ne sont pas des clés étrangères. L'écran « Sources » calcule les usages en parcourant les définitions publiées et en brouillon, et le retrait d'une source utilisée demande une confirmation.
@@ -480,6 +493,7 @@ Chaque étape du [plan de réalisation](../plan-realisation.md) crée les tables
 11. `themes_notes` : `user_notes`, et conversion des thèmes au format complet.
 12. `templates`.
 13. `backups`.
+14. `source_cell_edits`.
 
 ## Dépendances
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.

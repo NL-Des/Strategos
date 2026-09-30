@@ -55,7 +55,7 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **MediaModule** : médiathèque (upload, stockage sur le volume `uploads`, métadonnées en base) — voir [06](conception/06-page-builder.md#médiathèque).
 - **DiscussionsModule** : espaces de discussion, sujets et messages, pièces jointes images, modération — voir [07](conception/07-discussions.md).
 - **ChatModule** : chat temps réel et sa passerelle WebSocket (`/api/v1/ws`), historique par curseur, modération ; l'accès suit la lecture de la page (pas une ressource de droits) — voir [07](conception/07-discussions.md#chat).
-- **SourcesModule** : cœur technique Excel/Sheets : sources, staging, cache, lecture (`SourceDataService`), écriture (`SourceWriteService`), réimport — voir [08](conception/08-sources-donnees.md).
+- **SourcesModule** : cœur technique Excel/Sheets : sources, staging, cache, lecture (`SourceDataService`), écriture (`SourceWriteService`), grille de l'admin (`SourceGridService`), réimport — voir [08](conception/08-sources-donnees.md).
 - **FormsModule** : formulaires, soumissions et leur validation (`SubmissionProcessor`) — voir [09](conception/09-formulaires-soumissions.md).
 - **TemplatesModule** : bibliothèque de modèles et instanciation — voir [10](conception/10-modeles-duplication.md).
 - **TrashModule** : corbeille de l'admin (éléments supprimés en douceur) et restauration tracée — voir [04](conception/04-administration.md#corbeille).
@@ -75,7 +75,7 @@ Le schéma complet (colonnes, clés, index, contraintes, ordre des migrations) e
 | Instance | `settings` (ligne unique : page d'arrivée, thème par défaut, rétention), `themes`, `media`, `backups` | [04](conception/04-administration.md), [06](conception/06-page-builder.md), [11](conception/11-transverse.md) |
 | Pages | `pages` (brouillon et version publiée en JSON), `layout_parts` (header, footer) | [06](conception/06-page-builder.md) |
 | Discussions | `discussion_spaces`, `topics`, `topic_messages`, `chats`, `chat_messages`, `message_revisions`, `attachments` | [07](conception/07-discussions.md) |
-| Sources | `sources`, `staging_cells` (uploads seulement), `cell_references`, `onedrive_credentials`, `reimport_previews` | [08](conception/08-sources-donnees.md) |
+| Sources | `sources`, `staging_cells` (uploads seulement), `cell_references`, `onedrive_credentials`, `reimport_previews`, `source_cell_edits` | [08](conception/08-sources-donnees.md) |
 | Formulaires | `forms`, `form_versions`, `submissions` | [09](conception/09-formulaires-soumissions.md) |
 | Modèles | `templates` | [10](conception/10-modeles-duplication.md) |
 | Profil | `user_notes` | [05](conception/05-profil-utilisateur.md) |

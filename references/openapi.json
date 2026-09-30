@@ -1578,6 +1578,45 @@
         "tags": [
           "AdminSources"
         ]
+      },
+      "patch": {
+        "operationId": "AdminSources_editCell",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CellEditDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Modifier une cellule : valeur ou formule (`=…`), comme dans Excel.",
+        "tags": [
+          "AdminSources"
+        ]
       }
     },
     "/api/v1/admin/sources/{id}": {
@@ -4585,6 +4624,58 @@
         },
         "required": [
           "type"
+        ]
+      },
+      "ExpectedCellDto": {
+        "type": "object",
+        "properties": {
+          "display": {
+            "type": "string",
+            "maxLength": 32767
+          },
+          "formula": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 8192
+          }
+        },
+        "required": [
+          "display",
+          "formula"
+        ]
+      },
+      "CellEditDto": {
+        "type": "object",
+        "properties": {
+          "sheet": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "row": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1048576
+          },
+          "col": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 16384
+          },
+          "expected": {
+            "$ref": "#/components/schemas/ExpectedCellDto"
+          },
+          "input": {
+            "type": "string",
+            "maxLength": 32767
+          }
+        },
+        "required": [
+          "sheet",
+          "row",
+          "col",
+          "expected",
+          "input"
         ]
       },
       "ConfirmDto": {

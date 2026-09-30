@@ -43,8 +43,11 @@ function sheetParts(files: Record<string, Uint8Array>): Map<string, string> {
   return parts;
 }
 
-function cellXml(ref: string, style: string | undefined, value: CellWrite['value']): string {
+function cellXml(ref: string, style: string | undefined, w: CellWrite): string {
   const s = style ? ` s="${style}"` : '';
+  // Formule saisie dans la grille : pas de valeur, Excel la calcule à l'ouverture.
+  if (w.formula) return `<c r="${ref}"${s}><f>${escapeXml(w.formula)}</f></c>`;
+  const value = w.value;
   switch (value.type) {
     case CellType.empty:
       return `<c r="${ref}"${s}/>`;
@@ -91,7 +94,7 @@ function patchRow(
     const style = existing ? attributes(openTag(existing)).s : styleAbove(w.col);
     const shared = existing && /<f\b[^>]*t="shared"[^>]*ref="[^"]*"[^>]*>/.exec(existing);
     if (shared) removedShared.add(attributes(shared[0]).si ?? '');
-    byCol.set(w.col, cellXml(cellRef({ row: w.row, col: w.col }), style, w.value));
+    byCol.set(w.col, cellXml(cellRef({ row: w.row, col: w.col }), style, w));
     if (!existing) order.push(w.col);
   }
   const body = [...new Set(order)]

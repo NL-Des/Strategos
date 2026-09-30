@@ -39,6 +39,7 @@ export const AuditAction = {
   SOURCE_DOWNLOAD: 'source.download',
   SOURCE_DELETE: 'source.delete',
   SOURCE_REIMPORT: 'source.reimport',
+  SOURCE_EDIT_CELL: 'source.edit_cell',
   SOURCE_ADD: 'source.add',
   ONEDRIVE_CONNECT: 'onedrive.connect',
   FORM_CREATE: 'form.create',

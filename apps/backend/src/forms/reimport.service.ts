@@ -22,6 +22,11 @@ import { config } from '../config.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { ParsedWorkbook } from '../sources/excel-parser.js';
+import {
+  type CellSnapshot,
+  SourceGridService,
+  snapshotOf,
+} from '../sources/source-grid.service.js';
 import { SourcesService } from '../sources/sources.service.js';
 import { SubmissionProcessor, type Written } from './submission-processor.service.js';
 
@@ -44,6 +49,7 @@ export class ReimportService {
     private readonly audit: AuditService,
     private readonly sources: SourcesService,
     private readonly processor: SubmissionProcessor,
+    private readonly grid: SourceGridService,
   ) {}
 
   async preview(
@@ -95,7 +101,8 @@ export class ReimportService {
     });
     const workbook = await this.sources.readWorkbook(buffer);
     const lost = preview.lostValidations as unknown as LostValidation[];
-    const submissionIds = [...new Set(lost.map((l) => l.submissionId))];
+    const submissionIds = [...new Set(lost.flatMap((l) => l.submissionId ?? []))];
+    const editIds = [...new Set(lost.flatMap((l) => l.editId ?? []))];
 
     const { oldPath } = await this.prisma.$transaction(
       async (tx) => {
@@ -104,7 +111,8 @@ export class ReimportService {
         const { count } = await tx.reimportPreview.deleteMany({ where: { id: token } });
         if (count === 0) throw expired();
         const restaged = await this.sources.restage(tx, source, workbook, preview.uploadedFilePath);
-        const reapplied = mode === 'reapply' ? await this.reapply(tx, submissionIds) : [];
+        const reapplied =
+          mode === 'reapply' ? await this.reapply(tx, sourceId, submissionIds, editIds) : [];
         await this.audit.record(tx, actor, {
           action: AuditAction.SOURCE_REIMPORT,
           targetType: AuditTargetType.SOURCE,
@@ -118,7 +126,11 @@ export class ReimportService {
             mode,
             cells: restaged.cells,
             links: restaged.links,
-            lostValidations: lost.map((l) => ({ submissionId: l.submissionId, cell: l.cell })),
+            lostValidations: lost.map((l) => ({
+              submissionId: l.submissionId,
+              editId: l.editId,
+              cell: l.cell,
+            })),
             reapplied,
           },
         });
@@ -145,7 +157,9 @@ export class ReimportService {
   /**
    * Validations perdues : écrites dans cette source après le dernier
    * téléchargement, encore présentes dans la version de référence (staging), et
-   * dont le nouveau fichier porte une autre valeur.
+   * dont le nouveau fichier porte une autre valeur. De même pour les
+   * modifications de l'admin dans la grille (valeur ou formule), classées avec
+   * les validations dans l'ordre chronologique.
    */
   private async lostValidations(
     sourceId: string,
@@ -179,6 +193,7 @@ export class ReimportService {
         if (current === c.after && inNewFile !== c.after) {
           lost.push({
             submissionId: s.id,
+            editId: null,
             cell: `${c.sheet}!${cellRef(c)}`,
             validatedValue: c.after,
             valueInNewFile: inNewFile,
@@ -187,17 +202,75 @@ export class ReimportService {
         }
       }
     }
+    lost.push(...(await this.lostEdits(sourceId, lastDownloadedAt, workbook)));
+    return lost.sort((a, b) => a.validatedAt.localeCompare(b.validatedAt));
+  }
+
+  /** Modifications de l'admin dans la grille que le nouveau fichier ferait perdre. */
+  private async lostEdits(
+    sourceId: string,
+    lastDownloadedAt: Date | null,
+    workbook: ParsedWorkbook,
+  ): Promise<LostValidation[]> {
+    const edits = await this.prisma.sourceCellEdit.findMany({
+      where: { sourceId, ...(lastDownloadedAt ? { createdAt: { gt: lastDownloadedAt } } : {}) },
+      orderBy: { createdAt: 'asc' },
+    });
+    const inFile = new Map<string, CellSnapshot>();
+    for (const sheet of workbook.sheets) {
+      for (const c of sheet.cells) inFile.set(`${sheet.name}|${c.row}|${c.col}`, c);
+    }
+    const shown = (c: CellSnapshot | undefined) =>
+      c?.formula ? `=${c.formula}` : c && c.type !== CellType.empty ? c.text : null;
+    // Plusieurs modifications d'une même cellule : seule la dernière peut être perdue.
+    const latest = new Map(edits.map((e) => [`${e.sheet}|${e.row}|${e.col}`, e]));
+    const lost: LostValidation[] = [];
+    for (const e of latest.values()) {
+      const after = e.after as unknown as CellSnapshot;
+      const staged = await this.prisma.stagingCell.findUnique({
+        where: { sourceId_sheet_row_col: { sourceId, sheet: e.sheet, row: e.row, col: e.col } },
+      });
+      // Modification depuis remplacée (autre modification, validation) : ce n'est plus elle qui serait perdue.
+      if (shown(staged ? snapshotOf(staged) : undefined) !== shown(after)) continue;
+      const inNewFile = shown(inFile.get(`${e.sheet}|${e.row}|${e.col}`));
+      if (inNewFile === shown(after)) continue;
+      lost.push({
+        submissionId: null,
+        editId: e.id,
+        cell: `${e.sheet}!${cellRef(e)}`,
+        validatedValue: shown(after),
+        valueInNewFile: inNewFile,
+        validatedAt: e.createdAt.toISOString(),
+      });
+    }
     return lost;
   }
 
-  /** Réécrit les validations perdues sur le nouveau staging, dans l'ordre de validation. */
-  private async reapply(tx: Prisma.TransactionClient, ids: string[]): Promise<string[]> {
+  /**
+   * Réécrit les validations et les modifications de l'admin perdues sur le
+   * nouveau staging, ensemble dans l'ordre chronologique. Une modification de
+   * l'admin est réécrite telle quelle (valeur ou formule).
+   */
+  private async reapply(
+    tx: Prisma.TransactionClient,
+    sourceId: string,
+    submissionIds: string[],
+    editIds: string[],
+  ): Promise<string[]> {
     const submissions = await tx.submission.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: submissionIds } },
       include: { form: true, versionRef: true },
-      orderBy: { decidedAt: 'asc' },
     });
-    for (const s of submissions) {
+    const edits = await tx.sourceCellEdit.findMany({ where: { id: { in: editIds } } });
+    const steps = [
+      ...submissions.map((s) => ({ at: s.decidedAt!, submission: s, edit: null })),
+      ...edits.map((e) => ({ at: e.createdAt, submission: null, edit: e })),
+    ].sort((a, b) => a.at.getTime() - b.at.getTime());
+    for (const { submission: s, edit: e } of steps) {
+      if (e) {
+        await this.grid.apply(tx, sourceId, e, e.after as unknown as CellSnapshot);
+        continue;
+      }
       const written = s.written as unknown as Written;
       const def = s.versionRef.definition as unknown as FormDefinition;
       try {
@@ -223,6 +296,6 @@ export class ReimportService {
         throw error;
       }
     }
-    return submissions.map((s) => s.id);
+    return steps.map((step) => step.submission?.id ?? step.edit!.id);
   }
 }

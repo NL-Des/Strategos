@@ -211,6 +211,7 @@
     "UNSUPPORTED_FILE_TYPE": "Ce type de fichier n’est pas accepté.",
     "EXCEL_PARSE_FAILED": "Ce fichier Excel n’a pas pu être lu. Vérifiez qu’il s’agit bien d’un classeur .xlsx.",
     "SOURCE_NOT_UPLOAD": "Cette action ne concerne que les fichiers Excel uploadés.",
+    "FORMULA_EXTERNAL_REF": "Une formule saisie ici ne peut pas citer un autre classeur. Créez la liaison dans Excel, puis réimportez le fichier.",
     "FORM_CLOSED": "Ce formulaire est fermé.",
     "FORM_FULL": "Ce formulaire est complet.",
     "ADD_ZONE_FULL": "La zone d’ajout est pleine : cette soumission ne peut plus être validée, seulement refusée.",
@@ -277,6 +278,7 @@
       "source.download": "Téléchargement d’une source",
       "source.delete": "Retrait d’une source",
       "source.reimport": "Réimport du fichier",
+      "source.edit_cell": "Modification d’une cellule",
       "form.create": "Création du formulaire",
       "form.update": "Modification du brouillon du formulaire",
       "form.publish": "Publication du formulaire",
@@ -704,13 +706,14 @@
     "reimport": {
       "action": "Réimporter",
       "title": "Réimporter « {{name}} »",
-      "nothingLost": "Aucune validation ne serait perdue.",
-      "lost_one": "1 validation faite depuis le dernier téléchargement ({{date}}) serait perdue :",
-      "lost_other": "{{count}} validations faites depuis le dernier téléchargement ({{date}}) seraient perdues :",
+      "nothingLost": "Aucune validation ni saisie dans la grille ne serait perdue.",
+      "lost_one": "1 modification faite depuis le dernier téléchargement ({{date}}) serait perdue :",
+      "lost_other": "{{count}} modifications faites depuis le dernier téléchargement ({{date}}) seraient perdues :",
       "item": "{{cell}} : {{before}} dans le nouveau fichier, {{after}} validé le {{date}}",
-      "reapply": "Réappliquer les validations",
-      "overwrite": "Écraser (les validations sont perdues)",
-      "confirm": "Réimporter"
+      "reapply": "Réappliquer les modifications",
+      "overwrite": "Écraser (les modifications sont perdues)",
+      "confirm": "Réimporter",
+      "itemEdit": "{{cell}} : {{before}} dans le nouveau fichier, {{after}} saisi dans la grille le {{date}}"
     },
     "test": "Tester",
     "gsheet": {
@@ -747,7 +750,9 @@
       "rowsDown": "↓ Lignes suivantes",
       "colsLeft": "← Colonnes précédentes",
       "colsRight": "→ Colonnes suivantes",
-      "extent": "Dernière cellule remplie : {{ref}}"
+      "extent": "Dernière cellule remplie : {{ref}}",
+      "content": "Contenu de la cellule",
+      "editHelp": "Cliquez une cellule, puis modifiez son contenu comme dans Excel : « =B2*C2 » pour une formule, « 1 234,5 », « 26/09/2026 », « VRAI ». Une apostrophe en tête garde le texte tel quel. Une formule saisie ici n'est pas calculée : elle le sera à l'ouverture du fichier téléchargé dans Excel."
     }
   },
   "render": {

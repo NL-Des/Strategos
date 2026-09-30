@@ -1,5 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { GRID_MAX_COLS, GRID_MAX_ROWS, MAX_COLUMN, MAX_ROW } from '@strategos/shared';
+import {
+  CELL_TEXT_MAX_LENGTH,
+  type CellEditInput,
+  FORMULA_MAX_LENGTH,
+  GRID_MAX_COLS,
+  GRID_MAX_ROWS,
+  MAX_COLUMN,
+  MAX_ROW,
+} from '@strategos/shared';
 import { Type } from 'class-transformer';
 import {
   IsIn,
@@ -11,6 +19,7 @@ import {
   Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 
 /** `POST /admin/sources` : un Google Sheet par son lien, ou un fichier du OneDrive connecté. */
@@ -77,4 +86,41 @@ export class GridQueryDto {
   @Min(1)
   @Max(GRID_MAX_COLS)
   cols: number = 26;
+}
+
+class ExpectedCellDto {
+  @IsString()
+  @MaxLength(CELL_TEXT_MAX_LENGTH)
+  display: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(FORMULA_MAX_LENGTH)
+  formula: string | null;
+}
+
+/** `PATCH /admin/sources/:id/cells` : modification d'une cellule dans la grille. */
+export class CellEditDto implements CellEditInput {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  sheet: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(MAX_ROW)
+  row: number;
+
+  @IsInt()
+  @Min(1)
+  @Max(MAX_COLUMN)
+  col: number;
+
+  @ValidateNested()
+  @Type(() => ExpectedCellDto)
+  expected: ExpectedCellDto;
+
+  @IsString()
+  @MaxLength(CELL_TEXT_MAX_LENGTH)
+  input: string;
 }

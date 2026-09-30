@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Query,
@@ -16,6 +17,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   type AddSourceInput,
+  type GridCell,
   EXCEL_MAX_BYTES,
   EXCEL_MIME,
   ErrorCode,
@@ -28,7 +30,7 @@ import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { AppException } from '../common/app-exception.js';
 import { ConfirmDto } from '../common/confirm.dto.js';
 import { SourceGridService } from './source-grid.service.js';
-import { AddSourceDto, GridQueryDto } from './sources.dto.js';
+import { AddSourceDto, CellEditDto, GridQueryDto } from './sources.dto.js';
 import { SourcesService } from './sources.service.js';
 
 /** Sources de données, côté admin (13 — Sources). Protégé globalement par `AdminGuard`. */
@@ -92,6 +94,16 @@ export class AdminSourcesController {
   @Get(':id/cells')
   cells(@Param('id', ParseUUIDPipe) id: string, @Query() query: GridQueryDto): Promise<SourceGrid> {
     return this.grid.window(id, query);
+  }
+
+  /** Modifier une cellule : valeur ou formule (`=…`), comme dans Excel. */
+  @Patch(':id/cells')
+  editCell(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CellEditDto,
+    @Actor() actor: AuditActor,
+  ): Promise<GridCell> {
+    return this.grid.edit(id, dto, actor);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)

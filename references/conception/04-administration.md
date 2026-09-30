@@ -16,7 +16,7 @@ Un écran liste les sources de données et permet de les gérer (voir [Sources d
 - **ajouter** un Google Sheet par son lien : l'écran affiche l'**adresse du compte de service** avec laquelle partager le Sheet, puis teste l'accès ;
 - **connecter ou reconnecter** le compte OneDrive, puis ajouter un fichier ;
 - **uploader** un Excel, le **télécharger** et le **réimporter** (avec l'avertissement prévu) ;
-- **voir les cellules** d'un Excel uploadé : sa version de référence présentée comme un tableur (feuilles, fenêtres de 50 lignes × 26 colonnes, « aller à » une cellule). Un clic sur une cellule affiche sa formule ou sa valeur. Les valeurs sont celles du staging, sans calcul ; une valeur « à recalculer » porte sa marque. Les sources connectées se consultent dans Google Sheets ou OneDrive ;
+- **voir et modifier les cellules** d'un Excel uploadé : sa version de référence présentée comme un tableur (feuilles, fenêtres de 50 lignes × 26 colonnes, « aller à » une cellule). Un clic sur une cellule affiche sa formule ou sa valeur dans une barre de formule, où l'admin la modifie comme dans Excel : `=…` pour une formule, nombre, date, `VRAI`/`FAUX` ou texte. Rien n'est calculé : une formule saisie garde la valeur de l'ancienne formule (vide s'il n'y en avait pas) et passe « à recalculer », comme les cellules qui dépendent d'une valeur modifiée ; Excel recalcule à l'ouverture du fichier téléchargé. Une formule ne peut pas citer un autre classeur (la liaison se crée dans Excel). Si une validation a changé la cellule pendant la saisie, la modification est refusée (conflit). Chaque modification est tracée et comptée au réimport comme une validation (voir [08](08-sources-donnees.md#excel-uploadé--version-de-référence-et-réimport)). Les sources connectées se consultent et se modifient dans Google Sheets ou OneDrive ;
 - pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages qui l'utilisent, par un module ou par un formulaire (le header et le footer compris). Retirer une source encore utilisée déclenche un avertissement.
 
 ### Réglages de l'instance
@@ -53,7 +53,7 @@ Sont tracées (action, cible, état avant/après, date) :
 - les actions sur les comptes (y compris le changement d'identifiants ou de mot de passe fait par l'utilisateur lui-même), les appartenances aux groupes et les permissions ;
 - les réglages de l'instance ;
 - la **validation, le refus et la modification des soumissions**, y compris les validations automatiques, avec la valeur réellement écrite (avant/après pour un mouvement), la cellule et la source ;
-- les sources : upload, ajout d'un Google Sheet ou d'un fichier OneDrive, connexion du compte OneDrive, téléchargement d'un Excel uploadé, réimport avec le choix fait (annuler, écraser, réappliquer) et retrait ;
+- les sources : upload, ajout d'un Google Sheet ou d'un fichier OneDrive, connexion du compte OneDrive, téléchargement d'un Excel uploadé, modification d'une cellule dans la grille (cellule, contenu avant et après), réimport avec le choix fait (annuler, écraser, réappliquer) et retrait ;
 - la modération par l'admin : masquage et rétablissement d'un message, modification ou suppression du message d'un autre, suppression d'un sujet ;
 - les modifications et **publications** de pages, du header et du footer partagés, les modifications, publications et réglages de formulaires ;
 - l'upload et la suppression des images de la médiathèque ;

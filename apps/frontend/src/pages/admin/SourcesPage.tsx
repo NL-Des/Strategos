@@ -155,8 +155,8 @@ export function SourcesPage() {
               </p>
               <ul>
                 {reimport.preview.lostValidations.map((l) => (
-                  <li key={`${l.submissionId}${l.cell}`}>
-                    {t('sources.reimport.item', {
+                  <li key={`${l.submissionId ?? l.editId}${l.cell}`}>
+                    {t(l.editId ? 'sources.reimport.itemEdit' : 'sources.reimport.item', {
                       cell: l.cell,
                       before: l.valueInNewFile ?? '∅',
                       after: l.validatedValue ?? '∅',

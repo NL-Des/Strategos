@@ -82,3 +82,17 @@ export interface SourceGrid {
   cols: number;
   cells: GridCell[];
 }
+
+/**
+ * `PATCH /admin/sources/:id/cells` : modification d'une cellule par l'admin.
+ * `expected` est ce que l'admin voyait (`display`, `formula` de la grille) :
+ * si la cellule a changé depuis (une validation), `409 EDIT_CONFLICT`.
+ */
+export interface CellEditInput {
+  sheet: string;
+  row: number;
+  col: number;
+  expected: { display: string; formula: string | null };
+  /** Saisie comme dans Excel : `=…` pour une formule (voir `parseCellInput`). */
+  input: string;
+}

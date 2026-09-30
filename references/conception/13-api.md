@@ -174,8 +174,9 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | POST | `/sources/upload` | Uploader un Excel `.xlsx` (`multipart`, champ `file`, 20 Mo au plus) → nouvelle source de type upload. La liste renvoie aussi les feuilles (`sheets`) pour les sélecteurs du page builder | `413`, `415`, `422 EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/test` | Tester l'accès ; renvoie la source avec son état et ses feuilles relues | `SOURCE_UNAVAILABLE`, `SOURCE_AUTH_EXPIRED` |
 | GET | `/sources/:id/cells` | Grille d'un Excel uploadé : `?sheet=&top=&left=&rows=&cols=` (première feuille, `A1`, 50 × 26 par défaut ; 200 lignes et 50 colonnes au plus). Renvoie `{ sheets, sheet, maxRow, maxCol, top, left, rows, cols, cells: [{ row, col, type, display, formula, needsRecalc }] }`, cellules non vides seulement ; les liaisons inter-fichiers ne sont pas suivies | `404` si la source n'est pas un upload ou si la feuille est inconnue, `400` hors bornes |
+| PATCH | `/sources/:id/cells` | Modifier une cellule d'un Excel uploadé : `{ sheet, row, col, expected: { display, formula }, input }`. `input` se lit comme dans Excel (`=…` formule, nombre `1 234,5`, date `26/09/2026`, `VRAI`/`FAUX`, apostrophe en tête pour forcer le texte, vide pour effacer). `expected` est le contenu vu dans la grille. Renvoie la cellule (même forme que dans la grille). Tracé (`source.edit_cell`) | `404` (source non upload, feuille inconnue), `409 EDIT_CONFLICT` (la cellule a changé), `422 FORMULA_EXTERNAL_REF` (formule citant un autre classeur) |
 | GET | `/sources/:id/download` | Télécharger la version de référence d'un Excel uploadé ; met à jour `last_downloaded_at` et trace le téléchargement | `422 SOURCE_NOT_UPLOAD` si ce n'est pas un upload |
-| POST | `/sources/:id/reimport/preview` | Uploader le nouveau fichier ; renvoie un `reimportToken` et la liste des **validations qui seraient perdues** (voir [schéma](#aperçu-de-réimport)) | `415`, `EXCEL_PARSE_FAILED` |
+| POST | `/sources/:id/reimport/preview` | Uploader le nouveau fichier ; renvoie un `reimportToken` et la liste des **validations et modifications de la grille qui seraient perdues** (voir [schéma](#aperçu-de-réimport)) | `415`, `EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/reimport/confirm` | `{ reimportToken, mode: "overwrite" \| "reapply" }` (annuler revient à ne pas confirmer ; le jeton expire) | `409 REIMPORT_TOKEN_EXPIRED`, `422` si une validation réappliquée échoue |
 | DELETE | `/sources/:id` | Retirer (avertissement si encore utilisée) | `409 CONFIRMATION_REQUIRED` |
 | GET | `/onedrive/connect` | Démarre la connexion Microsoft (redirection) | — |
@@ -325,10 +326,12 @@ Côté admin, chaque soumission s'accompagne de son contexte :
   "reimportToken": "…", "expiresAt": "…",
   "lastDownloadedAt": "…",
   "lostValidations": [
-    { "submissionId": "…", "cell": "Stock!C2", "validatedValue": "8", "valueInNewFile": "10", "validatedAt": "…" }
+    { "submissionId": "…", "editId": null, "cell": "Stock!C2", "validatedValue": "8", "valueInNewFile": "10", "validatedAt": "…" },
+    { "submissionId": null, "editId": "…", "cell": "Stock!F2", "validatedValue": "=C2*2", "valueInNewFile": null, "validatedAt": "…" }
   ]
 }
 ```
+Une ligne vient d'une validation (`submissionId`) ou d'une modification dans la grille (`editId`, `validatedValue` = formule précédée de `=` s'il y en a une). Triées par date.
 Une liste vide signifie que le réimport ne perd rien.
 
 ### Événement de chat

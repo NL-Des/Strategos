@@ -167,7 +167,10 @@ export interface PublishPreview {
 
 /** Validation qu'un réimport ferait perdre. */
 export interface LostValidation {
-  submissionId: string;
+  /** Validation perdue ; `null` pour une modification de l'admin dans la grille. */
+  submissionId: string | null;
+  /** Modification de l'admin dans la grille (04 — Sources) ; `null` pour une validation. */
+  editId: string | null;
   /** « Stock!C2 ». */
   cell: string;
   validatedValue: string | null;

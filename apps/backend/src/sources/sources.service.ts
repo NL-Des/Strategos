@@ -305,23 +305,28 @@ export class SourcesService {
 
   /**
    * Cellules du staging qui diffèrent du fichier importé : valeurs écrites par
-   * Strategos (sans formule), à reporter dans la version téléchargée.
+   * les validations, valeurs et formules modifiées par l'admin dans la grille,
+   * à reporter dans la version téléchargée.
    */
   private async writtenSinceImport(sourceId: string, book: ParsedWorkbook): Promise<CellWrite[]> {
     const inFile = new Map<string, ParsedCell>();
     for (const sheet of book.sheets) {
       for (const c of sheet.cells) inFile.set(`${sheet.name}|${c.row}|${c.col}`, c);
     }
-    const staged = await this.prisma.stagingCell.findMany({ where: { sourceId, formula: null } });
+    const staged = await this.prisma.stagingCell.findMany({ where: { sourceId } });
     return staged.flatMap((c) => {
       const f = inFile.get(`${c.sheet}|${c.row}|${c.col}`);
       const number = c.valueNumber === null ? null : Number(c.valueNumber);
-      const same = f
-        ? f.formula === null &&
-          f.type === c.valueType &&
-          f.text === c.valueText &&
-          f.number === number
-        : c.valueType === CellType.empty;
+      // Une formule du fichier garde sa valeur calculée par Excel : seule la formule compte.
+      const same =
+        c.formula !== null
+          ? f?.formula === c.formula
+          : f
+            ? f.formula === null &&
+              f.type === c.valueType &&
+              f.text === c.valueText &&
+              f.number === number
+            : c.valueType === CellType.empty;
       return same
         ? []
         : [
@@ -330,6 +335,7 @@ export class SourcesService {
               row: c.row,
               col: c.col,
               value: { type: c.valueType, text: c.valueText, number },
+              formula: c.formula,
             },
           ];
     });

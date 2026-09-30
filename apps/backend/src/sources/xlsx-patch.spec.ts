@@ -50,6 +50,21 @@ describe('patchWorkbook', () => {
     expect(workbookXml).toContain('fullCalcOnLoad="1"');
   });
 
+  it('écrit une formule saisie dans la grille, sans valeur', async () => {
+    const patched = patchWorkbook(await buildXlsx({ Stock: { A1: 2, B1: 3, C1: 'x' } }), [
+      {
+        sheet: 'Stock',
+        row: 1,
+        col: 3,
+        value: { type: CellType.empty, text: null, number: null },
+        formula: 'A1*B1&">"',
+      },
+    ]);
+    expect((await cellsOf(patched)).get('1:3')).toMatchObject({ formula: 'A1*B1&">"' });
+    const sheetXml = strFromU8(unzipSync(new Uint8Array(patched))['xl/worksheets/sheet1.xml']!);
+    expect(sheetXml).toContain('<f>A1*B1&amp;&quot;&gt;&quot;</f></c>');
+  });
+
   it('écrit dans une feuille vide', async () => {
     const patched = patchWorkbook(await buildXlsx({ Stock: {} }), [
       { sheet: 'Stock', row: 5, col: 2, value: { type: CellType.number, text: '3', number: 3 } },

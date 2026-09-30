@@ -18,7 +18,7 @@ La conception complète est dans [references/](references/) ; l'ordre de réalis
 ### Pour l'administrateur (compte unique)
 
 - **Page builder** : brouillon puis publication, header et footer partagés, thèmes, médiathèque ([06](references/conception/06-page-builder.md)).
-- **Sources de données** : Excel uploadé, Google Sheets, OneDrive. Les données sont mises en cache et les fichiers peuvent être réimportés. Strategos écrit des valeurs brutes et ne calcule jamais de formule ([08](references/conception/08-sources-donnees.md)).
+- **Sources de données** : Excel uploadé, Google Sheets, OneDrive. Les données sont mises en cache et les fichiers peuvent être réimportés. L'admin voit et modifie les cellules d'un Excel uploadé dans une grille. Strategos écrit des valeurs brutes et ne calcule jamais de formule ([08](references/conception/08-sources-donnees.md)).
 - **Validation des soumissions** : les écritures sont sérialisées par source ([09](references/conception/09-formulaires-soumissions.md)).
 - **Comptes, groupes et droits de lecture** sur les pages et les espaces : une ressource illisible n'apparaît pas et renvoie `404` ([02](references/conception/02-comptes-authentification.md), [03](references/conception/03-droits-groupes.md)).
 - **Modération** des discussions et du chat ([07](references/conception/07-discussions.md)).

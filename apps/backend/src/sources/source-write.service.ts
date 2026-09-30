@@ -6,7 +6,7 @@ import { type FormulaRef, formulaRefs, rectContains } from './formula-deps.js';
 import { isConnected, SourceConnectors } from './connectors/source-connectors.service.js';
 import { SourceDataService } from './source-data.service.js';
 
-/** Valeur brute écrite dans une cellule : Strategos n'écrit jamais de formule. */
+/** Valeur brute écrite dans une cellule. */
 export interface StoredValue {
   type: CellType;
   text: string | null;
@@ -21,6 +21,12 @@ export interface CellAddress {
 
 export interface CellWrite extends CellAddress {
   value: StoredValue;
+  /**
+   * Formule saisie par l'admin dans la grille d'un Excel uploadé (04 — Sources),
+   * sans « = ». Elle n'est pas calculée : `value` est gardée et la cellule est
+   * marquée « à recalculer ». Les validations n'écrivent jamais de formule.
+   */
+  formula?: string | null;
 }
 
 const addressKey = (sourceId: string, c: CellAddress) =>
@@ -35,7 +41,8 @@ interface FormulaCell extends CellAddress {
 
 /**
  * Écriture dans les sources (08 — Points techniques) : l'unique chemin des
- * validations de soumissions. Les appelants ne savent pas de quel type est la
+ * validations de soumissions et des modifications de l'admin dans la grille
+ * d'un Excel uploadé (`SourceGridService`). Les appelants ne savent pas de quel type est la
  * source : staging et `needs_recalc` pour un Excel uploadé, API pour une
  * source connectée (cache vidé après l'écriture).
  */
@@ -70,7 +77,8 @@ export class SourceWriteService {
   }
 
   /**
-   * Écrit des valeurs brutes (une formule visée est remplacée par sa valeur),
+   * Écrit des valeurs brutes (une formule visée est remplacée par sa valeur ;
+   * seule la grille de l'admin écrit une formule, dans un Excel uploadé),
    * puis marque « à recalculer » les cellules qui en dépendent, directement ou
    * transitivement, y compris dans d'autres sources via `cell_references`.
    */
@@ -97,8 +105,8 @@ export class SourceWriteService {
         valueType: w.value.type,
         valueText: w.value.text,
         valueNumber: w.value.number,
-        formula: null,
-        needsRecalc: false,
+        formula: w.formula ?? null,
+        needsRecalc: Boolean(w.formula),
       };
       await tx.stagingCell.upsert({
         where: { sourceId_sheet_row_col: { sourceId, sheet: w.sheet, row: w.row, col: w.col } },

@@ -5,6 +5,7 @@ import type {
   Block,
   CatalogCard,
   Paginated,
+  ReimportPreview,
   Row,
   SourceGrid,
   SourceSummary,
@@ -13,6 +14,7 @@ import type {
 import { cellRef } from '@strategos/shared';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { parseWorkbook } from '../src/sources/excel-parser.js';
 import {
   PNG,
   TestClient,
@@ -262,6 +264,142 @@ describe('Sources et modules de données (e2e)', () => {
       expect(unknown.body.details.fields).toEqual({ [`${path}.sourceId`]: ['sourceNotFound'] });
       const sheet = await save(table({ sheet: 'Absente' }));
       expect(sheet.body.details.fields).toEqual({ [`${path}.sheet`]: ['sheetNotFound'] });
+    });
+  });
+
+  describe('grille : modification par l’admin', () => {
+    const editCell = (row: number, col: number, input: string, expected: object) =>
+      admin.send('patch', `/admin/sources/${source.id}/cells`, {
+        sheet: SHEET,
+        row,
+        col,
+        expected,
+        input,
+      });
+    const staged = (row: number, col: number) =>
+      prisma.stagingCell.findUnique({
+        where: { sourceId_sheet_row_col: { sourceId: source.id, sheet: SHEET, row, col } },
+      });
+    async function download(): Promise<Buffer> {
+      const res = await admin
+        .get(`/admin/sources/${source.id}/download`)
+        .buffer(true)
+        .parse((r, done) => {
+          const chunks: Buffer[] = [];
+          r.on('data', (c: Buffer) => chunks.push(c));
+          r.on('end', () => done(null, Buffer.concat(chunks)));
+        });
+      expectStatus(res, 200);
+      return res.body as Buffer;
+    }
+    async function reimportPreview(file: Buffer) {
+      const res = await admin.upload(
+        `/admin/sources/${source.id}/reimport/preview`,
+        file,
+        'stock.xlsx',
+      );
+      expectStatus(res, 200);
+      return res.body as ReimportPreview;
+    }
+    const confirmReimport = (reimportToken: string, mode: string) =>
+      admin.send('post', `/admin/sources/${source.id}/reimport/confirm`, { reimportToken, mode });
+
+    it('valeur : dépendantes « à recalculer », tracée ; contenu périmé → 409 EDIT_CONFLICT', async () => {
+      const res = await editCell(2, 2, '12', { display: '10', formula: null });
+      expectStatus(res, 200);
+      expect(res.body).toMatchObject({ type: 'number', display: '12', formula: null });
+      expect(await staged(2, 2)).toMatchObject({ valueType: 'number', valueText: '12' });
+      expect(await staged(2, 5)).toMatchObject({ formula: 'B2*C2', needsRecalc: true });
+      const entry = await prisma.auditLog.findFirstOrThrow({
+        where: { action: 'source.edit_cell' },
+      });
+      expect(entry.before).toMatchObject({ cell: `${SHEET}!B2`, text: '10' });
+      expect(entry.after).toMatchObject({ cell: `${SHEET}!B2`, text: '12', number: 12 });
+      expect(await prisma.sourceCellEdit.count()).toBe(1);
+
+      const stale = await editCell(2, 2, '13', { display: '10', formula: null });
+      expect(stale.status).toBe(409);
+      expect(stale.body.code).toBe('EDIT_CONFLICT');
+      expect((await editCell(2, 2, '', { display: '12', formula: null })).status).toBe(200);
+      expect(await staged(2, 2)).toMatchObject({ valueType: 'empty' });
+    });
+
+    it('formule : posée sans calcul ; autre classeur → 422 ; feuille inconnue ou non-admin → 404', async () => {
+      const added = await editCell(2, 6, '=B2*2', { display: '', formula: null });
+      expectStatus(added, 200);
+      expect(added.body).toMatchObject({ formula: 'B2*2', display: '', needsRecalc: true });
+      // Formule remplacée : la valeur de l'ancienne reste affichée, marquée à recalculer.
+      const changed = await editCell(2, 5, '=B2+C2', { display: '99', formula: 'B2*C2' });
+      expect(changed.body).toMatchObject({ formula: 'B2+C2', display: '99', needsRecalc: true });
+
+      const external = await editCell(3, 6, '=[1]Stock!A1', { display: '', formula: null });
+      expect(external.status).toBe(422);
+      expect(external.body.code).toBe('FORMULA_EXTERNAL_REF');
+      const unknownSheet = await admin.send('patch', `/admin/sources/${source.id}/cells`, {
+        sheet: 'Absente',
+        row: 1,
+        col: 1,
+        expected: { display: '', formula: null },
+        input: 'x',
+      });
+      expect(unknownSheet.status).toBe(404);
+      const byKira = await kira.send('patch', `/admin/sources/${source.id}/cells`, {
+        sheet: SHEET,
+        row: 1,
+        col: 1,
+        expected: { display: 'Produit', formula: null },
+        input: 'x',
+      });
+      expect(byKira.status).toBe(404);
+    });
+
+    it('téléchargement : valeurs et formules saisies reportées dans le fichier', async () => {
+      await editCell(2, 2, '12', { display: '10', formula: null });
+      await editCell(2, 6, '=B2*2', { display: '', formula: null });
+      await editCell(2, 5, '=B2+C2', { display: '99', formula: 'B2*C2' });
+      const book = await parseWorkbook(await download());
+      const cells = new Map(book.sheets[0]!.cells.map((c) => [cellRef(c), c]));
+      expect(cells.get('B2')).toMatchObject({ number: 12, formula: null });
+      expect(cells.get('F2')).toMatchObject({ formula: 'B2*2' });
+      expect(cells.get('E2')).toMatchObject({ formula: 'B2+C2' });
+      expect(cells.get('A2')).toMatchObject({ text: 'Épée' });
+    });
+
+    it('réimport : saisies perdues listées, réappliquées dans l’ordre ou écrasées', async () => {
+      await editCell(2, 2, '12', { display: '10', formula: null });
+      await editCell(2, 2, '14', { display: '12', formula: null });
+      await editCell(2, 6, '=B2*2', { display: '', formula: null });
+
+      const preview = await reimportPreview(stockFile);
+      expect(preview.lostValidations).toEqual([
+        expect.objectContaining({
+          submissionId: null,
+          cell: `${SHEET}!B2`,
+          validatedValue: '14',
+          valueInNewFile: '10',
+        }),
+        expect.objectContaining({
+          submissionId: null,
+          cell: `${SHEET}!F2`,
+          validatedValue: '=B2*2',
+          valueInNewFile: null,
+        }),
+      ]);
+      expectStatus(await confirmReimport(preview.reimportToken, 'reapply'), 204);
+      expect(await staged(2, 2)).toMatchObject({ valueText: '14' });
+      expect(await staged(2, 6)).toMatchObject({ formula: 'B2*2', needsRecalc: true });
+
+      // Toujours postérieures au dernier téléchargement : encore listées, cette fois écrasées.
+      const again = await reimportPreview(stockFile);
+      expect(again.lostValidations).toHaveLength(2);
+      expectStatus(await confirmReimport(again.reimportToken, 'overwrite'), 204);
+      expect(await staged(2, 2)).toMatchObject({ valueText: '10' });
+      expect(await staged(2, 6)).toBeNull();
+
+      // Téléchargées, elles ne peuvent plus être perdues.
+      await editCell(2, 2, '20', { display: '10', formula: null });
+      await download();
+      expect((await reimportPreview(stockFile)).lostValidations).toEqual([]);
     });
   });
 

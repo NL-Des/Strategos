@@ -48,8 +48,30 @@ test('1. l’admin uploade inventaire.xlsx et ouvre ses cellules', async ({ page
   await expect(grid.getByRole('cell', { name: 'Corde' })).toBeVisible();
 
   await grid.getByRole('cell', { name: '12', exact: true }).click();
-  await expect(page.locator('.grid-formula-bar')).toContainText('D2');
-  await expect(page.locator('.grid-formula-bar')).toContainText('=B2*C2');
+  const bar = page.locator('.grid-formula-bar');
+  const content = page.getByLabel(t('sources.grid.content'));
+  await expect(bar).toContainText('D2');
+  await expect(content).toHaveValue('=B2*C2');
+
+  // Quantité modifiée : le total (formule) passe « à recalculer », sans calcul.
+  await grid.getByRole('cell', { name: '3', exact: true }).click();
+  await content.fill('5');
+  await clickAndWait(page, bar.getByRole('button', { name: t('common.save') }), '/cells');
+  await expect(grid.getByRole('cell', { name: '5', exact: true })).toBeVisible();
+  await expect(grid.getByRole('cell', { name: /^12/ })).toContainText('*');
+
+  // Nouvelle formule en E2, validée par Entrée.
+  await grid
+    .locator('tr', { has: page.getByRole('rowheader', { name: '2', exact: true }) })
+    .locator('td')
+    .nth(4)
+    .dblclick();
+  await expect(content).toBeFocused();
+  await content.fill('=D2*2');
+  await content.press('Enter');
+  await expect(content).toHaveValue('=D2*2');
+  await expect(bar).toContainText(t('render.needsRecalc'));
+  await page.screenshot({ path: `${SHOTS}/grille-edition.png`, fullPage: true });
 
   await page.getByLabel(t('sources.grid.goTo')).fill('A60');
   await page.getByRole('button', { name: t('sources.grid.goToSubmit') }).click();

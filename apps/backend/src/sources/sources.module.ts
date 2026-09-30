@@ -25,6 +25,6 @@ import { SourcesService } from './sources.service.js';
     OneDriveAuthService,
     OneDriveConnector,
   ],
-  exports: [SourcesService, SourceDataService, SourceWriteService],
+  exports: [SourcesService, SourceDataService, SourceWriteService, SourceGridService],
 })
 export class SourcesModule {}
