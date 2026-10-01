@@ -265,7 +265,8 @@ button.link:hover:not(:disabled) {
   font-weight: 600;
   white-space: nowrap;
   background: var(--accent);
-  color: #fff;
+  /* La surface contraste toujours avec l'accent, y compris sur un thème sombre. */
+  color: var(--surface);
 }
 
 .badge.muted {

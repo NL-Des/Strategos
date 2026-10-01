@@ -320,7 +320,7 @@ function QueueItem({
           {t('submissions.admin.conflict', { count: Math.max(item.conflicts.length, 1) })}
         </p>
       )}
-      <div className="table-wrap">
+      <div className="table-wrap stack-mobile">
         <table>
           <thead>
             <tr>
@@ -333,8 +333,8 @@ function QueueItem({
           <tbody>
             {targets.map((target) => (
               <tr key={target.field}>
-                <td>{target.field}</td>
-                <td>
+                <td data-label={t('submissions.admin.field')}>{target.field}</td>
+                <td data-label={t('submissions.admin.cell')}>
                   {target.cell
                     ? `${target.sheet}!${target.cell}`
                     : form.mode === 'ajout'
@@ -344,8 +344,14 @@ function QueueItem({
                     <small className="field-error"> {t(`errors.${target.error}`)}</small>
                   )}
                 </td>
-                <td>{target.currentValue ?? '—'}</td>
-                <td>
+                <td
+                  data-label={
+                    pending ? t('submissions.admin.current') : t('submissions.admin.written')
+                  }
+                >
+                  {target.currentValue ?? '—'}
+                </td>
+                <td data-label={t('submissions.admin.proposed')}>
                   {editing && target.field in editing ? (
                     typeof editing[target.field] === 'boolean' ? (
                       <input

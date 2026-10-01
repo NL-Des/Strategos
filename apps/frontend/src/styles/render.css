@@ -13,6 +13,10 @@
   --accent: var(--t-link);
   --muted: color-mix(in srgb, var(--t-text) 68%, var(--t-bg));
   --border-strong: color-mix(in srgb, var(--t-text) 50%, var(--t-surface));
+  /* Teintes des messages rapprochées de la couleur du texte : lisibles sur fond clair comme sombre. */
+  --danger: color-mix(in srgb, #d93025 62%, var(--t-text));
+  --ok: color-mix(in srgb, #1f9d55 62%, var(--t-text));
+  --warn: color-mix(in srgb, #c98a00 62%, var(--t-text));
   --btn-bg: var(--t-btn-bg);
   --btn-fg: var(--t-btn-color);
   --btn-border: var(--t-btn-border);

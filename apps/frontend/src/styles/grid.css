@@ -282,3 +282,53 @@ summary.formula-head {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+/* Aide repliée : l'outil reste en haut de l'écran. */
+details.help {
+  margin-bottom: var(--space-3);
+  color: var(--muted);
+}
+
+details.help > summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--accent);
+}
+
+details.help p {
+  margin: var(--space-2) 0 0;
+}
+
+/* La grille défile dans son cadre ; les lettres et les numéros restent en vue. */
+.grid-scroll {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.source-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: inset 0 -1px var(--border);
+}
+
+.source-grid tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  box-shadow: inset -1px 0 var(--border);
+}
+
+.source-grid thead th:first-child {
+  left: 0;
+  z-index: 3;
+}
+
+.source-grid td:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.grid-goto button {
+  align-self: flex-end;
+}

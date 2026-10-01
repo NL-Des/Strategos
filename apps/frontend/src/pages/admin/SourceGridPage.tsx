@@ -12,7 +12,14 @@ import {
   parseFormula,
 } from '@strategos/shared';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { editSourceCell, getSourceGrid, listSources } from '../../api/sources';
@@ -159,6 +166,40 @@ export function SourceGridPage() {
     return () => window.removeEventListener('mouseup', stop);
   }, []);
 
+  // Navigation au clavier : flèches entre les cellules de la fenêtre, Entrée ou F2
+  // pour passer à la barre de formule. Le focus suit la cellule sélectionnée.
+  const gridRef = useRef<HTMLTableElement>(null);
+  const focusSelected = useRef(false);
+  useEffect(() => {
+    if (!focusSelected.current) return;
+    focusSelected.current = false;
+    gridRef.current?.querySelector<HTMLElement>('td.selected')?.focus();
+  });
+  const onGridKeyDown = (e: KeyboardEvent<HTMLTableElement>) => {
+    if (refMode || !data) return;
+    if (e.key === 'Enter' || e.key === 'F2') {
+      e.preventDefault();
+      editor.current?.focus();
+      return;
+    }
+    const step = (
+      { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] } as Record<
+        string,
+        [number, number]
+      >
+    )[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const from = editing?.sheet === data.sheet ? editing.position : { row: top, col: left };
+    const clamp = (n: number, start: number, size: number) =>
+      Math.min(start + size - 1, Math.max(start, n));
+    focusSelected.current = true;
+    select({
+      row: clamp(from.row + step[0], top, ROWS),
+      col: clamp(from.col + step[1], left, COLS),
+    });
+  };
+
   const moveCursor = (at: number) => {
     setCursor(at);
     pendingCursor.current = at;
@@ -246,6 +287,10 @@ export function SourceGridPage() {
     onHoverRef: setHoveredRef,
   };
 
+  const selectedHere =
+    !!editing &&
+    editing.sheet === data?.sheet &&
+    inWindow(editing.position.row, editing.position.col);
   const rows = Array.from({ length: ROWS }, (_, i) => top + i);
   const cols = Array.from({ length: COLS }, (_, i) => left + i);
 
@@ -253,8 +298,12 @@ export function SourceGridPage() {
     <section className="source-grid-page">
       <Breadcrumb items={[{ label: t('admin.nav.sources'), to: '/admin/sources' }]} />
       <h1>{name ?? t('sources.grid.title')}</h1>
-      <p className="muted">{t('sources.grid.intro')}</p>
-      <p className="muted">{t('sources.grid.editHelp')}</p>
+      <details className="help">
+        <summary>{t('sources.grid.help')}</summary>
+        <p>{t('sources.grid.intro')}</p>
+        <p>{t('sources.grid.editHelp')}</p>
+        <p>{t('sources.grid.keyboardHelp')}</p>
+      </details>
       <ErrorMessage error={grid.error} />
 
       {data && (
@@ -373,6 +422,8 @@ export function SourceGridPage() {
                     setDraft(initial);
                     setInserted(null);
                     setFormulaEdit(false);
+                    // Retour à la grille, sur la cellule en cours.
+                    focusSelected.current = true;
                   }}
                 />
                 <button
@@ -389,8 +440,12 @@ export function SourceGridPage() {
               </form>
               <ErrorMessage error={save.error} />
 
-              <div className="table-wrap">
-                <table className={refMode ? 'source-grid ref-mode' : 'source-grid'}>
+              <div className="table-wrap grid-scroll">
+                <table
+                  ref={gridRef}
+                  className={refMode ? 'source-grid ref-mode' : 'source-grid'}
+                  onKeyDown={onGridKeyDown}
+                >
                   <thead>
                     <tr>
                       <th scope="col" />
@@ -423,6 +478,13 @@ export function SourceGridPage() {
                                 ref && hoveredRef === ref.token.start ? 'ref-hover' : '',
                               ].join(' ')}
                               aria-selected={isSelected}
+                              // Une seule cellule dans l'ordre de tabulation : la sélection,
+                              // ou la première tant que rien n'est sélectionné.
+                              tabIndex={
+                                isSelected || (!selectedHere && row === top && col === left)
+                                  ? 0
+                                  : -1
+                              }
                               onMouseDown={(e) => {
                                 if (!refMode) return select({ row, col });
                                 e.preventDefault();

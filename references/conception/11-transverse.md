@@ -32,6 +32,20 @@ Suppression douce (soft-delete) pour sujets, messages (sujets et chat), groupes,
 - Les sources connectées (Google Sheets, OneDrive) ne sont pas sauvegardées par Strategos : leur historique de versions reste chez Google ou Microsoft.
 - La clé de chiffrement des secrets en base n'est pas dans la sauvegarde (volume `keys` ou `TOKEN_ENCRYPTION_KEY`) : restaurée sur une autre machine, une sauvegarde demande de ressaisir les identifiants Google et de reconnecter les comptes Google et OneDrive ([08](08-sources-donnees.md#points-techniques)).
 
+### Interface
+Règles communes à tous les écrans, pour que l'application se comporte partout de la même façon.
+- **Retours à l'utilisateur** :
+  - Une action réussie est confirmée par un **message éphémère** en bas de l'écran (« Brouillon enregistré »), ou par un encadré quand le message doit rester lisible (proposition envoyée).
+  - Une erreur s'affiche dans un **encadré**, près de l'action qui l'a provoquée. Un conflit d'édition propose de recharger.
+  - Un message ne repose jamais sur la couleur seule : il porte une icône et un encadré.
+- **Confirmations** : toute action destructive (suppression, retrait d'un module, abandon d'un brouillon) passe par une **fenêtre de confirmation** de l'application, jamais par une boîte du navigateur. Quand l'action touche d'autres contenus, la fenêtre les liste.
+- **Attente et listes vides** : un écran qui charge l'indique ; une liste vide dit ce qui manque au lieu d'afficher un tableau sans ligne.
+- **Clavier** : tout se fait au clavier. Le focus est toujours visible ; les menus et les fenêtres se ferment sur Échap et rendent le focus à leur point de départ.
+- **Tailles d'écran** : trois paliers — mobile (jusqu'à 700 px), tablette (jusqu'à 900 px) et bureau. Aucun écran ne défile horizontalement : un tableau large défile dans son cadre, ou se lit en fiches sur mobile.
+- **Dates** : affichées sans les secondes, sauf dans le journal où l'ordre exact des actions compte.
+- **Titre de l'onglet** : le nom de l'écran ou de la page, suivi du nom de l'application.
+- **Aucune ressource extérieure** : polices système et icônes dessinées dans le code, rien n'est chargé d'un autre site.
+
 ### Langue
 L'interface est en **français** en v1. Tous les textes de l'interface sont rangés dans des fichiers de traduction dès le départ, pour pouvoir ajouter d'autres langues plus tard sans retoucher le code.
 

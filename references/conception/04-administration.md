@@ -11,6 +11,19 @@ L'administrateur dispose d'un **espace d'administration dédié** pour gérer le
 - Groupes et permissions : voir [Droits et groupes](03-droits-groupes.md#gestion-des-groupes).
 - La fiche d'un utilisateur permet aussi de désigner sa **page personnelle** (voir [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)).
 
+**Navigation.** Un menu latéral regroupe les écrans par domaine ; sur mobile et tablette, il se replie derrière un bouton « Menu ».
+
+| Groupe | Écrans |
+|---|---|
+| Activité | Soumissions (avec le compteur des propositions en attente) |
+| Contenu | Pages, Header, Footer, Médiathèque, Thèmes, Modèles |
+| Données | Sources |
+| Accès | Comptes, Groupes, Droits |
+| Système | Réglages, Journal, Corbeille |
+
+- Un écran de détail (fiche d'un compte, d'un groupe, d'un thème, éditeur de page, grille d'une source) porte un **fil d'Ariane** vers sa liste.
+- Un écran de liste montre **la liste d'abord** : le formulaire de création s'ouvre par un bouton.
+
 ### Sources
 Un écran liste les sources de données et permet de les gérer (voir [Sources de données](08-sources-donnees.md)) :
 - **activer Google Sheets** : tant que rien n'est configuré, l'écran affiche le pas à pas à suivre dans la console Google, les deux adresses à y déclarer et un formulaire où coller l'ID client, le code secret et la clé d'API ; ces identifiants se remplacent ensuite depuis le même écran, le code secret n'étant jamais réaffiché. S'ils sont fournis au déploiement, le guide et le formulaire ne sont pas affichés ;

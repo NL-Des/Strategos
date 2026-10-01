@@ -932,7 +932,9 @@
           "emptyValue": "cellule vide",
           "reference": "Référence"
         }
-      }
+      },
+      "help": "Comment utiliser la grille",
+      "keyboardHelp": "Au clavier : les flèches changent de cellule, Entrée ou F2 ouvre la barre de formule, Échap annule la saisie et revient à la grille."
     },
     "uploaded": "Fichier importé.",
     "add": "Ajouter une source"
