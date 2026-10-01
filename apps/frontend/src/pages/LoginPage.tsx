@@ -5,6 +5,8 @@ import { Navigate, useNavigate } from 'react-router';
 import { login } from '../api/auth';
 import { ME_KEY, useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { PasswordInput } from '../components/PasswordInput';
+import { useDocumentTitle } from '../useDocumentTitle';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -13,6 +15,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  useDocumentTitle(t('login.title'));
   const mutation = useMutation({
     mutationFn: () => login(username, password),
     onSuccess: (user) => {
@@ -29,7 +32,7 @@ export function LoginPage() {
   };
 
   return (
-    <main className="page narrow">
+    <main className="auth-screen">
       <h1>{t('app.name')}</h1>
       <form className="card form" onSubmit={submit}>
         <h2>{t('login.title')}</h2>
@@ -37,23 +40,26 @@ export function LoginPage() {
           {t('fields.username')}
           <input
             autoComplete="username"
+            autoFocus
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
         </label>
-        <label>
-          {t('fields.password')}
-          <input
-            type="password"
+        <div className="form-field">
+          <label htmlFor="login-password">{t('fields.password')}</label>
+          <PasswordInput
+            id="login-password"
             autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </label>
+        </div>
         <ErrorMessage error={mutation.error} />
         <button type="submit" disabled={mutation.isPending}>
+          {/* Le libellé reste le même pendant l'envoi : seul l'indicateur s'ajoute. */}
+          {mutation.isPending && <span className="spinner" aria-hidden="true" />}
           {t('login.submit')}
         </button>
       </form>

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink } from 'react-router';
+import { NavLink, useLocation } from 'react-router';
+import { useDocumentTitle } from '../useDocumentTitle';
 import { pendingCount } from '../api/forms';
 import { getGoogleStatus, getOneDriveStatus } from '../api/sources';
 
@@ -34,6 +35,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     refetchInterval: PENDING_REFRESH_MS,
   });
   const count = pending.data?.count ?? 0;
+  const { pathname } = useLocation();
+  const active = LINKS.find(([to]) => pathname.startsWith(to));
+  useDocumentTitle(active ? t(`admin.nav.${active[1]}`) : t('admin.title'));
   // Connexion Google ou OneDrive expirée : signalée partout dans l'espace admin (08).
   const google = useQuery({ queryKey: ['admin', 'google'], queryFn: getGoogleStatus });
   const onedrive = useQuery({ queryKey: ['admin', 'onedrive'], queryFn: getOneDriveStatus });

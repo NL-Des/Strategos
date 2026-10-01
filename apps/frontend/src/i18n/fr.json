@@ -1,6 +1,7 @@
 {
   "app": {
-    "name": "Strategos"
+    "name": "Strategos",
+    "backToSite": "Retour au site"
   },
   "common": {
     "loading": "Chargement…",
@@ -26,7 +27,9 @@
   },
   "login": {
     "title": "Connexion",
-    "submit": "Se connecter"
+    "submit": "Se connecter",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe"
   },
   "changeCredentials": {
     "title": "Changez vos identifiants",
@@ -37,7 +40,9 @@
   "home": {
     "noLandingPage": "Aucune page d’accueil n’est encore définie.",
     "configureLanding": "Choisir la page d’arrivée dans les réglages",
-    "noSpace": "Aucun espace ne vous est encore attribué."
+    "noSpace": "Aucun espace ne vous est encore attribué.",
+    "noSpaceTitle": "Bienvenue",
+    "noSpaceHint": "Un administrateur doit vous donner accès à un espace. Revenez un peu plus tard."
   },
   "admin": {
     "title": "Administration",
@@ -922,7 +927,7 @@
       "message": "Message",
       "addImages": "Ajouter des images (4 au plus)",
       "reply": "Répondre",
-      "backToTopics": "← Retour aux sujets",
+      "backToTopics": "Retour aux sujets",
       "close": "Clore le sujet",
       "closed": "Clos",
       "closedNotice": "Ce sujet est clos : l’historique reste lisible.",
@@ -935,12 +940,15 @@
       "pin": "Épingler",
       "unpin": "Désépingler",
       "deleteTopic": "Supprimer le sujet",
-      "confirmDeleteTopic": "Supprimer ce sujet ? Il pourra être restauré depuis la corbeille."
+      "confirmDeleteTopic": "Supprimer ce sujet ? Il pourra être restauré depuis la corbeille.",
+      "attachment": "Image jointe {{n}}",
+      "removeAttachment": "Retirer l’image {{n}}",
+      "confirmClose": "Clore ce sujet ? Plus personne ne pourra y répondre."
     },
     "chat": {
       "empty": "Aucun message pour le moment.",
       "message": "Message",
-      "placeholder": "Écrire un message…",
+      "placeholder": "Écrire un message… (Entrée pour envoyer)",
       "connecting": "Connexion…",
       "send": "Envoyer",
       "edited": "modifié",
@@ -948,8 +956,10 @@
       "options": "Options du message",
       "hidden": "Masqué",
       "hide": "Masquer",
-      "unhide": "Rétablir"
-    }
+      "unhide": "Rétablir",
+      "disconnected": "Connexion perdue : reconnexion en cours. Votre message est conservé."
+    },
+    "actions": "Actions"
   },
   "forms": {
     "state": {
@@ -962,7 +972,8 @@
     "submit": "Envoyer",
     "previewOnly": "Aperçu : l’envoi n’est possible qu’une fois la page publiée.",
     "movementHint": "Quantité à ajouter (ex. 5) ou à retirer (ex. −3).",
-    "proposeChange": "Proposer une modification"
+    "proposeChange": "Proposer une modification",
+    "choose": "Choisir…"
   },
   "submissions": {
     "status": {
@@ -1038,7 +1049,9 @@
       "orderedList": "Liste numérotée",
       "link": "Lien",
       "linkPrompt": "Adresse du lien (vide pour le retirer)"
-    }
+    },
+    "discardConfirm": "Abandonner les modifications de cette note ?",
+    "discard": "Abandonner"
   },
   "themes": {
     "title": "Thèmes",
@@ -1121,7 +1134,11 @@
       "cardValue": "120",
       "discussion": "Discussion",
       "author": "Kira",
-      "message": "Rendez-vous ce soir à 21 h pour le raid."
+      "message": "Rendez-vous ce soir à 21 h pour le raid.",
+      "field": "Champ de formulaire",
+      "placeholder": "Texte saisi",
+      "help": "Aide affichée sous le champ.",
+      "notice": "Message de confirmation."
     }
   },
   "templates": {
@@ -1600,5 +1617,9 @@
         "help": "VRAI pour ne garder que les valeurs présentes une seule fois."
       }
     }
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "home": "Retour à l’accueil"
   }
 }

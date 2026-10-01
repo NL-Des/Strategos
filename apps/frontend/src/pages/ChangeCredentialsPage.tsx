@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { changeCredentials } from '../api/auth';
 import { ME_KEY, useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { useDocumentTitle } from '../useDocumentTitle';
 
 /** Changement d'identifiants forcé ; l'admin doit aussi changer de pseudo. */
 export function ChangeCredentialsPage() {
@@ -18,6 +19,7 @@ export function ChangeCredentialsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const mismatch = confirmation !== '' && confirmation !== newPassword;
+  useDocumentTitle(t('changeCredentials.title'));
 
   const mutation = useMutation({
     mutationFn: () =>

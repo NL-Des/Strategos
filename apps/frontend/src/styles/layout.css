@@ -184,3 +184,118 @@ a.usage {
 .table-wrap:has(> table > tbody:empty) {
   display: none;
 }
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.topbar-link:hover {
+  color: var(--accent);
+}
+
+/* ---- Connexion : carte centrée dans l'écran ---- */
+
+.auth-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 26rem;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) 12vh;
+}
+
+.auth-screen h1 {
+  margin: 0;
+  text-align: center;
+}
+
+.auth-screen .card {
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-screen button[type='submit'] {
+  align-self: stretch;
+}
+
+.password-input {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.password-input input {
+  flex: 1;
+  min-width: 0;
+}
+
+.password-input button {
+  padding-inline: var(--space-2);
+}
+
+/* Formulaire court dans une page large : les champs ne s'étirent pas sur toute la carte. */
+.form.compact > label {
+  max-width: 26rem;
+}
+
+/* ---- Tableau lu en fiches sur mobile (droits effectifs) ---- */
+
+@media (max-width: 700px) {
+  .table-wrap.stack-mobile {
+    border: none;
+    background: none;
+  }
+
+  .stack-mobile table,
+  .stack-mobile tbody,
+  .stack-mobile tr,
+  .stack-mobile td {
+    display: block;
+  }
+
+  .stack-mobile thead {
+    display: none;
+  }
+
+  .table-wrap.stack-mobile tbody tr {
+    margin-bottom: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  .stack-mobile td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    border: none;
+    text-align: right;
+  }
+
+  /* La première cellule nomme la fiche. */
+  .stack-mobile td:first-child {
+    justify-content: flex-start;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .stack-mobile td:not(:first-child)::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: var(--text-sm);
+    text-align: left;
+  }
+}

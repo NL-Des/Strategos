@@ -189,7 +189,8 @@
   width: 100%;
 }
 
-.block-table .table-wrap {
+.block-table .table-wrap,
+.block-table.table-wrap {
   border-color: var(--t-table-border, var(--border));
 }
 
@@ -553,4 +554,108 @@
   flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-1);
+}
+
+/* ---- Encadré des modules (thème : couleur et arrondi de « surface ») ---- */
+
+.layout-column > form.block-form,
+.theme-sample form.block-form {
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--t-radius, var(--radius-lg));
+}
+
+/* Les barres header et footer portent déjà la surface. */
+.zone-header .layout-column > form.block-form,
+.zone-footer .layout-column > form.block-form {
+  padding: 0;
+  border: none;
+}
+
+/* Le menu de compte est fixe dans le coin : le header lui laisse sa place. */
+.zone-header {
+  padding-right: 4.25rem;
+}
+
+/* Formulaire de ligne d'un tableau : sous la ligne, sur toute la largeur. */
+.row-form-row > td {
+  padding: var(--space-3);
+  background: var(--accent-soft);
+}
+
+.table-wrap tbody tr.row-form-row:hover {
+  background: none;
+}
+
+.row-form-row .row-form-panel {
+  max-width: 36rem;
+}
+
+/* Carte de catalogue : le formulaire s'ouvre sous les liens. */
+.card-body .row-form-panel {
+  margin-top: var(--space-2);
+  min-width: 0;
+}
+
+.row-forms {
+  margin-top: var(--space-2);
+}
+
+/* Pièce jointe en cours de saisie : croix de retrait dans le coin. */
+.attachment {
+  position: relative;
+  display: inline-block;
+}
+
+button.attachment-remove {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 50%;
+}
+
+.chat-composer textarea {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 2.5rem;
+  max-height: 8rem;
+  field-sizing: content;
+}
+
+.block-chat > h3,
+.block-discussion > h3 {
+  margin-bottom: var(--space-2);
+}
+
+/* ---- Écran « introuvable » et accueil sans page ---- */
+
+.blank-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 18vh var(--space-4) var(--space-6);
+  text-align: center;
+}
+
+.blank-screen > .icon {
+  color: var(--muted);
+}
+
+.blank-screen h1 {
+  margin: 0;
+}
+
+.blank-screen p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.block-catalog > .pagination:first-of-type {
+  margin: 0 0 var(--space-3);
 }

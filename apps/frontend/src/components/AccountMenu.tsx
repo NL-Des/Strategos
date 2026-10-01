@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { logout } from '../api/auth';
 import { ME_KEY, useMe } from '../auth/useMe';
 import { useMenu } from './useMenu';
@@ -15,6 +15,8 @@ export function AccountMenu() {
   const { open, setOpen, placement, rootRef, buttonRef, menuRef, onKeyDown } = useMenu();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const current = (path: string) => (pathname.startsWith(path) ? 'page' : undefined);
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSettled: () => {
@@ -42,22 +44,42 @@ export function AccountMenu() {
         <div ref={menuRef} className={`account-dropdown ${placement}`.trim()} role="menu">
           <p className="account-name">{me.username}</p>
           {!me.mustChangeCredentials && (
-            <Link role="menuitem" to="/profile" onClick={() => setOpen(false)}>
+            <Link
+              role="menuitem"
+              to="/profile"
+              aria-current={current('/profile')}
+              onClick={() => setOpen(false)}
+            >
               {t('account.profile')}
             </Link>
           )}
           {!me.mustChangeCredentials && (
-            <Link role="menuitem" to="/notes" onClick={() => setOpen(false)}>
+            <Link
+              role="menuitem"
+              to="/notes"
+              aria-current={current('/notes')}
+              onClick={() => setOpen(false)}
+            >
               {t('account.notes')}
             </Link>
           )}
           {!me.mustChangeCredentials && (
-            <Link role="menuitem" to="/submissions" onClick={() => setOpen(false)}>
+            <Link
+              role="menuitem"
+              to="/submissions"
+              aria-current={current('/submissions')}
+              onClick={() => setOpen(false)}
+            >
               {t('account.submissions')}
             </Link>
           )}
           {me.isAdmin && !me.mustChangeCredentials && (
-            <Link role="menuitem" to="/admin/pages" onClick={() => setOpen(false)}>
+            <Link
+              role="menuitem"
+              to="/admin/pages"
+              aria-current={current('/admin')}
+              onClick={() => setOpen(false)}
+            >
               {t('admin.title')}
             </Link>
           )}

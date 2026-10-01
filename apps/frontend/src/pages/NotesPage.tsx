@@ -7,6 +7,10 @@ import { useTranslation } from 'react-i18next';
 import { createNote, deleteNote, listNotes, type NoteInput, updateNote } from '../api/notes';
 import { useConfirmed, usePrompt } from '../components/Dialog';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { Loading } from '../components/Loading';
+import { Notice } from '../components/Notice';
+import { formatDateTime } from '../format';
+import { useDocumentTitle } from '../useDocumentTitle';
 import { useToast } from '../components/Toast';
 import { ToolButton } from '../components/ToolButton';
 import { EmptyState } from '../components/EmptyState';
@@ -21,14 +25,14 @@ export function NotesPage() {
   const { t } = useTranslation();
   const notes = useQuery({ queryKey: NOTES_KEY, queryFn: listNotes });
   const [creating, setCreating] = useState(false);
+  useDocumentTitle(t('notes.title'));
 
   return (
     <section>
       <h1>{t('notes.title')}</h1>
-      <p className="notice warning" role="note">
-        {t('notes.visibleByAdmin')}
-      </p>
+      <Notice tone="info">{t('notes.visibleByAdmin')}</Notice>
       <ErrorMessage error={notes.error} />
+      {notes.isPending && <Loading />}
       {creating ? (
         <NoteForm onDone={() => setCreating(false)} />
       ) : (
@@ -58,9 +62,7 @@ function NoteCard({ note }: { note: Note }) {
   return (
     <article className="card note">
       <h2>{note.title}</h2>
-      <p className="muted">
-        {t('notes.updatedAt', { date: new Date(note.updatedAt).toLocaleString('fr-FR') })}
-      </p>
+      <p className="muted">{t('notes.updatedAt', { date: formatDateTime(note.updatedAt) })}</p>
       {/* HTML nettoyé par le backend (liste blanche). */}
       <div className="block-rich" dangerouslySetInnerHTML={{ __html: note.content }} />
       <ErrorMessage error={remove.error} />
@@ -97,6 +99,8 @@ function NoteForm({ note, onDone }: { note?: Note; onDone: () => void }) {
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
   const toast = useToast();
+  const confirmed = useConfirmed();
+  const changed = title !== (note?.title ?? '') || content !== (note?.content ?? '');
   const save = useMutation({
     mutationFn: (body: NoteInput) => (note ? updateNote(note.id, body) : createNote(body)),
     onSuccess: () => {
@@ -129,7 +133,19 @@ function NoteForm({ note, onDone }: { note?: Note; onDone: () => void }) {
         <button type="submit" disabled={save.isPending}>
           {note ? t('common.save') : t('notes.create')}
         </button>
-        <button type="button" className="secondary" onClick={onDone}>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() =>
+            // Une saisie modifiée ne se perd pas sur un clic machinal.
+            changed
+              ? confirmed(
+                  { title: t('notes.discardConfirm'), confirmLabel: t('notes.discard') },
+                  onDone,
+                )
+              : onDone()
+          }
+        >
           {t('common.cancel')}
         </button>
       </div>

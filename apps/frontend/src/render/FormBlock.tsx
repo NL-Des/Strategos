@@ -7,12 +7,14 @@ import type {
   UserFormField,
 } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { getPrefill, getUserForm, submitForm } from '../api/forms';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { Notice } from '../components/Notice';
+import { formatDateTime } from '../format';
 import { Loading } from '../components/Loading';
 
 /** Saisie d'un champ : texte brut pour les champs de saisie, booléen pour une case. */
@@ -32,18 +34,24 @@ function toValue(field: UserFormField, input: Input | undefined): SubmissionValu
 }
 
 function FieldInput({
+  id,
   field,
   value,
   onChange,
   invalid,
+  disabled,
 }: {
+  id: string;
   field: UserFormField;
   value: Input | undefined;
   onChange: (value: Input) => void;
   invalid: boolean;
+  disabled: boolean;
 }) {
+  const { t } = useTranslation();
   const common = {
-    id: `field-${field.key}`,
+    id,
+    disabled,
     required: field.required && field.type !== 'checkbox',
     'aria-invalid': invalid || undefined,
   };
@@ -95,7 +103,7 @@ function FieldInput({
     case 'select':
       return (
         <select {...common} value={text} onChange={(e) => onChange(e.target.value)}>
-          <option value="" />
+          <option value="">{t('forms.choose')}</option>
           {field.options?.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -141,6 +149,9 @@ export function FormView({
   });
   const [inputs, setInputs] = useState<Record<string, Input>>({});
   const [done, setDone] = useState<Submission | null>(null);
+  // Plusieurs formulaires d'une même page peuvent partager une clé de champ.
+  const uid = useId();
+  const fieldId = (key: string) => `${uid}-${key}`;
   const submit = useMutation({
     mutationFn: (values: SubmissionValues) => submitForm(submitUrl!, { values, rowKey }),
     onSuccess: (submission) => {
@@ -151,6 +162,16 @@ export function FormView({
     },
   });
 
+  // Validation refusée : le focus va au premier champ en erreur.
+  const fieldErrors =
+    submit.error instanceof ApiRequestError && submit.error.code === 'VALIDATION_FAILED'
+      ? ((submit.error.error.details.fields ?? {}) as Record<string, string[]>)
+      : {};
+  const firstInvalid = form.data?.fields.find((f) => `values.${f.key}` in fieldErrors)?.key;
+  useEffect(() => {
+    if (firstInvalid) document.getElementById(`${uid}-${firstInvalid}`)?.focus();
+  }, [firstInvalid, uid, submit.submittedAt]);
+
   if (form.error) return <ErrorMessage error={form.error} />;
   if (prefill.error) return <ErrorMessage error={prefill.error} />;
   if (!form.data || (rowKey !== undefined && !prefill.data)) return <Loading />;
@@ -158,10 +179,7 @@ export function FormView({
   const initial = prefill.data?.values ?? {};
   const valueOf = (key: string) => (key in inputs ? inputs[key] : toInput(initial[key]));
 
-  const fieldErrors =
-    submit.error instanceof ApiRequestError && submit.error.code === 'VALIDATION_FAILED'
-      ? ((submit.error.error.details.fields ?? {}) as Record<string, string[]>)
-      : {};
+  const closed = state !== 'open';
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const values: SubmissionValues = {};
@@ -174,18 +192,16 @@ export function FormView({
     <form className="block-form" onSubmit={onSubmit}>
       {title && <h3>{title}</h3>}
       {intro && <p className="form-intro">{intro}</p>}
-      {state !== 'open' && (
-        <p className="notice" role="status">
+      {closed && (
+        <Notice tone="warning" role="status">
           {t(`forms.state.${state}`)}
-        </p>
+        </Notice>
       )}
-      {state === 'open' && closesAt && (
-        <p className="muted">
-          {t('forms.closesAt', { date: new Date(closesAt).toLocaleString('fr-FR') })}
-        </p>
+      {!closed && closesAt && (
+        <p className="muted">{t('forms.closesAt', { date: formatDateTime(closesAt) })}</p>
       )}
       {done ? (
-        <div className="notice" role="status">
+        <Notice tone="success" role="status">
           <p>{successMessage || t('forms.sent')}</p>
           <p>
             {t(`submissions.status.${done.status}`)} ·{' '}
@@ -198,7 +214,7 @@ export function FormView({
           >
             {rowKey !== undefined && onCancel ? t('common.close') : t('forms.again')}
           </button>
-        </div>
+        </Notice>
       ) : (
         <>
           {fields.map((field) => {
@@ -208,11 +224,13 @@ export function FormView({
                 key={field.key}
                 className={field.type === 'checkbox' ? 'form-field inline' : 'form-field'}
               >
-                <label htmlFor={`field-${field.key}`}>
+                <label htmlFor={fieldId(field.key)}>
                   {field.label}
                   {field.required && <span aria-hidden="true"> *</span>}
                 </label>
                 <FieldInput
+                  id={fieldId(field.key)}
+                  disabled={closed}
                   field={field}
                   value={valueOf(field.key)}
                   onChange={(value) => setInputs({ ...inputs, [field.key]: value })}
@@ -233,7 +251,7 @@ export function FormView({
           {Object.keys(fieldErrors).length === 0 && <ErrorMessage error={submit.error} />}
           <div className="actions">
             {submitUrl ? (
-              <button type="submit" disabled={state !== 'open' || submit.isPending}>
+              <button type="submit" disabled={closed || submit.isPending}>
                 {t('forms.submit')}
               </button>
             ) : (
@@ -256,19 +274,19 @@ export function FormBlock({ block }: { block: AssembledFormBlock }) {
   return <FormView formUrl={block.config.formUrl} submitUrl={block.config.submitUrl} />;
 }
 
-/**
- * « Proposer une modification » sur une ligne de Tableau ou une carte de
- * Catalogue : ouvre le formulaire de ligne relié, pré-rempli.
- */
-export function RowFormButtons({
+/** Liens « Proposer une modification » d'une ligne ; `open` : le formulaire déjà ouvert. */
+export function RowFormLinks({
   forms,
   rowKeys,
+  open,
+  onToggle,
 }: {
   forms: RowFormLink[];
   rowKeys: Record<string, string> | undefined;
+  open: RowFormLink | null;
+  onToggle: (form: RowFormLink | null) => void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState<RowFormLink | null>(null);
   if (forms.length === 0 || !rowKeys) return null;
   return (
     <div className="row-forms">
@@ -278,23 +296,59 @@ export function RowFormButtons({
             key={form.formId}
             type="button"
             className="link"
-            onClick={() => setOpen(open?.formId === form.formId ? null : form)}
+            aria-expanded={open?.formId === form.formId}
+            onClick={() => onToggle(open?.formId === form.formId ? null : form)}
           >
             {forms.length > 1 ? form.title : t('forms.proposeChange')}
           </button>
         ) : null,
       )}
-      {open && (
-        <div className="row-form-panel">
-          <FormView
-            key={open.formId}
-            formUrl={open.formUrl}
-            submitUrl={open.submitUrl}
-            rowKey={rowKeys[open.formId]}
-            onCancel={() => setOpen(null)}
-          />
-        </div>
-      )}
     </div>
+  );
+}
+
+/** Formulaire de ligne ouvert, pré-rempli avec la ligne `rowKey`. */
+export function RowFormPanel({
+  form,
+  rowKey,
+  onClose,
+}: {
+  form: RowFormLink;
+  rowKey: string | undefined;
+  onClose: () => void;
+}) {
+  return (
+    <div className="row-form-panel">
+      <FormView
+        key={form.formId}
+        formUrl={form.formUrl}
+        submitUrl={form.submitUrl}
+        rowKey={rowKey}
+        onCancel={onClose}
+      />
+    </div>
+  );
+}
+
+/**
+ * « Proposer une modification » sur une carte de Catalogue : ouvre le
+ * formulaire de ligne relié, pré-rempli, sous les liens.
+ */
+export function RowFormButtons({
+  forms,
+  rowKeys,
+}: {
+  forms: RowFormLink[];
+  rowKeys: Record<string, string> | undefined;
+}) {
+  const [open, setOpen] = useState<RowFormLink | null>(null);
+  if (forms.length === 0 || !rowKeys) return null;
+  return (
+    <>
+      <RowFormLinks forms={forms} rowKeys={rowKeys} open={open} onToggle={setOpen} />
+      {open && (
+        <RowFormPanel form={open} rowKey={rowKeys[open.formId]} onClose={() => setOpen(null)} />
+      )}
+    </>
   );
 }

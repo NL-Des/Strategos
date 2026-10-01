@@ -6,6 +6,9 @@ import { listMySubmissions } from '../api/forms';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Pagination } from '../components/Pagination';
 import { EmptyState } from '../components/EmptyState';
+import { Loading } from '../components/Loading';
+import { formatDateTime } from '../format';
+import { useDocumentTitle } from '../useDocumentTitle';
 
 const show = (value: SubmissionValue) =>
   value === null ? '—' : typeof value === 'boolean' ? (value ? '✓' : '✗') : String(value);
@@ -22,10 +25,12 @@ export function MySubmissionsPage() {
     queryFn: () => listMySubmissions(page),
     placeholderData: keepPreviousData,
   });
+  useDocumentTitle(t('submissions.mine.title'));
   return (
     <section>
       <h1>{t('submissions.mine.title')}</h1>
       <ErrorMessage error={submissions.error} />
+      {submissions.isPending && <Loading />}
       {submissions.data?.items.map((s) => (
         <article key={s.id} className="card submission-item">
           <header className="submission-header">
@@ -33,7 +38,7 @@ export function MySubmissionsPage() {
             <span className={`status status-${s.status}`}>
               {t(`submissions.status.${s.status}`)}
             </span>
-            <span className="muted">{new Date(s.submittedAt).toLocaleString('fr-FR')}</span>
+            <span className="muted">{formatDateTime(s.submittedAt)}</span>
           </header>
           <dl className="submission-values">
             {Object.entries(s.values).map(([key, value]) => (
@@ -45,7 +50,7 @@ export function MySubmissionsPage() {
           </dl>
           {s.decidedAt && (
             <p className="muted">
-              {t('submissions.decidedAt', { date: new Date(s.decidedAt).toLocaleString('fr-FR') })}
+              {t('submissions.decidedAt', { date: formatDateTime(s.decidedAt) })}
             </p>
           )}
           {s.reason && (
@@ -58,7 +63,7 @@ export function MySubmissionsPage() {
         </article>
       ))}
       {submissions.data?.total === 0 && <EmptyState>{t('submissions.mine.empty')}</EmptyState>}
-      {submissions.data && submissions.data.total > submissions.data.pageSize && (
+      {submissions.data && (
         <Pagination
           page={page}
           total={submissions.data.total}

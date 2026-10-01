@@ -3,15 +3,16 @@ import type {
   AssembledTableBlock,
   CatalogCard,
   RowCell,
+  RowFormLink,
   TableRow,
 } from '@strategos/shared';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchRows } from '../api/pages';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Pagination } from '../components/Pagination';
-import { RowFormButtons } from './FormBlock';
+import { RowFormButtons, RowFormLinks, RowFormPanel } from './FormBlock';
 import { Icon } from '../components/Icon';
 
 /** Source injoignable : le module l'annonce, le reste de la page s'affiche. */
@@ -75,16 +76,27 @@ function useRows<T>(rowsUrl: string, sort: string | undefined, q: string, page: 
   });
 }
 
-function Search({ value, onChange }: { value: string; onChange: (q: string) => void }) {
+/** Délai après la dernière frappe avant de lancer la recherche. */
+const SEARCH_DELAY_MS = 300;
+
+/** Recherche : la saisie s'affiche aussitôt, la requête part quand la frappe s'arrête. */
+function Search({ onChange }: { onChange: (q: string) => void }) {
   const { t } = useTranslation();
+  const [text, setText] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => onChange(text), SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+    // `onChange` change à chaque rendu : seul le texte relance le délai.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
   return (
     <input
       type="search"
       className="block-search"
       placeholder={t('render.search')}
       aria-label={t('render.search')}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
     />
   );
 }
@@ -95,6 +107,8 @@ export function TableBlock({ block }: { block: AssembledTableBlock }) {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<{ col: number; dir: 'asc' | 'desc' } | null>(null);
+  // Formulaire de ligne ouvert : affiché sous la ligne, sur toute la largeur du tableau.
+  const [openForm, setOpenForm] = useState<{ row: number; form: RowFormLink } | null>(null);
   const rows = useRows<TableRow>(
     block.rowsUrl,
     sort ? `${sort.col}:${sort.dir}` : undefined,
@@ -103,15 +117,19 @@ export function TableBlock({ block }: { block: AssembledTableBlock }) {
   );
   if (block.error) return <SourceUnavailable />;
   const { columns, sortable, searchable } = block.config;
+  const goTo = (next: number) => {
+    setOpenForm(null);
+    setPage(next);
+  };
 
   return (
     <div className="block-table">
       {searchable && (
         <Search
-          value={q}
           onChange={(value) => {
+            if (value === q) return;
             setQ(value);
-            setPage(1);
+            goTo(1);
           }}
         />
       )}
@@ -131,12 +149,13 @@ export function TableBlock({ block }: { block: AssembledTableBlock }) {
                     <button
                       type="button"
                       className="link sort"
-                      onClick={() =>
+                      onClick={() => {
+                        setOpenForm(null);
                         setSort({
                           col: i,
                           dir: sort?.col === i && sort.dir === 'asc' ? 'desc' : 'asc',
-                        })
-                      }
+                        });
+                      }}
                     >
                       {column.label}
                       {sort?.col === i && (
@@ -148,22 +167,45 @@ export function TableBlock({ block }: { block: AssembledTableBlock }) {
                   )}
                 </th>
               ))}
+              {block.rowForms.length > 0 && (
+                <th>
+                  <span className="visually-hidden">{t('render.actions')}</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
             {rows.data?.items.map((row, r) => (
-              <tr key={r}>
-                {row.cells.map((cell, i) => (
-                  <td key={i} className={`format-${columns[i]?.format ?? 'text'}`}>
-                    <Cell cell={cell} />
-                  </td>
-                ))}
-                {block.rowForms.length > 0 && (
-                  <td>
-                    <RowFormButtons forms={block.rowForms} rowKeys={row.rowKeys} />
-                  </td>
+              <Fragment key={r}>
+                <tr>
+                  {row.cells.map((cell, i) => (
+                    <td key={i} className={`format-${columns[i]?.format ?? 'text'}`}>
+                      <Cell cell={cell} />
+                    </td>
+                  ))}
+                  {block.rowForms.length > 0 && (
+                    <td>
+                      <RowFormLinks
+                        forms={block.rowForms}
+                        rowKeys={row.rowKeys}
+                        open={openForm?.row === r ? openForm.form : null}
+                        onToggle={(form) => setOpenForm(form && { row: r, form })}
+                      />
+                    </td>
+                  )}
+                </tr>
+                {openForm?.row === r && (
+                  <tr className="row-form-row">
+                    <td colSpan={columns.length + 1}>
+                      <RowFormPanel
+                        form={openForm.form}
+                        rowKey={row.rowKeys?.[openForm.form.formId]}
+                        onClose={() => setOpenForm(null)}
+                      />
+                    </td>
+                  </tr>
                 )}
-              </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -175,7 +217,7 @@ export function TableBlock({ block }: { block: AssembledTableBlock }) {
           page={page}
           total={rows.data.total}
           pageSize={rows.data.pageSize}
-          onChange={setPage}
+          onChange={goTo}
         />
       )}
     </div>
@@ -195,11 +237,20 @@ export function CatalogBlock({ block }: { block: AssembledCatalogBlock }) {
     <div className="block-catalog">
       {searchable && (
         <Search
-          value={q}
           onChange={(value) => {
+            if (value === q) return;
             setQ(value);
             setPage(1);
           }}
+        />
+      )}
+      {/* Sur mobile la liste est longue : la pagination est aussi proposée en haut. */}
+      {rows.data && (
+        <Pagination
+          page={page}
+          total={rows.data.total}
+          pageSize={rows.data.pageSize}
+          onChange={setPage}
         />
       )}
       <div className={`catalog-grid per-row-${perRow}`}>

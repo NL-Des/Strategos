@@ -139,7 +139,7 @@ test('3. Kira s’inscrit : pseudo automatique, classe lue dans le Sheet', async
   await expect(pseudo).toHaveValue('kira');
   await expect(pseudo).not.toBeEditable();
   await expect(page.getByLabel('Classe').locator('option')).toHaveText([
-    '',
+    t('forms.choose'),
     'Guerrier',
     'Mage',
     'Voleur',

@@ -418,3 +418,8 @@ button.action-menu-button {
   right: auto;
   left: 0;
 }
+
+.account-dropdown a[aria-current='page'] {
+  background: var(--accent-soft);
+  font-weight: 600;
+}

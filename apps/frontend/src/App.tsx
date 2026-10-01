@@ -1,5 +1,5 @@
 import { type ReactNode, Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { BrowserRouter, Route, Routes } from 'react-router';
 import { RequireAdmin, RequireAuth } from './auth/guards';
 import { AdminLayout } from './components/AdminNav';
 import { AppLayout } from './components/AppLayout';
@@ -8,6 +8,7 @@ import { ChangeCredentialsPage } from './pages/ChangeCredentialsPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MySubmissionsPage } from './pages/MySubmissionsPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { PageRoute } from './pages/PageRoute';
 import { ProfilePage } from './pages/ProfilePage';
 
@@ -144,7 +145,14 @@ export function App() {
         {ADMIN_ROUTES.map(([path, element]) => (
           <Route key={path} path={path} element={<Framed admin>{element}</Framed>} />
         ))}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="*"
+          element={
+            <Site>
+              <NotFoundPage />
+            </Site>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

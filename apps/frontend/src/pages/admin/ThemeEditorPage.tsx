@@ -17,6 +17,7 @@ import { deleteTheme, getTheme, updateTheme } from '../../api/themes';
 import { MediaPicker } from '../../builder/MediaPicker';
 import { useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { Notice } from '../../components/Notice';
 import { useToast } from '../../components/Toast';
 import { ThemeScope } from '../../render/ThemeScope';
 
@@ -344,7 +345,8 @@ function FontSelect({
 
 /**
  * Échantillon fixe rendu avec le thème en cours de modification : titre,
- * texte, lien, boutons, tableau, carte de catalogue, sujet et message.
+ * texte, lien, boutons, champ de formulaire, message, tableau, carte de
+ * catalogue, sujet et message de discussion.
  */
 function ThemeSample({ config }: { config: ThemeConfig }) {
   const { t } = useTranslation();
@@ -360,7 +362,15 @@ function ThemeSample({ config }: { config: ThemeConfig }) {
           <span className="theme-button">{t('themes.sample.button')}</span>
           <span className="theme-button">{t('themes.sample.button')}</span>
         </div>
-        <div className="block-table">
+        <form className="block-form" onSubmit={(e) => e.preventDefault()}>
+          <div className="form-field">
+            <label htmlFor="theme-sample-field">{t('themes.sample.field')}</label>
+            <input id="theme-sample-field" placeholder={t('themes.sample.placeholder')} />
+            <small>{t('themes.sample.help')}</small>
+          </div>
+        </form>
+        <Notice tone="success">{t('themes.sample.notice')}</Notice>
+        <div className="block-table table-wrap">
           <table>
             <thead>
               <tr>

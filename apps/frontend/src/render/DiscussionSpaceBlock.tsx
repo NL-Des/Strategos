@@ -5,6 +5,7 @@ import type {
 } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { deleteTopic, hideMessage, pinTopic, unhideMessage } from '../api/admin-discussions';
 import {
@@ -22,44 +23,48 @@ import { ActionMenu } from '../components/ActionMenu';
 import { useConfirmed } from '../components/Dialog';
 import { SaveAsTemplate } from '../components/SaveAsTemplate';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { Notice } from '../components/Notice';
+import { Pagination } from '../components/Pagination';
+import { formatDate, formatDateTime } from '../format';
+import { toHtml, toText } from './messageText';
 import { Loading } from '../components/Loading';
 import { Icon } from '../components/Icon';
 
-/** Texte multi-ligne → HTML simple (le backend le nettoie à nouveau). */
-function toHtml(text: string): string {
-  const escape = (s: string) =>
-    s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-  return text
-    .split(/\n{2,}/)
-    .map((p) => `<p>${escape(p.trim()).replaceAll('\n', '<br>')}</p>`)
-    .filter((p) => p !== '<p></p>')
-    .join('');
-}
-
-/** HTML nettoyé → texte, pour ré-éditer un message. */
-function toText(html: string): string {
-  return html
-    .replace(/<\/p>\s*<p>/g, '\n\n')
-    .replace(/<br\s*\/?>/g, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replaceAll('&lt;', '<')
-    .replaceAll('&gt;', '>')
-    .replaceAll('&amp;', '&')
-    .trim();
-}
-
-function Attachments({ items }: { items: AttachmentRef[] }) {
+/** Images jointes ; `onRemove` : pendant la saisie, chacune peut être retirée avant l'envoi. */
+function Attachments({
+  items,
+  onRemove,
+}: {
+  items: AttachmentRef[];
+  onRemove?: (id: string) => void;
+}) {
+  const { t } = useTranslation();
   if (items.length === 0) return null;
   return (
     <div className="message-attachments">
-      {items.map((a) => (
-        <a key={a.id} href={a.url} target="_blank" rel="noreferrer">
-          <img src={a.url} alt="" />
-        </a>
+      {items.map((a, i) => (
+        <span key={a.id} className="attachment">
+          <a href={a.url} target="_blank" rel="noreferrer">
+            <img src={a.url} alt={t('render.discussion.attachment', { n: i + 1 })} />
+          </a>
+          {onRemove && (
+            <button
+              type="button"
+              className="secondary attachment-remove"
+              aria-label={t('render.discussion.removeAttachment', { n: i + 1 })}
+              onClick={() => onRemove(a.id)}
+            >
+              <Icon name="x" size={14} />
+            </button>
+          )}
+        </span>
       ))}
     </div>
   );
 }
+
+/** Paramètre d'adresse du sujet ouvert. */
+const TOPIC_PARAM = 'sujet';
 
 /** Saisie d'un message : texte et pièces jointes images. */
 function Composer({
@@ -72,7 +77,8 @@ function Composer({
 }: {
   submitLabel: string;
   pending: boolean;
-  onSubmit: (content: string, attachmentIds: string[]) => void;
+  /** La saisie n'est vidée qu'une fois l'envoi réussi : un refus ne fait rien perdre. */
+  onSubmit: (content: string, attachmentIds: string[]) => Promise<unknown>;
   onCancel?: () => void;
   initial?: string;
   title?: { value: string; onChange: (v: string) => void };
@@ -93,12 +99,17 @@ function Composer({
     e.preventDefault();
     const html = toHtml(text);
     if (!html) return;
-    onSubmit(
+    void onSubmit(
       html,
       attachments.map((a) => a.id),
+    ).then(
+      () => {
+        setText('');
+        setAttachments([]);
+      },
+      // L'erreur est affichée par l'appelant ; le texte et les images restent en place.
+      () => undefined,
     );
-    setText('');
-    setAttachments([]);
   };
 
   return (
@@ -113,7 +124,10 @@ function Composer({
         {t('render.discussion.message')}
         <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} required />
       </label>
-      <Attachments items={attachments} />
+      <Attachments
+        items={attachments}
+        onRemove={(id) => setAttachments((prev) => prev.filter((a) => a.id !== id))}
+      />
       <label className="attach">
         {t('render.discussion.addImages')}
         <input
@@ -167,27 +181,29 @@ function Message({
 
   if (editing) {
     return (
-      <Composer
-        submitLabel={t('common.save')}
-        pending={edit.isPending}
-        initial={toText(message.content)}
-        onSubmit={(content) => edit.mutate(content)}
-        onCancel={() => setEditing(false)}
-      />
+      <>
+        <Composer
+          submitLabel={t('common.save')}
+          pending={edit.isPending}
+          initial={toText(message.content)}
+          onSubmit={(content) => edit.mutateAsync(content)}
+          onCancel={() => setEditing(false)}
+        />
+        <ErrorMessage error={edit.error} />
+      </>
     );
   }
   return (
     <article className={message.hidden ? 'topic-message hidden' : 'topic-message'}>
       <header>
         <strong>{message.author.username}</strong>
-        <time dateTime={message.createdAt}>
-          {new Date(message.createdAt).toLocaleString('fr-FR')}
-        </time>
+        <time dateTime={message.createdAt}>{formatDateTime(message.createdAt)}</time>
         {message.editedAt && <span className="muted"> · {t('render.discussion.edited')}</span>}
         {message.hidden && <span className="badge"> {t('render.discussion.hidden')}</span>}
       </header>
       <div className="message-body" dangerouslySetInnerHTML={{ __html: message.content }} />
       <Attachments items={message.attachments} />
+      <ErrorMessage error={remove.error ?? moderate.error} />
       {(message.mine || me?.isAdmin) && (
         <ActionMenu label={t('render.discussion.messageOptions')}>
           {message.mine && (
@@ -244,7 +260,12 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['topic', topicId] });
   const reply = useMutation({
     mutationFn: (body: { content: string; attachmentIds: string[] }) => postMessage(topicId, body),
-    onSuccess: () => void refresh(),
+    // La réponse est en fin de sujet : on y va.
+    onSuccess: () => {
+      const data = query.data;
+      if (data) setPage(Math.ceil((data.messages.total + 1) / data.messages.pageSize));
+      void refresh();
+    },
   });
   const close = useMutation({
     mutationFn: () => patchTopic(topicId, { closed: true }),
@@ -263,19 +284,19 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
   if (query.error) return <ErrorMessage error={query.error} />;
   if (!query.data) return <Loading />;
   const { topic, messages } = query.data;
-  const pageCount = Math.max(1, Math.ceil(messages.total / messages.pageSize));
 
   return (
     <div className="topic-view">
       <div className="actions">
         <button type="button" className="secondary" onClick={onBack}>
+          <Icon name="arrowLeft" />
           {t('render.discussion.backToTopics')}
         </button>
         {me?.isAdmin && (
           <SaveAsTemplate type="topic" sourceId={topic.id} defaultName={topic.title} />
         )}
       </div>
-      <ErrorMessage error={remove.error} />
+      <ErrorMessage error={remove.error ?? close.error} />
       <div className="topic-heading">
         <h3>
           {topic.title}
@@ -288,7 +309,15 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
                 type="button"
                 className="menu-item"
                 role="menuitem"
-                onClick={() => close.mutate()}
+                onClick={() =>
+                  confirmed(
+                    {
+                      title: t('render.discussion.confirmClose'),
+                      confirmLabel: t('render.discussion.close'),
+                    },
+                    () => close.mutate(),
+                  )
+                }
               >
                 {t('render.discussion.close')}
               </button>
@@ -319,25 +348,20 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
       {messages.items.map((message) => (
         <Message key={message.id} message={message} onEdited={refresh} onDeleted={refresh} />
       ))}
-      {pageCount > 1 && (
-        <div className="pagination">
-          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            {t('common.previous')}
-          </button>
-          <span>{t('common.pageOf', { page, total: pageCount })}</span>
-          <button type="button" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>
-            {t('common.next')}
-          </button>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        total={messages.total}
+        pageSize={messages.pageSize}
+        onChange={setPage}
+      />
       {topic.closed ? (
-        <p className="notice">{t('render.discussion.closedNotice')}</p>
+        <Notice tone="info">{t('render.discussion.closedNotice')}</Notice>
       ) : (
         topic.canPost && (
           <Composer
             submitLabel={t('render.discussion.reply')}
             pending={reply.isPending}
-            onSubmit={(content, attachmentIds) => reply.mutate({ content, attachmentIds })}
+            onSubmit={(content, attachmentIds) => reply.mutateAsync({ content, attachmentIds })}
           />
         )
       )}
@@ -353,7 +377,17 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
   const queryClient = useQueryClient();
   const { name, canCreateTopic, canPost } = block.config;
   const [page, setPage] = useState(1);
-  const [openTopicId, setOpenTopicId] = useState<string | null>(null);
+  // Le sujet ouvert est dans l'adresse (`?sujet=<espace>.<sujet>`) : on peut le
+  // partager, recharger la page et revenir à la liste par « Précédent ».
+  const [params, setParams] = useSearchParams();
+  const [openBlock, openTopicId] = (params.get(TOPIC_PARAM) ?? '').split('.');
+  const setOpenTopicId = (topicId: string | null) =>
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      if (topicId) next.set(TOPIC_PARAM, `${block.id}.${topicId}`);
+      else next.delete(TOPIC_PARAM);
+      return next;
+    });
   const [composing, setComposing] = useState(false);
   const [title, setTitle] = useState('');
 
@@ -376,7 +410,7 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
     },
   });
 
-  if (openTopicId) {
+  if (openBlock === block.id && openTopicId) {
     return (
       <section className="block-discussion">
         <TopicView topicId={openTopicId} onBack={() => setOpenTopicId(null)} />
@@ -387,7 +421,8 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
   return (
     <section className="block-discussion">
       <h3>{name}</h3>
-      {topics.error && <ErrorMessage error={topics.error} />}
+      <ErrorMessage error={topics.error ?? pin.error} />
+      {topics.isPending && <Loading />}
       {topics.data && topics.data.items.length === 0 && (
         <p className="muted">{t('render.discussion.noTopics')}</p>
       )}
@@ -398,7 +433,7 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
               {topic.pinned && <Icon name="pin" size={15} />} {topic.title}
             </button>
             <span className="muted">
-              {topic.author.username} · {new Date(topic.lastActivityAt).toLocaleDateString('fr-FR')}
+              {topic.author.username} · {formatDate(topic.lastActivityAt)}
               {topic.closed && ` · ${t('render.discussion.closed')}`}
             </span>
             {me?.isAdmin && (
@@ -416,19 +451,13 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
           </li>
         ))}
       </ul>
-      {topics.data && topics.data.total > topics.data.pageSize && (
-        <div className="pagination">
-          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            {t('common.previous')}
-          </button>
-          <button
-            type="button"
-            disabled={page >= Math.ceil(topics.data.total / topics.data.pageSize)}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            {t('common.next')}
-          </button>
-        </div>
+      {topics.data && (
+        <Pagination
+          page={page}
+          total={topics.data.total}
+          pageSize={topics.data.pageSize}
+          onChange={setPage}
+        />
       )}
       {canCreateTopic &&
         (composing ? (
@@ -438,7 +467,7 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
             title={{ value: title, onChange: setTitle }}
             onCancel={() => setComposing(false)}
             onSubmit={(firstMessage, attachmentIds) =>
-              open.mutate({ title, firstMessage, attachmentIds })
+              open.mutateAsync({ title, firstMessage, attachmentIds })
             }
           />
         ) : (

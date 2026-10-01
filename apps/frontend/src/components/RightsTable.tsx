@@ -16,7 +16,7 @@ export function RightsTable({
   const { t } = useTranslation();
   if (rights.resources.length === 0) return <p className="muted">{t('rights.none')}</p>;
   return (
-    <div className="table-wrap">
+    <div className="table-wrap stack-mobile">
       <table>
         <thead>
           <tr>
@@ -30,12 +30,12 @@ export function RightsTable({
         <tbody>
           {rights.resources.map(({ resource, rights: granted }) => (
             <tr key={`${resource.type}:${resource.id}`}>
-              <td>
+              <td data-label={t('rights.resource')}>
                 <Link to={linkTo(resource)}>{resource.name}</Link>
               </td>
-              <td>{t(`rights.resourceTypes.${resource.type}`)}</td>
+              <td data-label={t('rights.type')}>{t(`rights.resourceTypes.${resource.type}`)}</td>
               {RIGHTS.map((right) => (
-                <td key={right}>
+                <td key={right} data-label={t(`rights.names.${right}`)}>
                   {granted[right].length > 0
                     ? t('rights.via', { groups: granted[right].map((g) => g.name).join(', ') })
                     : '—'}

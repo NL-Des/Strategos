@@ -96,3 +96,13 @@ code {
       filter 120ms ease;
   }
 }
+
+/* Texte lu par les lecteurs d'écran seulement (en-tête de colonne d'actions…). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

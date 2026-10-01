@@ -29,7 +29,8 @@ export function ThemeScope({
     '--t-link': text.linkColor,
     '--t-font': font(text.font),
     '--t-heading-font': font(text.headingFont),
-    '--t-size': `${text.size}px`,
+    // En `rem` : la taille du thème suit le réglage de taille de texte du navigateur.
+    '--t-size': `${text.size / 16}rem`,
     '--t-surface': surface.color,
     '--t-border': surface.borderColor,
     '--t-radius': `${surface.radius}px`,
@@ -45,7 +46,7 @@ export function ThemeScope({
     '--t-card-border': cards.borderColor,
     '--t-card-title': cards.titleColor,
     '--t-card-radius': `${cards.radius}px`,
-    '--t-card-shadow': cards.shadow ? '0 2px 10px rgb(0 0 0 / 15%)' : 'none',
+    '--t-card-shadow': cards.shadow ? 'var(--shadow-md)' : 'none',
     '--t-disc-bg': discussions.background,
     '--t-disc-border': discussions.borderColor,
     '--t-disc-msg-bg': discussions.messageBackground,

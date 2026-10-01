@@ -1,6 +1,6 @@
 import type { AssembledChatBlock, ChatEvent, ChatMessageView } from '@strategos/shared';
 import { CHAT_WS_EVENTS, CHAT_WS_PATH } from '@strategos/shared';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   chatHistory,
@@ -12,29 +12,10 @@ import {
 import { useMe } from '../auth/useMe';
 import { ActionMenu } from '../components/ActionMenu';
 import { useConfirmed } from '../components/Dialog';
-
-/** Texte multi-ligne → HTML simple (le backend le nettoie à nouveau). */
-function toHtml(text: string): string {
-  const escape = (s: string) =>
-    s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-  return text
-    .split(/\n{2,}/)
-    .map((p) => `<p>${escape(p.trim()).replaceAll('\n', '<br>')}</p>`)
-    .filter((p) => p !== '<p></p>')
-    .join('');
-}
-
-/** HTML nettoyé → texte, pour ré-éditer un message. */
-function toText(html: string): string {
-  return html
-    .replace(/<\/p>\s*<p>/g, '\n\n')
-    .replace(/<br\s*\/?>/g, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replaceAll('&lt;', '<')
-    .replaceAll('&gt;', '>')
-    .replaceAll('&amp;', '&')
-    .trim();
-}
+import { ErrorMessage } from '../components/ErrorMessage';
+import { Notice } from '../components/Notice';
+import { formatMessageTime } from '../format';
+import { toHtml, toText } from './messageText';
 
 /** Adresse de la passerelle WebSocket, dérivée de l'origine courante. */
 function wsUrl(): string {
@@ -47,6 +28,18 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState('');
   const confirmed = useConfirmed();
+  // Une action refusée (message déjà supprimé, droit retiré…) s'affiche sous le message.
+  const [error, setError] = useState<unknown>(null);
+  const run = (action: Promise<unknown>) => {
+    setError(null);
+    return action.then(
+      () => true,
+      (failure: unknown) => {
+        setError(failure);
+        return false;
+      },
+    );
+  };
 
   const startEdit = () => {
     setText(toText(message.content));
@@ -55,23 +48,29 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
   const saveEdit = (e: FormEvent) => {
     e.preventDefault();
     const html = toHtml(text);
-    if (html) void editChatMessage(message.id, { content: html });
-    setEditing(false);
+    if (!html) return setEditing(false);
+    // L'édition ne se referme que si la modification est acceptée.
+    void run(editChatMessage(message.id, { content: html })).then((ok) => {
+      if (ok) setEditing(false);
+    });
   };
 
   return (
     <article className={message.hidden ? 'chat-message hidden' : 'chat-message'}>
       <header>
         <strong>{message.author.username}</strong>
-        <time dateTime={message.createdAt}>
-          {new Date(message.createdAt).toLocaleTimeString('fr-FR')}
-        </time>
+        <time dateTime={message.createdAt}>{formatMessageTime(message.createdAt)}</time>
         {message.editedAt && <span className="muted"> · {t('render.chat.edited')}</span>}
         {message.hidden && <span className="badge"> {t('render.chat.hidden')}</span>}
       </header>
       {editing ? (
         <form className="chat-edit" onSubmit={saveEdit}>
-          <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} />
+          <textarea
+            rows={2}
+            aria-label={t('render.chat.message')}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
           <div className="actions">
             <button type="submit">{t('common.save')}</button>
             <button type="button" className="secondary" onClick={() => setEditing(false)}>
@@ -82,6 +81,7 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
       ) : (
         <div className="message-body" dangerouslySetInnerHTML={{ __html: message.content }} />
       )}
+      <ErrorMessage error={error} />
       {(message.mine || isAdmin) && !editing && (
         <ActionMenu label={t('render.chat.options')}>
           {message.mine && (
@@ -100,7 +100,7 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
                       confirmLabel: t('common.delete'),
                       danger: true,
                     },
-                    () => void deleteChatMessage(message.id),
+                    () => void run(deleteChatMessage(message.id)),
                   )
                 }
               >
@@ -114,7 +114,9 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
               className="menu-item"
               role="menuitem"
               onClick={() =>
-                void (message.hidden ? unhideChatMessage(message.id) : hideChatMessage(message.id))
+                void run(
+                  message.hidden ? unhideChatMessage(message.id) : hideChatMessage(message.id),
+                )
               }
             >
               {message.hidden ? t('render.chat.unhide') : t('render.chat.hide')}
@@ -138,7 +140,13 @@ export function ChatBlock({ block }: { block: AssembledChatBlock }) {
   const { name, height } = block.config;
   const [messages, setMessages] = useState<ChatMessageView[]>([]);
   const [connected, setConnected] = useState(false);
+  // Connexion perdue après avoir été établie : annoncée, la saisie est conservée.
+  const [lost, setLost] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [historyError, setHistoryError] = useState<unknown>(null);
   const [draft, setDraft] = useState('');
+  // Vrai tant que le lecteur est en bas de la liste : on ne le ramène pas en bas s'il relit.
+  const stickRef = useRef(true);
   const wsRef = useRef<WebSocket | null>(null);
   const lastIdRef = useRef<string | null>(null);
   const closedRef = useRef(false);
@@ -188,9 +196,15 @@ export function ChatBlock({ block }: { block: AssembledChatBlock }) {
     };
 
     const loadHistory = async (after?: string) => {
-      const items = await chatHistory(block.messagesUrl, after ? { after } : {});
-      for (const m of items) noteId(m.id);
-      setMessages((prev) => (after ? mergeById(prev, items) : items));
+      try {
+        const items = await chatHistory(block.messagesUrl, after ? { after } : {});
+        for (const m of items) noteId(m.id);
+        setMessages((prev) => (after ? mergeById(prev, items) : items));
+        setHistoryError(null);
+        setLoaded(true);
+      } catch (failure) {
+        setHistoryError(failure);
+      }
     };
 
     const connect = () => {
@@ -198,6 +212,7 @@ export function ChatBlock({ block }: { block: AssembledChatBlock }) {
       wsRef.current = ws;
       ws.onopen = () => {
         setConnected(true);
+        setLost(false);
         // `chat.join` peut arriver avant que le serveur ait fini d'attacher ses
         // gestionnaires ; on répète jusqu'à recevoir `chat.joined`.
         const join = () =>
@@ -227,6 +242,7 @@ export function ChatBlock({ block }: { block: AssembledChatBlock }) {
         if (joinTimer) clearInterval(joinTimer);
         joinTimer = undefined;
         if (closedRef.current) return;
+        setLost(true);
         // Reconnexion : rejoint le salon et rattrape les messages manqués.
         timer = setTimeout(() => {
           void loadHistory(lastIdRef.current ?? undefined);
@@ -247,13 +263,17 @@ export function ChatBlock({ block }: { block: AssembledChatBlock }) {
     };
   }, [block.id, block.messagesUrl, isAdmin]);
 
-  // Défile vers le dernier message à chaque ajout.
+  // Défile vers le dernier message à chaque ajout, sauf si le lecteur est remonté dans l'historique.
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+    if (stickRef.current) listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages]);
+  const onScroll = () => {
+    const list = listRef.current;
+    if (list) stickRef.current = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+  };
 
-  const send = (e: FormEvent) => {
-    e.preventDefault();
+  const send = (e?: FormEvent) => {
+    e?.preventDefault();
     const html = toHtml(draft);
     const ws = wsRef.current;
     if (!html || !ws || ws.readyState !== ws.OPEN) return;
@@ -263,22 +283,35 @@ export function ChatBlock({ block }: { block: AssembledChatBlock }) {
         data: { blockId: block.id, clientId: crypto.randomUUID(), content: html },
       }),
     );
+    stickRef.current = true;
     setDraft('');
+  };
+  // Entrée envoie, Maj+Entrée passe à la ligne.
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) send(e);
   };
 
   return (
     <section className="block-chat">
       <h3>{name}</h3>
-      <div className="chat-messages" ref={listRef} style={{ height }}>
-        {messages.length === 0 && <p className="muted">{t('render.chat.empty')}</p>}
+      <div className="chat-messages" ref={listRef} style={{ height }} onScroll={onScroll}>
+        {loaded && messages.length === 0 && <p className="muted">{t('render.chat.empty')}</p>}
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} isAdmin={me?.isAdmin ?? false} />
         ))}
       </div>
+      <ErrorMessage error={historyError} />
+      {lost && (
+        <Notice tone="warning" role="status">
+          {t('render.chat.disconnected')}
+        </Notice>
+      )}
       <form className="block-form chat-composer" onSubmit={send}>
-        <input
+        <textarea
+          rows={1}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={onKeyDown}
           placeholder={connected ? t('render.chat.placeholder') : t('render.chat.connecting')}
           aria-label={t('render.chat.message')}
         />
