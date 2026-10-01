@@ -32,6 +32,8 @@ import { formatDateTime } from '../../format';
 import { SaveAsTemplate } from '../../components/SaveAsTemplate';
 import { PageRender } from '../../render/PageRender';
 import { Breadcrumb } from '../../components/Breadcrumb';
+import { ActionMenu } from '../../components/ActionMenu';
+import { useUnsavedGuard } from '../../useUnsavedGuard';
 
 /** Éditeur d'une page : on modifie toujours le brouillon, publié par un bouton dédié. */
 export function PageEditorPage() {
@@ -60,6 +62,7 @@ function Editor({ initial }: { initial: AdminPage }) {
   const [previewGroup, setPreviewGroup] = useState('');
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const themes = useQuery({ queryKey: ['admin', 'themes'], queryFn: listThemes });
+  useUnsavedGuard(dirty);
   const context = useMemo(
     () => ({ pageId: saved.id, blocks: blocksOf([draft.zones.main, draft.zones.sidebar]) }),
     [saved.id, draft],
@@ -71,6 +74,19 @@ function Editor({ initial }: { initial: AdminPage }) {
   };
   const setZone = (zone: 'main' | 'sidebar', rows: Row[] | null) =>
     edit({ zones: { ...draft.zones, [zone]: rows } });
+  /** Retirer une zone qui contient des rangées les supprime : on le confirme. */
+  const toggleZone = (zone: 'main' | 'sidebar', shown: boolean) => {
+    if (shown) return setZone(zone, []);
+    if (!draft.zones[zone]?.length) return setZone(zone, null);
+    confirmed(
+      {
+        title: t('builder.removeZoneConfirm', { zone: t(`builder.zoneNames.${zone}`) }),
+        confirmLabel: t('common.delete'),
+        danger: true,
+      },
+      () => setZone(zone, null),
+    );
+  };
 
   const onSaved = (page: AdminPage) => {
     setSaved(page);
@@ -145,16 +161,24 @@ function Editor({ initial }: { initial: AdminPage }) {
       <Breadcrumb items={[{ label: t('admin.nav.pages'), to: '/admin/pages' }]} />
       <div className="editor-header">
         <h1>{name || t('builder.pages.untitled')}</h1>
-        <p className="muted">
+        <p className="muted editor-state">
           {saved.publishedAt
             ? t('builder.lastPublished', {
                 date: formatDateTime(saved.publishedAt),
               })
             : t('builder.pages.neverPublished')}
-          {dirty && ` · ${t('builder.unsaved')}`}
+          {dirty && <span className="status status-pending">{t('builder.unsaved')}</span>}
         </p>
         <div className="actions">
-          <button type="button" disabled={busy || !dirty} onClick={() => saveMutation.mutate()}>
+          <button type="button" disabled={busy} onClick={() => publishMutation.mutate()}>
+            {t('builder.publish')}
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy || !dirty}
+            onClick={() => saveMutation.mutate()}
+          >
             {t('builder.saveDraft')}
           </button>
           <button
@@ -165,30 +189,30 @@ function Editor({ initial }: { initial: AdminPage }) {
           >
             {t('builder.preview')}
           </button>
-          <button type="button" disabled={busy} onClick={() => publishMutation.mutate()}>
-            {t('builder.publish')}
-          </button>
           <Link className="button secondary" to={`/admin/rights/page/${saved.id}`}>
             {t('rights.pageAccess')}
           </Link>
-          <button
-            type="button"
-            className="danger"
-            onClick={() =>
-              confirmed(
-                {
-                  title: t('builder.pages.deleteConfirm', { name: saved.name }),
-                  confirmLabel: t('common.delete'),
-                  danger: true,
-                },
-                () => deleteMutation.mutate(),
-              )
-            }
-          >
-            {t('builder.pages.delete')}
-          </button>
+          <SaveAsTemplate type="page" sourceId={saved.id} defaultName={saved.name} />
+          <ActionMenu label={t('builder.moreActions')} icon="more">
+            <button
+              type="button"
+              className="menu-item danger"
+              role="menuitem"
+              onClick={() =>
+                confirmed(
+                  {
+                    title: t('builder.pages.deleteConfirm', { name: saved.name }),
+                    confirmLabel: t('common.delete'),
+                    danger: true,
+                  },
+                  () => deleteMutation.mutate(),
+                )
+              }
+            >
+              {t('builder.pages.delete')}
+            </button>
+          </ActionMenu>
         </div>
-        <SaveAsTemplate type="page" sourceId={saved.id} defaultName={saved.name} />
         <ErrorMessage error={error} />
         <Warnings warnings={warnings} />
       </div>
@@ -257,7 +281,7 @@ function Editor({ initial }: { initial: AdminPage }) {
             <input
               type="checkbox"
               checked={draft.zones.main !== null}
-              onChange={(e) => setZone('main', e.target.checked ? [] : null)}
+              onChange={(e) => toggleZone('main', e.target.checked)}
             />
             {t('builder.zoneNames.main')}
           </label>
@@ -265,7 +289,7 @@ function Editor({ initial }: { initial: AdminPage }) {
             <input
               type="checkbox"
               checked={draft.zones.sidebar !== null}
-              onChange={(e) => setZone('sidebar', e.target.checked ? [] : null)}
+              onChange={(e) => toggleZone('sidebar', e.target.checked)}
             />
             {t('builder.zoneNames.sidebar')}
           </label>

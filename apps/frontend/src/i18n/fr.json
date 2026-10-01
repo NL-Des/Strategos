@@ -392,7 +392,7 @@
     "publish": "Publier",
     "saved": "Brouillon enregistré.",
     "published": "Publié : les utilisateurs voient maintenant cette version.",
-    "unsaved": "modifications non enregistrées",
+    "unsaved": "Modifications non enregistrées",
     "lastPublished": "Dernière publication : {{date}}",
     "previewTitle": "Aperçu du brouillon (vue administrateur)",
     "previewTitleGroup": "Aperçu du brouillon (vue d’un membre de ce seul groupe)",
@@ -651,8 +651,24 @@
       "zoneItem": "« {{form}} » sur la page « {{page}} »",
       "fromTemplate": "Partir de",
       "blank": "Un formulaire vide",
-      "templateHint": "Les champs du modèle sont repris ; la feuille et les cellules ou colonnes cibles sont à redéfinir."
-    }
+      "templateHint": "Les champs du modèle sont repris ; la feuille et les cellules ou colonnes cibles sont à redéfinir.",
+      "removeFieldConfirm": "Retirer le champ « {{label}} » ?",
+      "saveHint": "Le formulaire s’enregistre à part du brouillon de la page. Ses champs deviennent visibles des utilisateurs à la publication de la page."
+    },
+    "leaveConfirm": "Quitter sans enregistrer ?",
+    "leaveHint": "Les modifications non enregistrées de ce brouillon seront perdues.",
+    "leave": "Quitter sans enregistrer",
+    "expandAll": "Tout déplier",
+    "collapseAll": "Tout replier",
+    "expandRow": "Déplier la rangée {{n}}",
+    "collapseRow": "Replier la rangée {{n}}",
+    "insertRow": "Insérer une rangée ici",
+    "emptyColumn": "vide",
+    "layoutDropsBlocks": "Cette répartition retire une colonne qui contient un module. Le supprimer ?",
+    "removeRowConfirm": "Supprimer la rangée {{n}} et ses modules ?",
+    "removeBlockConfirm": "Retirer le module « {{type}} » et ses réglages ?",
+    "removeZoneConfirm": "Retirer la zone {{zone}} et toutes ses rangées ?",
+    "moreActions": "Autres actions"
   },
   "warnings": {
     "MEDIA_IN_USE": "L’image « {{filename}} » est encore utilisée ici. Si vous la supprimez, les modules qui l’affichent seront masqués :",

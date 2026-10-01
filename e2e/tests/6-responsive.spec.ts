@@ -5,13 +5,14 @@ import { PLAYER_PASSWORD } from '../stack.ts';
 import { login, loginAsAdmin } from './helpers.ts';
 
 /**
- * Écrans sur mobile et tablette : aucune page ne défile horizontalement (les
- * tableaux larges défilent dans leur cadre). Les captures, dans
+ * Écrans sur mobile, tablette et bureau : aucune page ne défile horizontalement
+ * (les tableaux larges défilent dans leur cadre). Les captures, dans
  * `e2e/screenshots/`, servent à la relecture visuelle.
  */
 const VIEWPORTS = {
   mobile: { width: 375, height: 740 },
   tablette: { width: 768, height: 1024 },
+  bureau: { width: 1280, height: 800 },
 };
 const SHOTS = resolve(import.meta.dirname, '../screenshots');
 mkdirSync(SHOTS, { recursive: true });

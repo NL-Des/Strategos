@@ -2,6 +2,7 @@ import { expect, type Locator, type Page, test } from '@playwright/test';
 import {
   adminNav,
   clickAndWait,
+  expandRows,
   firstLogin,
   loginAsAdmin,
   openCreate,
@@ -98,6 +99,7 @@ test('2. instancié pour Arkan : feuille « Arkan », groupe personnel, publicat
   await expect(page.getByRole('heading', { level: 1, name: 'Espace d’Arkan' })).toBeVisible();
 
   // La copie est un brouillon aux plages et mappings vides.
+  await expandRows(page);
   await expect(page.getByText(t('builder.data.notConfigured'))).toBeVisible();
   await configureTable(row(page, 0));
   const rich = row(page, 1);
@@ -149,6 +151,7 @@ test('3. « Ma page personnelle » : fiche d’Arkan et bouton « Mon espace » 
   );
 
   await adminNav(page, 'header');
+  await expandRows(page);
   const buttons = row(page, 0);
   await buttons.getByRole('button', { name: t('builder.buttons.add') }).click();
   const mine = buttons.getByRole('group', { name: t('builder.buttons.button', { n: 4 }) });

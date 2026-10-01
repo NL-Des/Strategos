@@ -21,6 +21,7 @@ import { Notice } from '../../components/Notice';
 import { useToast } from '../../components/Toast';
 import { ThemeScope } from '../../render/ThemeScope';
 import { Breadcrumb } from '../../components/Breadcrumb';
+import { useUnsavedGuard } from '../../useUnsavedGuard';
 
 /** Admin › Thème : réglages par section et aperçu en direct (06 — Thèmes). */
 export function ThemeEditorPage() {
@@ -48,6 +49,7 @@ function ThemeEditor({ theme }: { theme: Theme }) {
   const toast = useToast();
   const confirmed = useConfirmed();
   const [pickingImage, setPickingImage] = useState(false);
+  useUnsavedGuard(name !== theme.name || JSON.stringify(config) !== JSON.stringify(theme.config));
 
   const set = <S extends Section>(section: S, patch: Partial<ThemeConfig[S]>) =>
     setConfig((c) => ({ ...c, [section]: { ...c[section], ...patch } }));

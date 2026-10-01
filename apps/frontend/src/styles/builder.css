@@ -156,3 +156,138 @@ button.tool.active:hover {
 .preview-frame .themed {
   min-height: auto;
 }
+
+/* ---- En-tête des éditeurs ---- */
+
+.editor-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.editor-header .actions {
+  gap: var(--space-2);
+}
+
+/* ---- Rangées repliables ---- */
+
+.rows-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.rows-fold {
+  justify-content: flex-end;
+  font-size: var(--text-sm);
+}
+
+.row-slot {
+  display: flex;
+  flex-direction: column;
+}
+
+.rows-editor .row-editor {
+  margin: var(--space-2) 0;
+  padding: var(--space-3);
+}
+
+.row-editor.collapsed {
+  background: color-mix(in srgb, var(--surface) 60%, var(--bg));
+}
+
+.row-toolbar {
+  justify-content: flex-start;
+}
+
+.row-summary {
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+
+.row-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.row-tools select {
+  padding-block: 0.3rem;
+}
+
+button.row-toggle,
+button.icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.1rem;
+  min-height: 2.1rem;
+  padding: 0;
+  text-decoration: none;
+}
+
+button.row-toggle {
+  color: var(--muted);
+}
+
+button.row-toggle:hover {
+  background: var(--hover);
+}
+
+/* Insertion entre deux rangées : un trait discret, révélé au survol ou au focus. */
+button.row-insert {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  height: 1.1rem;
+  color: var(--muted);
+  opacity: 0.35;
+}
+
+button.row-insert::before {
+  content: '';
+  grid-area: 1 / 1;
+  width: 100%;
+  border-top: 1px dashed var(--border-strong);
+}
+
+button.row-insert > .icon {
+  grid-area: 1 / 1;
+  padding: 1px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+}
+
+button.row-insert:hover,
+button.row-insert:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.column-label {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+/* Une seule colonne : pas de cadre dans le cadre. */
+.row-columns > .column-editor:only-child {
+  padding: 0;
+  border: none;
+}
+
+button.link.danger-link {
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+/* Les encadrés internes d'un module restent légers. */
+.column-editor fieldset {
+  border-color: var(--border);
+}

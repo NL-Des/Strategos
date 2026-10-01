@@ -1,5 +1,5 @@
 import { type ReactNode, Suspense, lazy } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router';
 import { RequireAdmin, RequireAuth } from './auth/guards';
 import { AdminLayout } from './components/AdminNav';
 import { AppLayout } from './components/AppLayout';
@@ -87,73 +87,77 @@ const ADMIN_ROUTES: [string, ReactNode][] = [
   ['/admin/trash', <TrashPage />],
 ];
 
+// Routeur de données : il permet de retenir une navigation tant qu'un brouillon
+// n'est pas enregistré (useUnsavedGuard).
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/change-credentials"
+        element={
+          <Framed>
+            <ChangeCredentialsPage />
+          </Framed>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <Framed>
+            <ProfilePage />
+          </Framed>
+        }
+      />
+      <Route
+        path="/notes"
+        element={
+          <Framed>
+            <Suspense fallback={<Loading />}>
+              <NotesPage />
+            </Suspense>
+          </Framed>
+        }
+      />
+      <Route
+        path="/submissions"
+        element={
+          <Framed>
+            <MySubmissionsPage />
+          </Framed>
+        }
+      />
+      <Route
+        path="/"
+        element={
+          <Site>
+            <HomePage />
+          </Site>
+        }
+      />
+      <Route
+        path="/pages/:id"
+        element={
+          <Site>
+            <PageRoute />
+          </Site>
+        }
+      />
+      {ADMIN_ROUTES.map(([path, element]) => (
+        <Route key={path} path={path} element={<Framed admin>{element}</Framed>} />
+      ))}
+      <Route
+        path="*"
+        element={
+          <Site>
+            <NotFoundPage />
+          </Site>
+        }
+      />
+    </>,
+  ),
+);
+
 export function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/change-credentials"
-          element={
-            <Framed>
-              <ChangeCredentialsPage />
-            </Framed>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <Framed>
-              <ProfilePage />
-            </Framed>
-          }
-        />
-        <Route
-          path="/notes"
-          element={
-            <Framed>
-              <Suspense fallback={<Loading />}>
-                <NotesPage />
-              </Suspense>
-            </Framed>
-          }
-        />
-        <Route
-          path="/submissions"
-          element={
-            <Framed>
-              <MySubmissionsPage />
-            </Framed>
-          }
-        />
-        <Route
-          path="/"
-          element={
-            <Site>
-              <HomePage />
-            </Site>
-          }
-        />
-        <Route
-          path="/pages/:id"
-          element={
-            <Site>
-              <PageRoute />
-            </Site>
-          }
-        />
-        {ADMIN_ROUTES.map(([path, element]) => (
-          <Route key={path} path={path} element={<Framed admin>{element}</Framed>} />
-        ))}
-        <Route
-          path="*"
-          element={
-            <Site>
-              <NotFoundPage />
-            </Site>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }

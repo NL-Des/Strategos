@@ -19,6 +19,8 @@ import { ErrorMessage } from '../../components/ErrorMessage';
 import { Loading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
 import { Rows } from '../../render/Rows';
+import { formatDateTime } from '../../format';
+import { useUnsavedGuard } from '../../useUnsavedGuard';
 
 const LAYOUT_TYPES = BLOCK_TYPES.filter((type) => !LAYOUT_FORBIDDEN_BLOCK_TYPES.includes(type));
 
@@ -41,6 +43,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
   const [saved, setSaved] = useState(initial);
   const [rows, setRows] = useState<Row[]>(initial.draft.rows);
   const [dirty, setDirty] = useState(false);
+  useUnsavedGuard(dirty);
   const [preview, setPreview] = useState<AssembledRow[] | null>(null);
   const toast = useToast();
   const [previewGroup, setPreviewGroup] = useState('');
@@ -89,16 +92,22 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
     <section className="page-editor">
       <div className="editor-header">
         <h1>{t(`builder.zoneNames.${kind}`)}</h1>
-        <p className="muted">
+        <p className="muted editor-state">
           {t(`builder.layoutIntro.${kind}`)}
           {saved.publishedAt &&
-            ` ${t('builder.lastPublished', {
-              date: new Date(saved.publishedAt).toLocaleString('fr-FR'),
-            })}`}
-          {dirty && ` · ${t('builder.unsaved')}`}
+            ` ${t('builder.lastPublished', { date: formatDateTime(saved.publishedAt) })}`}
+          {dirty && <span className="status status-pending">{t('builder.unsaved')}</span>}
         </p>
         <div className="actions">
-          <button type="button" disabled={busy || !dirty} onClick={() => saveMutation.mutate()}>
+          <button type="button" disabled={busy} onClick={() => publishMutation.mutate()}>
+            {t('builder.publish')}
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            disabled={busy || !dirty}
+            onClick={() => saveMutation.mutate()}
+          >
             {t('builder.saveDraft')}
           </button>
           <button
@@ -108,9 +117,6 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
             onClick={() => previewMutation.mutate(previewGroup)}
           >
             {t('builder.preview')}
-          </button>
-          <button type="button" disabled={busy} onClick={() => publishMutation.mutate()}>
-            {t('builder.publish')}
           </button>
         </div>
         <ErrorMessage error={error} />

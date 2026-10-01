@@ -100,6 +100,20 @@ export async function openAdminPage(page: Page, name: string): Promise<void> {
   await adminNav(page, 'pages');
   await page.getByRole('link', { name, exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
+  await expandRows(page);
+}
+
+/** Les rangées d'une page existante s'ouvrent repliées : on les déplie toutes. */
+export async function expandRows(page: Page): Promise<void> {
+  await expect(page.locator('.rows-editor').first()).toBeVisible();
+  for (const button of await page.getByRole('button', { name: t('builder.expandAll') }).all()) {
+    if (await button.isEnabled()) await button.click();
+  }
+  for (const button of await page
+    .getByRole('button', { name: new RegExp(`^${t('builder.expandRow', { n: '' }).trim()}`) })
+    .all()) {
+    await button.click();
+  }
 }
 
 /** Bouton de la fenêtre de confirmation ouverte (par défaut « Supprimer »). */

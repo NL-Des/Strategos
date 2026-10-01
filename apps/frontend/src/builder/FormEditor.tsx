@@ -26,6 +26,7 @@ import { SaveAsTemplate } from '../components/SaveAsTemplate';
 import { useSources } from './DataBlockEditors';
 import { usePageEditor } from './PageEditorContext';
 import { Loading } from '../components/Loading';
+import { useConfirmed } from '../components/Dialog';
 
 type FormBlock = Extract<Block, { type: 'form' }>;
 
@@ -161,6 +162,7 @@ const optionalNumber = (value: string) => (value === '' ? undefined : Number(val
 
 function DefinitionEditor({ initial }: { initial: AdminForm }) {
   const { t } = useTranslation();
+  const confirmed = useConfirmed();
   const queryClient = useQueryClient();
   const page = usePageEditor();
   const sources = useSources();
@@ -199,16 +201,18 @@ function DefinitionEditor({ initial }: { initial: AdminForm }) {
       setResult({ warnings: res.warnings, wouldInvalidate: res.wouldInvalidate });
     },
   });
-  const [settingsWarnings, setSettingsWarnings] = useState<Warning[]>([]);
+  // Réglage en attente de confirmation : on rejoue ce réglage-là, pas un autre.
+  type Settings = Parameters<typeof setFormSettings>[1];
+  const [toConfirm, setToConfirm] = useState<{ body: Settings; warnings: Warning[] } | null>(null);
   const settings = useMutation({
-    mutationFn: (body: Parameters<typeof setFormSettings>[1]) => setFormSettings(form.id, body),
+    mutationFn: (body: Settings) => setFormSettings(form.id, body),
     onSuccess: (next) => {
       onForm(next);
-      setSettingsWarnings([]);
+      setToConfirm(null);
     },
-    onError: (error) => {
+    onError: (error, body) => {
       if (error instanceof ApiRequestError && error.code === 'CONFIRMATION_REQUIRED') {
-        setSettingsWarnings((error.error.details.warnings ?? []) as Warning[]);
+        setToConfirm({ body, warnings: (error.error.details.warnings ?? []) as Warning[] });
       }
     },
   });
@@ -369,7 +373,18 @@ function DefinitionEditor({ initial }: { initial: AdminForm }) {
                 }
               : undefined
           }
-          onRemove={() => edit({ fields: def.fields.filter((_, j) => j !== i) })}
+          onRemove={() =>
+            confirmed(
+              {
+                title: t('builder.form.removeFieldConfirm', {
+                  label: field.label || t('builder.form.field', { n: i + 1 }),
+                }),
+                confirmLabel: t('builder.form.removeField'),
+                danger: true,
+              },
+              () => edit({ fields: def.fields.filter((_, j) => j !== i) }),
+            )
+          }
         />
       ))}
       <button
@@ -391,9 +406,13 @@ function DefinitionEditor({ initial }: { initial: AdminForm }) {
           </p>
         </>
       )}
-      <button type="button" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
-        {t('builder.form.save')}
-      </button>
+      <div className="actions">
+        <button type="button" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+          {t('builder.form.save')}
+        </button>
+        {dirty && <span className="status status-pending">{t('builder.unsaved')}</span>}
+      </div>
+      <small>{t('builder.form.saveHint')}</small>
 
       <fieldset>
         <legend>{t('builder.form.operational')}</legend>
@@ -429,15 +448,20 @@ function DefinitionEditor({ initial }: { initial: AdminForm }) {
           />
           {t('builder.form.autoValidate')}
         </label>
-        {settingsWarnings.length > 0 && (
+        {toConfirm && (
           <>
-            <Warnings warnings={settingsWarnings} />
-            <button
-              type="button"
-              onClick={() => settings.mutate({ autoValidate: true, confirm: true })}
-            >
-              {t('common.confirm')}
-            </button>
+            <Warnings warnings={toConfirm.warnings} />
+            <div className="actions">
+              <button
+                type="button"
+                onClick={() => settings.mutate({ ...toConfirm.body, confirm: true })}
+              >
+                {t('common.confirm')}
+              </button>
+              <button type="button" className="secondary" onClick={() => setToConfirm(null)}>
+                {t('common.cancel')}
+              </button>
+            </div>
           </>
         )}
         <ErrorMessage error={settingsError ?? openClose.error} />
@@ -715,7 +739,7 @@ function FieldEditor({
             {t('builder.moveUp')}
           </button>
         )}
-        <button type="button" className="danger" onClick={onRemove}>
+        <button type="button" className="link danger-link" onClick={onRemove}>
           {t('builder.form.removeField')}
         </button>
       </div>
