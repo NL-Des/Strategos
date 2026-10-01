@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router';
 import { createTheme, listThemes } from '../../api/themes';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { EmptyState } from '../../components/EmptyState';
+import { CreatePanel } from '../../components/CreatePanel';
 
 /** Admin › Thèmes : liste et création (06 — Thèmes). */
 export function ThemesPage() {
@@ -16,7 +17,9 @@ export function ThemesPage() {
     <section>
       <h1>{t('themes.title')}</h1>
       <p className="muted">{t('themes.intro')}</p>
-      <CreateThemeForm />
+      <CreatePanel label={t('themes.create')}>
+        <CreateThemeForm />
+      </CreatePanel>
       <ErrorMessage error={themes.error} />
       <div className="table-wrap">
         <table>

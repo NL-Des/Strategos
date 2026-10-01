@@ -13,7 +13,7 @@ export interface AuditQuery {
 }
 
 export function listAudit({ page, ...filters }: AuditQuery): Promise<Paginated<AuditEntry>> {
-  const params = new URLSearchParams({ page: String(page), pageSize: '50' });
+  const params = new URLSearchParams({ page: String(page), pageSize: '25' });
   for (const [key, value] of Object.entries(filters)) {
     if (value) params.set(key, value);
   }

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { getResourceRights } from '../../api/rights';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { Breadcrumb } from '../../components/Breadcrumb';
 
 /** Vue « par ressource » (04) : qui peut lire, ouvrir un sujet ou poster, et via quel groupe. */
 export function ResourceRightsPage() {
@@ -19,7 +20,7 @@ export function ResourceRightsPage() {
 
   return (
     <section>
-      <Link to="/admin/rights">{t('rights.back')}</Link>
+      <Breadcrumb items={[{ label: t('admin.nav.rights'), to: '/admin/rights' }]} />
       <ErrorMessage error={rights.error} />
       {rights.data && (
         <>

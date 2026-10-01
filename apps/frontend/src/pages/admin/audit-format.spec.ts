@@ -31,6 +31,28 @@ describe('présentation du journal', () => {
     expect(describeChanges(t, entry(null, { username: 'kira' }))).toEqual(['username : kira']);
   });
 
+  it('détaille une valeur composée au lieu d’afficher [object Object]', () => {
+    const changes = describeChanges(
+      t,
+      entry(null, { values: { classe: 'Mage', niveau: 20, actif: true, equipe: null } }),
+    );
+    expect(changes).toEqual([
+      'values : classe = Mage ; niveau = 20 ; actif = common.yes ; equipe = —',
+    ]);
+  });
+
+  it('traduit le statut selon la cible', () => {
+    const submission = { ...entry({ status: 'pending' }, { status: 'validated' }) };
+    submission.targetType = 'submission';
+    const keys = ((key: string) => key) as TFunction;
+    expect(describeChanges(keys, submission)).toEqual([
+      'audit.fields.status : submissions.status.pending → submissions.status.validated',
+    ]);
+    expect(describeChanges(keys, entry({ status: 'active' }, { status: 'disabled' }))).toEqual([
+      'audit.fields.status : admin.users.status_active → admin.users.status_disabled',
+    ]);
+  });
+
   it('nomme la cible par son pseudo, sinon par son id', () => {
     expect(targetLabel(entry(null, { username: 'kira' }))).toBe('kira');
     expect(targetLabel(entry(null, null))).toBe('id-kira');

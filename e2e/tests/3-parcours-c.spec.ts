@@ -7,7 +7,7 @@ import {
   login,
   loginAsAdmin,
   openAdminPage,
-  section,
+  openCreate,
   t,
 } from './helpers.ts';
 
@@ -73,6 +73,7 @@ test('2. page « Stock » : Catalogue avec images de la médiathèque, formulair
 }) => {
   await loginAsAdmin(page);
   await adminNav(page, 'media');
+  await openCreate(page, t('builder.media.upload'));
   await page.getByLabel(t('builder.media.file')).setInputFiles({
     name: 'carton.png',
     mimeType: 'image/png',
@@ -86,7 +87,7 @@ test('2. page « Stock » : Catalogue avec images de la médiathèque, formulair
   );
 
   await adminNav(page, 'pages');
-  const create = section(page, t('builder.pages.create'));
+  const create = await openCreate(page, t('builder.pages.create'));
   await create.getByLabel(t('builder.pages.name')).fill('Stock');
   await create.getByRole('button', { name: t('builder.pages.createSubmit') }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Stock' })).toBeVisible();

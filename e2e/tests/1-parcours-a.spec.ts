@@ -6,7 +6,7 @@ import {
   firstLogin,
   login,
   loginAsAdmin,
-  section,
+  openCreate,
   selectByText,
   t,
 } from './helpers.ts';
@@ -27,7 +27,7 @@ const GROUPS: Record<string, string[]> = {
 
 async function createPage(page: Page, name: string): Promise<void> {
   await adminNav(page, 'pages');
-  const form = section(page, t('builder.pages.create'));
+  const form = await openCreate(page, t('builder.pages.create'));
   await form.getByLabel(t('builder.pages.name')).fill(name);
   await form.getByRole('button', { name: t('builder.pages.createSubmit') }).click();
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
@@ -127,7 +127,7 @@ test('3. groupes et comptes des joueurs (mot de passe temporaire)', async ({ pag
   await loginAsAdmin(page);
   for (const username of PLAYERS) {
     await adminNav(page, 'users');
-    const form = section(page, t('admin.users.create'));
+    const form = await openCreate(page, t('admin.users.create'));
     await form.getByLabel(t('fields.username')).fill(username);
     await form.getByLabel(t('fields.temporaryPassword')).fill(TEMPORARY_PASSWORD);
     await form.getByRole('button', { name: t('admin.users.createSubmit') }).click();
@@ -135,7 +135,7 @@ test('3. groupes et comptes des joueurs (mot de passe temporaire)', async ({ pag
   }
   for (const [name, members] of Object.entries(GROUPS)) {
     await adminNav(page, 'groups');
-    const form = section(page, t('admin.groups.create'));
+    const form = await openCreate(page, t('admin.groups.create'));
     await form.getByLabel(t('fields.name')).fill(name);
     await form.getByRole('button', { name: t('admin.groups.createSubmit') }).click();
     await expect(page.getByRole('button', { name: t('admin.group.saveMembers') })).toBeVisible();

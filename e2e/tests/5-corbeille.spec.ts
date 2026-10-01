@@ -6,7 +6,7 @@ import {
   dialogButton,
   login,
   loginAsAdmin,
-  section,
+  openCreate,
   t,
 } from './helpers.ts';
 
@@ -27,7 +27,7 @@ test('1. l’admin supprime un sujet et un groupe', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Qui fait équipe avec moi/ })).toHaveCount(0);
 
   await adminNav(page, 'groups');
-  const create = section(page, t('admin.groups.create'));
+  const create = await openCreate(page, t('admin.groups.create'));
   await create.getByLabel(t('fields.name')).fill('Anciens');
   await create.getByRole('button', { name: t('admin.groups.createSubmit') }).click();
   await page.getByRole('button', { name: t('admin.group.delete') }).click();

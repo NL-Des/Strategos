@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useToast } from '../../components/Toast';
 import { Pagination } from '../../components/Pagination';
+import { CreatePanel } from '../../components/CreatePanel';
 
 interface Usages {
   pages: { id: string; name: string }[];
@@ -82,34 +83,36 @@ export function MediaPage() {
     <section>
       <h1>{t('builder.media.title')}</h1>
       <p className="muted">{t('builder.media.intro')}</p>
-      <form
-        className="card form"
-        onSubmit={(e: FormEvent) => {
-          e.preventDefault();
-          const file = fileInput.current?.files?.[0];
-          if (file) upload.mutate(file);
-        }}
-      >
-        <h2>{t('builder.media.upload')}</h2>
-        <label>
-          {t('builder.media.file')}
-          <input
-            ref={fileInput}
-            type="file"
-            required
-            accept="image/jpeg,image/png,image/webp,image/gif"
-          />
-          <small>{t('builder.media.limits', { mb: MEDIA_MAX_BYTES / 1024 / 1024 })}</small>
-        </label>
-        <label>
-          {t('builder.image.alt')}
-          <input value={alt} maxLength={300} onChange={(e) => setAlt(e.target.value)} />
-        </label>
-        <ErrorMessage error={upload.error} />
-        <button type="submit" disabled={upload.isPending}>
-          {t('builder.media.uploadSubmit')}
-        </button>
-      </form>
+      <CreatePanel label={t('builder.media.upload')}>
+        <form
+          className="card form"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            const file = fileInput.current?.files?.[0];
+            if (file) upload.mutate(file);
+          }}
+        >
+          <h2>{t('builder.media.upload')}</h2>
+          <label>
+            {t('builder.media.file')}
+            <input
+              ref={fileInput}
+              type="file"
+              required
+              accept="image/jpeg,image/png,image/webp,image/gif"
+            />
+            <small>{t('builder.media.limits', { mb: MEDIA_MAX_BYTES / 1024 / 1024 })}</small>
+          </label>
+          <label>
+            {t('builder.image.alt')}
+            <input value={alt} maxLength={300} onChange={(e) => setAlt(e.target.value)} />
+          </label>
+          <ErrorMessage error={upload.error} />
+          <button type="submit" disabled={upload.isPending}>
+            {t('builder.media.uploadSubmit')}
+          </button>
+        </form>
+      </CreatePanel>
 
       <div className="filters">
         <input

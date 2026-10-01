@@ -6,17 +6,32 @@ import { Link, useNavigate } from 'react-router';
 import { createGroup, listGroups } from '../../api/groups';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { EmptyState } from '../../components/EmptyState';
+import { CreatePanel } from '../../components/CreatePanel';
+import { matches } from '../../search';
 
 /** Admin › Groupes : liste et création (03 — Gestion des groupes). */
 export function GroupsPage() {
   const { t } = useTranslation();
   const groups = useQuery({ queryKey: ['admin', 'groups'], queryFn: listGroups });
+  const [q, setQ] = useState('');
+  const shown = groups.data?.filter((group) => matches(group.name, q));
 
   return (
     <section>
       <h1>{t('admin.groups.title')}</h1>
       <p className="muted">{t('admin.groups.intro')}</p>
-      <CreateGroupForm />
+      <CreatePanel label={t('admin.groups.create')}>
+        <CreateGroupForm />
+      </CreatePanel>
+      <div className="filters">
+        <input
+          type="search"
+          placeholder={t('admin.groups.search')}
+          aria-label={t('admin.groups.search')}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
       <ErrorMessage error={groups.error} />
       <div className="table-wrap">
         <table>
@@ -28,7 +43,7 @@ export function GroupsPage() {
             </tr>
           </thead>
           <tbody>
-            {groups.data?.map((group) => (
+            {shown?.map((group) => (
               <tr key={group.id}>
                 <td>
                   <Link to={`/admin/groups/${group.id}`}>{group.name}</Link>
@@ -40,7 +55,11 @@ export function GroupsPage() {
           </tbody>
         </table>
       </div>
-      {groups.data?.length === 0 && <EmptyState>{t('admin.groups.empty')}</EmptyState>}
+      {shown?.length === 0 && (
+        <EmptyState icon="users">
+          {t(groups.data?.length ? 'common.noMatch' : 'admin.groups.empty')}
+        </EmptyState>
+      )}
     </section>
   );
 }

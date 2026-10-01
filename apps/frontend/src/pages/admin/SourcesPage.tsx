@@ -124,27 +124,6 @@ export function SourcesPage() {
     <section>
       <h1>{t('sources.title')}</h1>
       <p className="muted">{t('sources.intro')}</p>
-      <form
-        className="card form"
-        onSubmit={(e: FormEvent) => {
-          e.preventDefault();
-          const file = fileInput.current?.files?.[0];
-          if (file) upload.mutate(file);
-        }}
-      >
-        <h2>{t('sources.upload')}</h2>
-        <label>
-          {t('fields.file')}
-          <input ref={fileInput} type="file" required accept={`.xlsx,${EXCEL_MIME}`} />
-          <small>{t('sources.limits', { mb: EXCEL_MAX_BYTES / 1024 / 1024 })}</small>
-        </label>
-        <ErrorMessage error={upload.error} />
-        <button type="submit" disabled={upload.isPending}>
-          {t('sources.uploadSubmit')}
-        </button>
-      </form>
-      <GoogleSheetsPanel />
-      <OneDrivePanel />
 
       {reimport && (
         <Modal
@@ -229,7 +208,13 @@ export function SourcesPage() {
                   <small>{t('sources.sheets', { sheets: source.sheets.join(', ') })}</small>
                 </td>
                 <td>{t(`sources.types.${source.type}`)}</td>
-                <td>{t(`sources.statuses.${source.status}`)}</td>
+                <td>
+                  <span
+                    className={`status ${source.status === 'ok' ? 'status-validated' : 'status-rejected'}`}
+                  >
+                    {t(`sources.statuses.${source.status}`)}
+                  </span>
+                </td>
                 <td>
                   {date(source.type === 'upload' ? source.lastImportedAt : source.lastReadAt)}
                 </td>
@@ -303,6 +288,29 @@ export function SourcesPage() {
         </table>
       </div>
       {sources.data?.length === 0 && <EmptyState icon="database">{t('sources.empty')}</EmptyState>}
+
+      <h2 className="section-title">{t('sources.add')}</h2>
+      <form
+        className="card form"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          const file = fileInput.current?.files?.[0];
+          if (file) upload.mutate(file);
+        }}
+      >
+        <h2>{t('sources.upload')}</h2>
+        <label>
+          {t('fields.file')}
+          <input ref={fileInput} type="file" required accept={`.xlsx,${EXCEL_MIME}`} />
+          <small>{t('sources.limits', { mb: EXCEL_MAX_BYTES / 1024 / 1024 })}</small>
+        </label>
+        <ErrorMessage error={upload.error} />
+        <button type="submit" disabled={upload.isPending}>
+          {t('sources.uploadSubmit')}
+        </button>
+      </form>
+      <GoogleSheetsPanel />
+      <OneDrivePanel />
     </section>
   );
 }

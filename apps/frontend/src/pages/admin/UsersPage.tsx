@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { createUser, listUsers } from '../../api/users';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { CreatePanel } from '../../components/CreatePanel';
+import { EmptyState } from '../../components/EmptyState';
+import { Pagination } from '../../components/Pagination';
 
 /** Admin › Comptes : liste filtrable et création avec mot de passe temporaire. */
 export function UsersPage() {
@@ -17,12 +20,13 @@ export function UsersPage() {
     queryFn: () => listUsers({ page, q: q.trim() || undefined, status: status || undefined }),
     placeholderData: keepPreviousData,
   });
-  const lastPage = users.data ? Math.max(1, Math.ceil(users.data.total / users.data.pageSize)) : 1;
 
   return (
     <section>
       <h1>{t('admin.users.title')}</h1>
-      <CreateUserForm />
+      <CreatePanel label={t('admin.users.create')}>
+        <CreateUserForm />
+      </CreatePanel>
 
       <div className="filters">
         <input
@@ -69,22 +73,28 @@ export function UsersPage() {
                     <span className="badge muted">{t('admin.users.temporaryPassword')}</span>
                   )}
                 </td>
-                <td>{t(`admin.users.status_${user.status}`)}</td>
+                <td>
+                  <span
+                    className={`status ${user.status === 'active' ? 'status-validated' : 'status-none'}`}
+                  >
+                    {t(`admin.users.status_${user.status}`)}
+                  </span>
+                </td>
                 <td>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="pagination">
-        <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-          {t('common.previous')}
-        </button>
-        <span>{t('common.pageOf', { page, total: lastPage })}</span>
-        <button type="button" disabled={page >= lastPage} onClick={() => setPage(page + 1)}>
-          {t('common.next')}
-        </button>
-      </div>
+      {users.data && (
+        <Pagination
+          page={page}
+          total={users.data.total}
+          pageSize={users.data.pageSize}
+          onChange={setPage}
+        />
+      )}
+      {users.data?.total === 0 && <EmptyState icon="user">{t('admin.users.empty')}</EmptyState>}
     </section>
   );
 }

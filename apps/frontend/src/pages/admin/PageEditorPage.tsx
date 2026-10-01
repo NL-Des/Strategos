@@ -31,6 +31,7 @@ import { useToast } from '../../components/Toast';
 import { formatDateTime } from '../../format';
 import { SaveAsTemplate } from '../../components/SaveAsTemplate';
 import { PageRender } from '../../render/PageRender';
+import { Breadcrumb } from '../../components/Breadcrumb';
 
 /** Éditeur d'une page : on modifie toujours le brouillon, publié par un bouton dédié. */
 export function PageEditorPage() {
@@ -141,6 +142,7 @@ function Editor({ initial }: { initial: AdminPage }) {
 
   return (
     <section className="page-editor">
+      <Breadcrumb items={[{ label: t('admin.nav.pages'), to: '/admin/pages' }]} />
       <div className="editor-header">
         <h1>{name || t('builder.pages.untitled')}</h1>
         <p className="muted">

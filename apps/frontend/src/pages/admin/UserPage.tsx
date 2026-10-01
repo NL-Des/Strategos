@@ -19,6 +19,7 @@ import { useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useToast } from '../../components/Toast';
 import { RightsTable } from '../../components/RightsTable';
+import { Breadcrumb } from '../../components/Breadcrumb';
 
 /**
  * Fiche d'un compte : pseudo et page personnelle, groupes, droits effectifs,
@@ -31,7 +32,7 @@ export function UserPage() {
 
   return (
     <section>
-      <Link to="/admin/users">{t('admin.users.back')}</Link>
+      <Breadcrumb items={[{ label: t('admin.nav.users'), to: '/admin/users' }]} />
       <ErrorMessage error={user.error} />
       {user.data && <UserDetails key={user.data.id} user={user.data} />}
     </section>

@@ -79,6 +79,12 @@
   --tone-soft: var(--ok-soft);
 }
 
+/* État neutre : jamais publiée, compte désactivé. */
+.status-none {
+  --tone: var(--muted);
+  --tone-soft: var(--hover);
+}
+
 .status-rejected,
 .status-invalidated {
   --tone: var(--danger);

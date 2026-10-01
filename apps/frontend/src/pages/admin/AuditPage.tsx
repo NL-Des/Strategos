@@ -153,6 +153,7 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
   return (
     <tr>
       <td>
+        {/* Le journal garde les secondes : l'ordre exact des actions compte. */}
         {new Date(entry.createdAt).toLocaleString('fr-FR', {
           dateStyle: 'short',
           timeStyle: 'medium',

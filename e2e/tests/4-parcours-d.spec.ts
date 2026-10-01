@@ -4,7 +4,7 @@ import {
   clickAndWait,
   firstLogin,
   loginAsAdmin,
-  section,
+  openCreate,
   selectByText,
   t,
 } from './helpers.ts';
@@ -51,7 +51,7 @@ async function configureTable(table: Locator): Promise<void> {
 test('1. Nadia crée le modèle de page « Espace joueur »', async ({ page }) => {
   await loginAsAdmin(page);
   await adminNav(page, 'pages');
-  const create = section(page, t('builder.pages.create'));
+  const create = await openCreate(page, t('builder.pages.create'));
   await create.getByLabel(t('builder.pages.name')).fill('Espace joueur');
   await create.getByRole('button', { name: t('builder.pages.createSubmit') }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Espace joueur' })).toBeVisible();
@@ -118,7 +118,7 @@ test('2. instancié pour Arkan : feuille « Arkan », groupe personnel, publicat
 
   // Groupe personnel « Arkan », qui lit sa page.
   await adminNav(page, 'groups');
-  const groupForm = section(page, t('admin.groups.create'));
+  const groupForm = await openCreate(page, t('admin.groups.create'));
   await groupForm.getByLabel(t('fields.name')).fill('Arkan');
   await groupForm.getByRole('button', { name: t('admin.groups.createSubmit') }).click();
   await page.getByRole('checkbox', { name: 'arkan', exact: true }).check();

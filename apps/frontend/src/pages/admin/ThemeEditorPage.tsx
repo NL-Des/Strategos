@@ -12,7 +12,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { deleteTheme, getTheme, updateTheme } from '../../api/themes';
 import { MediaPicker } from '../../builder/MediaPicker';
 import { useConfirmed } from '../../components/Dialog';
@@ -20,6 +20,7 @@ import { ErrorMessage } from '../../components/ErrorMessage';
 import { Notice } from '../../components/Notice';
 import { useToast } from '../../components/Toast';
 import { ThemeScope } from '../../render/ThemeScope';
+import { Breadcrumb } from '../../components/Breadcrumb';
 
 /** Admin › Thème : réglages par section et aperçu en direct (06 — Thèmes). */
 export function ThemeEditorPage() {
@@ -29,7 +30,7 @@ export function ThemeEditorPage() {
 
   return (
     <section>
-      <Link to="/admin/themes">{t('themes.back')}</Link>
+      <Breadcrumb items={[{ label: t('admin.nav.themes'), to: '/admin/themes' }]} />
       <ErrorMessage error={theme.error} />
       {theme.data && <ThemeEditor key={theme.data.id} theme={theme.data} />}
     </section>

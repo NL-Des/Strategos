@@ -106,3 +106,15 @@ export async function openAdminPage(page: Page, name: string): Promise<void> {
 export function dialogButton(page: Page, label = t('common.delete')): Locator {
   return page.getByRole('dialog').getByRole('button', { name: label, exact: true });
 }
+
+/**
+ * Carte de création d'un écran de liste (« Créer une page »…) : repliée derrière
+ * un bouton du même nom, ouverte ici si elle ne l'est pas déjà.
+ */
+export async function openCreate(page: Page, heading: string): Promise<Locator> {
+  const title = page.getByRole('heading', { name: heading, exact: true });
+  if (!(await title.isVisible())) {
+    await page.getByRole('button', { name: heading, exact: true }).click();
+  }
+  return section(page, heading);
+}

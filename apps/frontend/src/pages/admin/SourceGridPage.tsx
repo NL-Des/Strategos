@@ -14,13 +14,14 @@ import {
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { editSourceCell, getSourceGrid, listSources } from '../../api/sources';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { RecalcMark } from '../../render/DataBlocks';
 import { FormulaPanel } from './formula/FormulaPanel';
 import type { TreeContext } from './formula/FormulaTree';
 import { areaText, coloredRefs, resolveSheet, sheetPrefix } from './formula/refs';
+import { Breadcrumb } from '../../components/Breadcrumb';
 
 const ROWS = 50;
 const COLS = 26;
@@ -250,9 +251,7 @@ export function SourceGridPage() {
 
   return (
     <section className="source-grid-page">
-      <p>
-        <Link to="/admin/sources">{t('sources.grid.back')}</Link>
-      </p>
+      <Breadcrumb items={[{ label: t('admin.nav.sources'), to: '/admin/sources' }]} />
       <h1>{name ?? t('sources.grid.title')}</h1>
       <p className="muted">{t('sources.grid.intro')}</p>
       <p className="muted">{t('sources.grid.editHelp')}</p>

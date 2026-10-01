@@ -16,7 +16,10 @@
     "confirm": "Confirmer",
     "edit": "Modifier",
     "delete": "Supprimer",
-    "reload": "Recharger"
+    "reload": "Recharger",
+    "breadcrumb": "Fil d’Ariane",
+    "noMatch": "Aucun résultat pour cette recherche.",
+    "truncated": "{{shown}} premiers résultats sur {{total}} : précisez la recherche pour voir les autres."
   },
   "account": {
     "menu": "Menu du compte",
@@ -58,7 +61,7 @@
       "temporaryPassword": "Mot de passe temporaire",
       "create": "Créer un compte",
       "createSubmit": "Créer le compte",
-      "back": "← Tous les comptes"
+      "empty": "Aucun compte pour ces filtres."
     },
     "user": {
       "identity": "Pseudo et page personnelle",
@@ -90,7 +93,7 @@
       "create": "Créer un groupe",
       "createSubmit": "Créer le groupe",
       "empty": "Aucun groupe pour l’instant.",
-      "back": "← Tous les groupes"
+      "search": "Rechercher un groupe"
     },
     "group": {
       "saved": "Groupe enregistré.",
@@ -121,6 +124,14 @@
       "themes": "Thèmes",
       "templates": "Modèles",
       "trash": "Corbeille"
+    },
+    "menu": "Menu",
+    "navGroups": {
+      "activity": "Activité",
+      "content": "Contenu",
+      "data": "Données",
+      "access": "Accès",
+      "system": "Système"
     }
   },
   "fields": {
@@ -494,7 +505,8 @@
       "empty": "Aucune page.",
       "untitled": "Page sans nom",
       "delete": "Supprimer la page",
-      "deleteConfirm": "Supprimer la page « {{name}} » ? Les liens qui y mènent disparaîtront."
+      "deleteConfirm": "Supprimer la page « {{name}} » ? Les liens qui y mènent disparaîtront.",
+      "search": "Rechercher une page"
     },
     "data": {
       "source": "Données",
@@ -676,7 +688,6 @@
     },
     "via": "via {{groups}}",
     "pageAccess": "Droits d’accès",
-    "back": "← Matrice des droits",
     "resourceTitle": "{{type}} « {{name}} »",
     "openEditor": "Ouvrir dans le page builder",
     "declaringGroups": "Groupes qui déclarent une permission",
@@ -836,7 +847,6 @@
     "grid": {
       "open": "Voir les cellules",
       "title": "Cellules",
-      "back": "← Retour aux sources",
       "intro": "La version de référence du classeur, telle que Strategos la conserve. Une formule n'est jamais calculée ici : sa valeur est celle du dernier enregistrement dans Excel, marquée * si une cellule dont elle dépend a changé depuis.",
       "sheets": "Feuilles",
       "goTo": "Aller à",
@@ -908,7 +918,8 @@
         }
       }
     },
-    "uploaded": "Fichier importé."
+    "uploaded": "Fichier importé.",
+    "add": "Ajouter une source"
   },
   "render": {
     "sourceUnavailable": "Ces données sont momentanément indisponibles.",
@@ -1060,7 +1071,6 @@
     "create": "Créer un thème",
     "createSubmit": "Créer le thème",
     "empty": "Aucun thème.",
-    "back": "← Tous les thèmes",
     "saved": "Thème enregistré.",
     "delete": "Supprimer le thème",
     "deleteConfirm": "Supprimer le thème « {{name}} » ? Les pages qui l’utilisent passeront au thème par défaut.",

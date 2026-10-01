@@ -43,6 +43,11 @@ export function MediaPicker({
         ))}
       </div>
       {media.data?.items.length === 0 && <p className="muted">{t('builder.media.empty')}</p>}
+      {media.data && media.data.total > media.data.items.length && (
+        <p className="hint">
+          {t('common.truncated', { shown: media.data.items.length, total: media.data.total })}
+        </p>
+      )}
     </div>
   );
 }

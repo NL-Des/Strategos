@@ -22,6 +22,7 @@ import { listUsers } from '../../api/users';
 import { useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useToast } from '../../components/Toast';
+import { Breadcrumb } from '../../components/Breadcrumb';
 
 /** Fiche d'un groupe : nom, membres et permissions qu'il déclare (vue « par groupe »). */
 export function GroupPage() {
@@ -31,7 +32,7 @@ export function GroupPage() {
 
   return (
     <section>
-      <Link to="/admin/groups">{t('admin.groups.back')}</Link>
+      <Breadcrumb items={[{ label: t('admin.nav.groups'), to: '/admin/groups' }]} />
       <ErrorMessage error={group.error} />
       {group.data && <GroupDetails key={group.data.id} group={group.data} />}
     </section>
@@ -178,6 +179,11 @@ function MembersEditor({ group }: { group: GroupDetail }) {
             </label>
           ))}
       </div>
+      {users.data && users.data.total > users.data.items.length && (
+        <p className="hint">
+          {t('common.truncated', { shown: users.data.items.length, total: users.data.total })}
+        </p>
+      )}
       <ErrorMessage error={users.error ?? save.error} />
       <button type="button" disabled={save.isPending} onClick={() => save.mutate()}>
         {t('admin.group.saveMembers')}
