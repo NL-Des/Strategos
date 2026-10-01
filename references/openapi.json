@@ -1652,6 +1652,38 @@
         ]
       }
     },
+    "/api/v1/admin/google/config": {
+      "put": {
+        "operationId": "Google_configure",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleConfigDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Identifiants du projet Google Cloud, saisis par l'admin ; le secret n'est jamais renvoyé.",
+        "tags": [
+          "Google"
+        ]
+      }
+    },
     "/api/v1/admin/google/connect": {
       "get": {
         "operationId": "Google_connect",
@@ -4749,6 +4781,28 @@
             "type": "boolean"
           }
         }
+      },
+      "GoogleConfigDto": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "clientSecret": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "apiKey": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "clientId",
+          "clientSecret"
+        ]
       },
       "CreateFormDto": {
         "type": "object",

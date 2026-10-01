@@ -1,8 +1,10 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
- * Chiffrement des jetons Google et OneDrive en base (08) : AES-256-GCM, clé fournie au
- * déploiement. Format : IV (12 octets) · étiquette (16 octets) · texte chiffré.
+ * Chiffrement des secrets gardés en base (08) : jetons Google et OneDrive, secret
+ * du client Google. AES-256-GCM. Format : IV (12 octets) · étiquette (16 octets) · texte chiffré.
  */
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
@@ -24,4 +26,30 @@ export function decryptToken(key: Buffer, payload: Uint8Array): string {
     decipher.update(data.subarray(IV_BYTES + TAG_BYTES)),
     decipher.final(),
   ]).toString('utf8');
+}
+
+const KEY_FILE = 'token-encryption.key';
+const generated = new Map<string, Buffer>();
+
+/**
+ * Clé de chiffrement de l'instance : celle fournie au déploiement (base64) a
+ * priorité ; sinon une clé est créée une fois dans `keysDir`, hors de la base et
+ * des sauvegardes, puis relue à chaque démarrage. Sans cette clé, les secrets
+ * en base sont illisibles : l'admin les ressaisit et reconnecte ses comptes.
+ */
+export function loadEncryptionKey(provided: string | undefined, keysDir: string): Buffer {
+  if (provided) return Buffer.from(provided, 'base64');
+  const file = join(keysDir, KEY_FILE);
+  let key = generated.get(file);
+  if (!key) {
+    try {
+      key = readFileSync(file);
+    } catch {
+      mkdirSync(keysDir, { recursive: true });
+      key = randomBytes(32);
+      writeFileSync(file, key, { mode: 0o600, flag: 'wx' });
+    }
+    generated.set(file, key);
+  }
+  return key;
 }

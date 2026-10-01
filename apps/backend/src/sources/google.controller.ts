@@ -1,10 +1,12 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Put, Query, Res } from '@nestjs/common';
 import type { GooglePickerSession, GoogleStatus } from '@strategos/shared';
 import type { Response } from 'express';
+import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth, Public } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { GoogleAuthService } from './connectors/google-auth.service.js';
 import { SourceUnavailableError, sourceException } from './source-errors.js';
+import { GoogleConfigDto } from './sources.dto.js';
 
 /** Connexion Google de l'admin (13 — Sources). Les routes `admin/` sont protégées par `AdminGuard`. */
 @Controller()
@@ -16,10 +18,16 @@ export class GoogleController {
     return this.auth.status();
   }
 
+  /** Identifiants du projet Google Cloud, saisis par l'admin ; le secret n'est jamais renvoyé. */
+  @Put('admin/google/config')
+  configure(@Body() dto: GoogleConfigDto, @Actor() actor: AuditActor): Promise<GoogleStatus> {
+    return this.auth.configure(dto, actor);
+  }
+
   /** Démarre la connexion Google (redirection). */
   @Get('admin/google/connect')
-  connect(@CurrentAuth() auth: AuthContext, @Res() res: Response): void {
-    res.redirect(this.auth.connectUrl(auth.user.id));
+  async connect(@CurrentAuth() auth: AuthContext, @Res() res: Response): Promise<void> {
+    res.redirect(await this.auth.connectUrl(auth.user.id));
   }
 
   /**

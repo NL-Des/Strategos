@@ -30,6 +30,7 @@ Suppression douce (soft-delete) pour sujets, messages (sujets et chat), groupes,
 - La purge supprime les archives plus anciennes que la durée de conservation, mais **garde toujours la dernière sauvegarde réussie**, pour qu'une série d'échecs ne laisse jamais l'instance sans sauvegarde.
 - La restauration d'une sauvegarde se fait par une commande serveur, comme la récupération du compte admin, backend arrêté : la base est remplacée en une transaction (`pg_restore --clean`), puis le contenu du volume `uploads` ; les archives du volume `backups` sont réinscrites, et la restauration est tracée au journal (acteur `cli`).
 - Les sources connectées (Google Sheets, OneDrive) ne sont pas sauvegardées par Strategos : leur historique de versions reste chez Google ou Microsoft.
+- La clé de chiffrement des secrets en base n'est pas dans la sauvegarde (volume `keys` ou `TOKEN_ENCRYPTION_KEY`) : restaurée sur une autre machine, une sauvegarde demande de ressaisir les identifiants Google et de reconnecter les comptes Google et OneDrive ([08](08-sources-donnees.md#points-techniques)).
 
 ### Langue
 L'interface est en **français** en v1. Tous les textes de l'interface sont rangés dans des fichiers de traduction dès le départ, pour pouvoir ajouter d'autres langues plus tard sans retoucher le code.

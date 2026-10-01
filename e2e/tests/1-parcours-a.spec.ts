@@ -90,12 +90,28 @@ const FAKE_PICKER = `
   window.gapi = { load: (api, options) => options.callback() };
 `;
 
-test('2. écran Sources : compte Google connecté, Sheet choisi et testé', async ({ page }) => {
+test('2. écran Sources : identifiants Google saisis, compte connecté, Sheet choisi et testé', async ({
+  page,
+}) => {
   await page.route('https://apis.google.com/js/api.js', (route) =>
     route.fulfill({ contentType: 'text/javascript', body: FAKE_PICKER }),
   );
   await loginAsAdmin(page);
   await adminNav(page, 'sources');
+  // Rien n'est configuré : le guide donne les deux adresses à déclarer chez Google.
+  await expect(page.getByText(t('sources.gsheet.setup.steps.publish'))).toBeVisible();
+  await expect(page.getByLabel(t('sources.gsheet.setup.origin'))).toHaveValue(
+    new URL(page.url()).origin,
+  );
+  await expect(page.getByLabel(t('sources.gsheet.setup.redirectUri'))).toHaveValue(
+    /\/api\/v1\/google\/callback$/,
+  );
+  await page
+    .getByLabel(t('sources.gsheet.setup.clientId'))
+    .fill('123456789-client-test.apps.googleusercontent.com');
+  await page.getByLabel(t('sources.gsheet.setup.clientSecret')).fill('secret-test');
+  await page.getByLabel(t('sources.gsheet.setup.apiKey')).fill('api-key-test');
+  await page.getByRole('button', { name: t('sources.gsheet.setup.save') }).click();
   await page.getByRole('link', { name: t('sources.gsheet.connect') }).click();
   await expect(page.getByText(t('sources.gsheet.connectedNow'))).toBeVisible();
   await expect(page.getByText(/nadia@exemple\.fr/)).toBeVisible();

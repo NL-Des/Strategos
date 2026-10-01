@@ -50,7 +50,7 @@ export class OneDriveAuthService {
 
   configured(): boolean {
     const { clientId, clientSecret } = config.azure;
-    return !!(clientId && clientSecret && config.tokenEncryptionKey);
+    return !!(clientId && clientSecret);
   }
 
   async status(): Promise<OneDriveStatus> {
@@ -93,7 +93,7 @@ export class OneDriveAuthService {
       .then((r) => (r.ok ? (r.json() as Promise<Me>) : {}))
       .catch(() => ({}));
     const accountLabel = me.userPrincipalName ?? me.displayName ?? '';
-    const encrypted = encryptToken(config.tokenEncryptionKey!, tokens.refresh_token);
+    const encrypted = encryptToken(config.tokenEncryptionKey, tokens.refresh_token);
     const accessExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
     await this.prisma.$transaction(async (tx) => {
       const data = {
@@ -134,7 +134,7 @@ export class OneDriveAuthService {
     try {
       tokens = await this.token({
         grant_type: 'refresh_token',
-        refresh_token: decryptToken(config.tokenEncryptionKey!, row.refreshTokenEncrypted),
+        refresh_token: decryptToken(config.tokenEncryptionKey, row.refreshTokenEncrypted),
       });
     } catch (error) {
       if (!(error instanceof RefusedError)) throw new SourceUnavailableError(sourceId);
@@ -148,7 +148,7 @@ export class OneDriveAuthService {
         accessExpiresAt,
         ...(tokens.refresh_token
           ? {
-              refreshTokenEncrypted: encryptToken(config.tokenEncryptionKey!, tokens.refresh_token),
+              refreshTokenEncrypted: encryptToken(config.tokenEncryptionKey, tokens.refresh_token),
             }
           : {}),
       },

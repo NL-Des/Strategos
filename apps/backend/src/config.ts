@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { loadEncryptionKey } from './sources/connectors/token-crypto.js';
 
 /** Réglages lus dans l'environnement (voir .env.example et docker-compose.yml). */
 export const config = {
@@ -32,16 +33,17 @@ export const config = {
       .filter(Boolean);
   },
   /**
-   * Projet Google Cloud (Google Sheets, accès délégué limité aux fichiers choisis) ;
-   * sans identifiant, Google Sheets est indisponible.
+   * Google Sheets : les identifiants du projet Google Cloud sont saisis par l'admin
+   * dans l'écran Sources et gardés en base (08), sauf si l'installateur les fournit
+   * ici : ils ont alors priorité et ne se modifient plus depuis l'écran.
    */
   get google() {
     return {
       clientId: process.env.GOOGLE_CLIENT_ID || null,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,
-      /** Clé d'API du projet, pour le sélecteur de fichiers ouvert dans le navigateur. */
+      /** Clé d'API du sélecteur de fichiers, envoyée au navigateur de l'admin. */
       apiKey: process.env.GOOGLE_API_KEY || null,
-      /** Adresse de retour déclarée dans le client OAuth (`…/api/v1/google/callback`). */
+      /** Adresse de retour à déclarer dans le client OAuth (`…/api/v1/google/callback`). */
       redirectUri:
         process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5173/api/v1/google/callback',
     };
@@ -57,10 +59,17 @@ export const config = {
         process.env.AZURE_REDIRECT_URI || 'http://localhost:5173/api/v1/onedrive/callback',
     };
   },
-  /** Clé de chiffrement des jetons Google et OneDrive : 32 octets en base64. */
-  get tokenEncryptionKey(): Buffer | null {
-    const key = process.env.TOKEN_ENCRYPTION_KEY;
-    return key ? Buffer.from(key, 'base64') : null;
+  /** Clé de chiffrement créée par le backend : volume `keys` en conteneur, hors sauvegardes. */
+  get keysDir(): string {
+    return resolve(process.env.KEYS_DIR ?? '.data/keys');
+  },
+  /**
+   * Clé de chiffrement des secrets gardés en base (jetons Google et OneDrive, secret
+   * du client Google) : `TOKEN_ENCRYPTION_KEY` (32 octets en base64) si elle est
+   * fournie, sinon une clé créée au premier besoin dans `keysDir`.
+   */
+  get tokenEncryptionKey(): Buffer {
+    return loadEncryptionKey(process.env.TOKEN_ENCRYPTION_KEY, this.keysDir);
   },
   /** Adresses des API externes, surchargées par les tests (faux serveur). */
   get apis() {

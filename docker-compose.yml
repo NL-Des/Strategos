@@ -38,7 +38,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-strategos}:${POSTGRES_PASSWORD:-strategos}@db:5432/${POSTGRES_DB:-strategos}
       UPLOADS_DIR: /data/uploads
       BACKUPS_DIR: /data/backups
-      # Google Sheets : client OAuth et clé d'API du projet Google Cloud (voir .env.example).
+      # Google Sheets : les identifiants Google se saisissent dans Admin › Sources, sauf si
+      # l'installateur les fournit ici (ils ont alors priorité ; voir .env.example).
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
@@ -48,11 +49,13 @@ services:
       AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:-}
       AZURE_TENANT: ${AZURE_TENANT:-common}
       AZURE_REDIRECT_URI: https://${DOMAIN:-localhost}/api/v1/onedrive/callback
-      # Clé de chiffrement des jetons Google et OneDrive.
+      # Clé de chiffrement des secrets en base : facultative, créée dans le volume `keys` sinon.
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
+      KEYS_DIR: /data/keys
     volumes:
       - uploads:/data/uploads
       - backups:/data/backups
+      - keys:/data/keys
     depends_on:
       db:
         condition: service_healthy
@@ -76,5 +79,6 @@ volumes:
   db_data:
   uploads:
   backups:
+  keys:
   caddy_data:
   caddy_config:

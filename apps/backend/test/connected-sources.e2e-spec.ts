@@ -1,4 +1,7 @@
 import { randomBytes } from 'node:crypto';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type {
   AdminPage,
@@ -15,6 +18,7 @@ import type {
   Submission,
   TableRow,
 } from '@strategos/shared';
+import { config } from '../src/config.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { FakeApis, type FakeSheets, GOOGLE_ACCOUNT } from './fake-apis.js';
 import {
@@ -30,6 +34,13 @@ import {
 } from './helpers.js';
 
 const SHEET_ID = 'SHEET_stock_guilde_0123456789';
+
+/** Identifiants du projet Google Cloud, tels que l'admin les colle dans l'écran Sources. */
+const GOOGLE_APP = {
+  clientId: '123456789-client-test.apps.googleusercontent.com',
+  clientSecret: 'secret-google-test',
+  apiKey: 'api-key-test',
+};
 
 const stock = (): FakeSheets => ({
   Stock: {
@@ -66,9 +77,6 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       GOOGLE_AUTH_URL: `${base}/google/authorize`,
       GOOGLE_TOKEN_URL: `${base}/google/token`,
       GOOGLE_USERINFO_URL: `${base}/google/userinfo`,
-      GOOGLE_CLIENT_ID: '123456789-client-test.apps.googleusercontent.com',
-      GOOGLE_CLIENT_SECRET: 'secret-test',
-      GOOGLE_API_KEY: 'api-key-test',
       GOOGLE_SHEETS_API: `${base}/sheets`,
       MICROSOFT_LOGIN_URL: `${base}/ms`,
       GRAPH_API: `${base}/graph`,
@@ -102,7 +110,11 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
     return location.searchParams.get('state')!;
   }
 
+  const configureGoogle = (app: Partial<typeof GOOGLE_APP> = GOOGLE_APP) =>
+    admin.send('put', '/admin/google/config', app);
+
   async function connectGoogle(): Promise<void> {
+    expectStatus(await configureGoogle(), 200);
     const state = await googleState();
     const back = await new TestClient(app).get(`/google/callback?code=good-code&state=${state}`);
     expect(back.headers.location).toBe('/admin/sources?google=connected');
@@ -206,13 +218,114 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
   };
 
   describe('Google Sheets', () => {
-    it('connexion : réservée à l’admin, state vérifié, jeton chiffré jamais renvoyé, tracée', async () => {
-      expect((await admin.get('/admin/google/status')).body).toEqual({
+    it('identifiants saisis par l’admin : refus tant qu’ils manquent, secret chiffré jamais renvoyé, tracés', async () => {
+      expect((await admin.get('/admin/google/status')).body).toMatchObject({
+        configured: false,
+        clientId: null,
+        redirectUri: 'http://localhost:5173/api/v1/google/callback',
+      });
+      const early = await admin.get('/admin/google/connect');
+      expect(early.status).toBe(400);
+      expect(early.body.code).toBe('SOURCE_AUTH_FAILED');
+      expect((await kira.send('put', '/admin/google/config', GOOGLE_APP)).status).toBe(404);
+      for (const bad of [
+        { ...GOOGLE_APP, clientId: 'pas-un-id-client' },
+        { ...GOOGLE_APP, clientSecret: '' },
+        { clientId: GOOGLE_APP.clientId },
+      ]) {
+        expect((await configureGoogle(bad)).status).toBe(400);
+      }
+
+      // Valeurs collées avec des espaces autour : acceptées.
+      const saved = await configureGoogle({ ...GOOGLE_APP, clientId: ` ${GOOGLE_APP.clientId}\n` });
+      expectStatus(saved, 200);
+      expect(saved.body).toMatchObject({
         configured: true,
+        clientId: GOOGLE_APP.clientId,
+        hasApiKey: true,
+      });
+      const row = await prisma.googleApp.findUniqueOrThrow({ where: { id: 1 } });
+      expect(Buffer.from(row.clientSecretEncrypted).toString('latin1')).not.toContain(
+        GOOGLE_APP.clientSecret,
+      );
+      const entry = await prisma.auditLog.findFirstOrThrow({
+        where: { action: 'google.configure' },
+      });
+      expect(entry.after).toEqual({ clientId: GOOGLE_APP.clientId });
+      const exposed = JSON.stringify([
+        saved.body,
+        (await admin.get('/admin/google/status')).body,
+        await prisma.auditLog.findMany(),
+      ]);
+      expect(exposed).not.toContain(GOOGLE_APP.clientSecret);
+      // Le faux Google reçoit bien le secret déchiffré.
+      await connectGoogle();
+      expect(fake.googleClients).toContainEqual([GOOGLE_APP.clientId, GOOGLE_APP.clientSecret]);
+    });
+
+    it('identifiants fournis au déploiement : prioritaires, non modifiables depuis l’écran', async () => {
+      const env = { GOOGLE_CLIENT_ID: '555-deploiement.apps.googleusercontent.com' };
+      try {
+        // Un seul des deux : ignoré.
+        Object.assign(process.env, env);
+        expect((await admin.get('/admin/google/status')).body).toMatchObject({
+          configured: false,
+          managed: false,
+        });
+        Object.assign(process.env, { GOOGLE_CLIENT_SECRET: 'secret-deploiement' });
+        expect((await admin.get('/admin/google/status')).body).toMatchObject({
+          configured: true,
+          managed: true,
+          clientId: env.GOOGLE_CLIENT_ID,
+          hasApiKey: false,
+        });
+        const refused = await configureGoogle();
+        expect(refused.status).toBe(403);
+        expect(refused.body.code).toBe('FORBIDDEN');
+        expect(await prisma.googleApp.count()).toBe(0);
+
+        const state = await googleState();
+        await new TestClient(app).get(`/google/callback?code=good-code&state=${state}`);
+        expect(fake.googleClients).toEqual([[env.GOOGLE_CLIENT_ID, 'secret-deploiement']]);
+        expect(JSON.stringify((await admin.get('/admin/google/status')).body)).not.toContain(
+          'secret-deploiement',
+        );
+      } finally {
+        delete process.env.GOOGLE_CLIENT_ID;
+        delete process.env.GOOGLE_CLIENT_SECRET;
+      }
+    });
+
+    it('changer d’ID client : connexion expirée, Sheets en auth_expired ; même ID : rien ne change', async () => {
+      const source = await addSheet();
+      expectStatus(await configureGoogle({ ...GOOGLE_APP, clientSecret: 'secret-renouvelé' }), 200);
+      expect(((await admin.get('/admin/google/status')).body as GoogleStatus).connected).toBe(true);
+
+      const other = { ...GOOGLE_APP, clientId: '987654321-autre.apps.googleusercontent.com' };
+      const changed = await configureGoogle(other);
+      expect(changed.body).toMatchObject({ clientId: other.clientId, expired: true });
+      expect(((await admin.get('/admin/sources')).body as SourceSummary[])[0]!.status).toBe(
+        'auth_expired',
+      );
+      const test = await admin.send('post', `/admin/sources/${source.id}/test`);
+      expect(test.body.code).toBe('SOURCE_AUTH_EXPIRED');
+      await connectGoogle();
+      expectStatus(await admin.send('post', `/admin/sources/${source.id}/test`), 200);
+    });
+
+    it('connexion : réservée à l’admin, state vérifié, jeton chiffré jamais renvoyé, tracée', async () => {
+      const status = {
+        configured: true,
+        managed: false,
+        clientId: GOOGLE_APP.clientId,
+        hasApiKey: true,
+        redirectUri: 'http://localhost:5173/api/v1/google/callback',
         connected: false,
         accountLabel: null,
         expired: false,
-      });
+      };
+      expectStatus(await configureGoogle(), 200);
+      expect((await admin.get('/admin/google/status')).body).toEqual(status);
       expect((await kira.get('/admin/google/connect')).status).toBe(404);
       expect((await kira.get('/admin/google/picker')).status).toBe(404);
       // Pas encore connecté : pas de sélecteur.
@@ -237,10 +350,9 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       expect(replay.headers.location).toBe('/admin/sources?google=failed');
 
       expect((await admin.get('/admin/google/status')).body as GoogleStatus).toEqual({
-        configured: true,
+        ...status,
         connected: true,
         accountLabel: GOOGLE_ACCOUNT,
-        expired: false,
       });
       const row = await prisma.googleCredential.findUniqueOrThrow({ where: { id: 1 } });
       expect(Buffer.from(row.refreshTokenEncrypted).toString('latin1')).not.toContain(
@@ -363,6 +475,23 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       expectStatus(back, 200);
       expect(back.body.status).toBe('ok');
     });
+  });
+
+  it('sans TOKEN_ENCRYPTION_KEY : clé créée une fois dans KEYS_DIR, puis relue', () => {
+    const provided = process.env.TOKEN_ENCRYPTION_KEY;
+    const dir = mkdtempSync(join(tmpdir(), 'strategos-keys-'));
+    Object.assign(process.env, { TOKEN_ENCRYPTION_KEY: '', KEYS_DIR: join(dir, 'keys') });
+    try {
+      const file = join(dir, 'keys', 'token-encryption.key');
+      expect(existsSync(file)).toBe(false);
+      const key = config.tokenEncryptionKey;
+      expect(key).toHaveLength(32);
+      expect(readFileSync(file)).toEqual(key);
+      expect(config.tokenEncryptionKey).toEqual(key);
+    } finally {
+      Object.assign(process.env, { TOKEN_ENCRYPTION_KEY: provided });
+      delete process.env.KEYS_DIR;
+    }
   });
 
   describe('OneDrive', () => {

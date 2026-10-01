@@ -2,6 +2,7 @@ import type {
   AddSourceInput,
   CellEditInput,
   GridCell,
+  GoogleConfigInput,
   GooglePickerSession,
   GoogleStatus,
   OneDriveItem,
@@ -47,6 +48,9 @@ export const deleteSource = (id: string, confirm = false) =>
 
 // Sources connectées (08) : Google Sheets et OneDrive.
 export const getGoogleStatus = () => apiFetch<GoogleStatus>('/admin/google/status');
+/** Identifiants du projet Google Cloud, saisis par l'admin ; le secret n'est jamais relu. */
+export const setGoogleConfig = (body: GoogleConfigInput) =>
+  apiFetch<GoogleStatus>('/admin/google/config', { method: 'PUT', body });
 /** Jeton court et identifiants pour ouvrir le sélecteur de fichiers Google. */
 export const getGooglePicker = () => apiFetch<GooglePickerSession>('/admin/google/picker');
 /** Lancement de la connexion Google : navigation complète (redirection). */

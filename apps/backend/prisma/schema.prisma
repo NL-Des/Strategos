@@ -575,6 +575,20 @@ model OnedriveCredential {
   @@map("onedrive_credentials")
 }
 
+/// Projet Google Cloud de l'instance, saisi par l'admin dans l'écran Sources :
+/// une seule ligne, `id = 1` (`CHECK` ajouté dans la migration). Le secret du
+/// client OAuth est chiffré (AES-256-GCM) et n'est jamais renvoyé par l'API.
+model GoogleApp {
+  id                    Int      @id @default(1)
+  clientId              String   @map("client_id")
+  clientSecretEncrypted Bytes    @map("client_secret_encrypted")
+  /// Clé d'API du sélecteur de fichiers, envoyée au navigateur de l'admin.
+  apiKey                String?  @map("api_key")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("google_app")
+}
+
 /// Connexion du compte Google de l'admin (accès délégué, limité aux fichiers
 /// qu'il choisit) : une seule ligne, `id = 1` (`CHECK` ajouté dans la migration).
 /// Le refresh token est chiffré (AES-256-GCM).

@@ -240,7 +240,7 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 
 - Adaptateurs Google Sheets puis OneDrive, derrière l'interface commune de l'étape 5.
 - Cache mémoire de 30 à 60 secondes, invalidé par `source_id` après chaque écriture ; erreurs `SOURCE_UNAVAILABLE` et `SOURCE_AUTH_EXPIRED`.
-- Google : accès délégué (`drive.file`), table `google_credentials` (jeton chiffré), sélecteur de fichiers, test d'accès.
+- Google : identifiants saisis par l'admin (`google_app`), accès délégué (`drive.file`), table `google_credentials` (jeton chiffré), sélecteur de fichiers, test d'accès.
 - OneDrive : accès délégué, table `onedrive_credentials` (jeton chiffré), reconnexion signalée dans l'espace admin.
 
 **Critères d'acceptation**

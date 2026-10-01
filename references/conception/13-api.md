@@ -178,8 +178,9 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | POST | `/sources/:id/reimport/preview` | Uploader le nouveau fichier ; renvoie un `reimportToken` et la liste des **validations et modifications de la grille qui seraient perdues** (voir [schéma](#aperçu-de-réimport)) | `415`, `EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/reimport/confirm` | `{ reimportToken, mode: "overwrite" \| "reapply" }` (annuler revient à ne pas confirmer ; le jeton expire) | `409 REIMPORT_TOKEN_EXPIRED`, `422` si une validation réappliquée échoue |
 | DELETE | `/sources/:id` | Retirer (avertissement si encore utilisée) | `409 CONFIRMATION_REQUIRED` |
-| GET | `/google/connect` | Démarre la connexion Google (redirection) | — |
-| GET | `/google/status` | État de la connexion : `{ configured, connected, accountLabel, expired }` (jamais le jeton) | — |
+| PUT | `/google/config` | Saisir ou remplacer les identifiants du projet Google Cloud : `{ clientId, clientSecret, apiKey? }` ; renvoie l'état. Changer d'ID client rend la connexion en cours expirée. Tracé (`google.configure`, ID client seulement) | `400` (ID client mal formé), `403 FORBIDDEN` (identifiants fournis au déploiement) |
+| GET | `/google/connect` | Démarre la connexion Google (redirection) | `400 SOURCE_AUTH_FAILED` sans identifiants |
+| GET | `/google/status` | État : `{ configured, managed, clientId, hasApiKey, redirectUri, connected, accountLabel, expired }` — `managed` : identifiants fournis au déploiement, non modifiables ici ; `redirectUri` est l'adresse de retour à déclarer chez Google ; jamais le code secret ni le jeton | — |
 | GET | `/api/v1/google/callback` (**hors** `/admin`, publique) | Retour de Google : même règle que le retour de Microsoft (`state`), puis redirection vers `/admin/sources?google=connected` ou `failed` | `400 SOURCE_AUTH_FAILED` |
 | GET | `/google/picker` | Ce qu'il faut au sélecteur de fichiers Google : `{ accessToken, apiKey, appId }` (jeton d'accès court, limité aux fichiers choisis ; jamais le refresh token) | `SOURCE_AUTH_EXPIRED` |
 | GET | `/onedrive/connect` | Démarre la connexion Microsoft (redirection) | — |

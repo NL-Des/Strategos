@@ -4,11 +4,14 @@ import {
   type CellEditInput,
   FORMULA_MAX_LENGTH,
   GRID_MAX_COLS,
+  GOOGLE_CLIENT_ID_PATTERN,
+  GOOGLE_SECRET_MAX_LENGTH,
+  type GoogleConfigInput,
   GRID_MAX_ROWS,
   MAX_COLUMN,
   MAX_ROW,
 } from '@strategos/shared';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -22,6 +25,31 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+
+/** Valeur collée depuis la console Google : sans les espaces autour. */
+const Trim = () =>
+  Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value));
+
+/** `PUT /admin/google/config` : identifiants du projet Google Cloud. */
+export class GoogleConfigDto implements GoogleConfigInput {
+  @Trim()
+  @IsString()
+  @MaxLength(GOOGLE_SECRET_MAX_LENGTH)
+  @Matches(GOOGLE_CLIENT_ID_PATTERN)
+  clientId: string;
+
+  @Trim()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(GOOGLE_SECRET_MAX_LENGTH)
+  clientSecret: string;
+
+  @Trim()
+  @IsOptional()
+  @IsString()
+  @MaxLength(GOOGLE_SECRET_MAX_LENGTH)
+  apiKey?: string;
+}
 
 /** `POST /admin/sources` : un Google Sheet choisi dans le sélecteur, ou un fichier du OneDrive connecté. */
 export class AddSourceDto {

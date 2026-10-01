@@ -116,6 +116,9 @@
     }
   },
   "fields": {
+    "clientId": "ID client",
+    "clientSecret": "Code secret du client",
+    "apiKey": "Clé d’API",
     "username": "Pseudo",
     "password": "Mot de passe",
     "newUsername": "Nouveau pseudo",
@@ -290,6 +293,7 @@
       "submission.invalidate": "Invalidation des soumissions en attente",
       "source.add": "Ajout d’une source",
       "onedrive.connect": "Connexion OneDrive",
+      "google.configure": "Saisie des identifiants Google",
       "google.connect": "Connexion du compte Google",
       "message.hide": "Masquage d’un message",
       "message.unhide": "Rétablissement d’un message",
@@ -723,7 +727,6 @@
     "test": "Tester",
     "gsheet": {
       "title": "Google Sheets",
-      "notConfigured": "Google Sheets n’est pas configuré sur cette instance (identifiants Google à fournir au déploiement).",
       "connected": "Connecté au compte {{account}}. Strategos n’accède qu’aux Sheets que vous choisissez.",
       "notConnected": "Aucun compte Google connecté.",
       "expired": "La connexion Google a expiré : reconnectez-vous pour que les Google Sheets restent lisibles.",
@@ -731,7 +734,80 @@
       "reconnect": "Reconnecter",
       "connectedNow": "Compte Google connecté.",
       "pick": "Choisir des Google Sheets",
-      "pickerFailed": "Le sélecteur de fichiers Google n’a pas pu s’ouvrir. Réessayez."
+      "pickerFailed": "Le sélecteur de fichiers Google n’a pas pu s’ouvrir. Réessayez.",
+      "connectFailed": "La connexion au compte Google a échoué. Vérifiez les identifiants Google et les deux adresses déclarées chez Google, puis réessayez.",
+      "connectFailedManaged": "La connexion au compte Google a échoué. Les identifiants Google de ce site sont fournis par la personne qui l’a installé : signalez-lui le problème.",
+      "setup": {
+        "title": "Identifiants Google",
+        "intro": "Pour activer Google Sheets, déclarez une fois ce site chez Google, puis collez ici les trois valeurs obtenues. C’est gratuit, avec n’importe quel compte Google.",
+        "console": "Ouvrir la console Google Cloud",
+        "steps": {
+          "project": {
+            "title": "Créer un nouveau projet",
+            "items": [
+              "En haut de l’écran (à côté du logo Google Cloud), cliquez sur le sélecteur de projet (un bouton déroulant qui affiche par défaut « Sélectionner un projet » ou le nom d’un projet existant).",
+              "Dans la fenêtre qui s’ouvre, cliquez sur le bouton « Nouveau projet » (situé en haut à droite de cette fenêtre).",
+              "Dans le champ « Nom du projet », donnez le nom de votre choix (par exemple : Mon Projet Google).",
+              "Cliquez sur le bouton bleu « Créer » en bas de la page.",
+              "Patientez quelques secondes, puis vérifiez en haut de l’écran que votre nouveau projet est bien sélectionné."
+            ]
+          },
+          "apis": {
+            "title": "Activer les deux API requises",
+            "items": [
+              "Ouvrez le menu principal en cliquant sur l’icône ☰ (les 3 barres horizontales en haut à gauche).",
+              "Passez votre souris sur « API et services », puis cliquez sur « Bibliothèque ».",
+              "Dans la barre de recherche au centre, tapez « Google Sheets API » et appuyez sur Entrée.",
+              "Cliquez sur la carte « Google Sheets API », puis sur le bouton bleu « Activer ».",
+              "Revenez dans la bibliothèque (menu ☰ › « API et services » › « Bibliothèque »).",
+              "Dans la barre de recherche, tapez « Google Picker API ».",
+              "Cliquez sur la carte « Google Picker API », puis sur le bouton bleu « Activer »."
+            ]
+          },
+          "consent": {
+            "title": "Configurer l’écran de consentement OAuth",
+            "items": [
+              "Dans le menu de gauche, cliquez sur « Écran de consentement OAuth ».",
+              "Cochez le type d’utilisateur « Externe », puis cliquez sur le bouton « Créer ».",
+              "Remplissez uniquement les informations obligatoires : dans « Nom de l’application », tapez le nom de votre choix ; dans « Adresse e-mail d’assistance utilisateur », sélectionnez votre propre adresse e-mail dans le menu déroulant.",
+              "Descendez tout en bas de la page et inscrivez également votre e-mail dans le champ « Coordonnées du développeur ».",
+              "Cliquez sur « Enregistrer et continuer » en bas de la page (cliquez aussi sur ce bouton pour les pages suivantes « Champs d’application » et « Utilisateurs de test », sans rien modifier d’autre).",
+              "Une fois revenu au résumé de l’écran de consentement, repérez la section « État de publication ».",
+              "Cliquez sur le bouton « Publier l’application », puis cliquez sur « Confirmer »."
+            ],
+            "note": "Publier est une étape cruciale : si vous l’oubliez, l’application reste en mode « Test » et votre connexion expirera automatiquement tous les 7 jours."
+          },
+          "client": {
+            "title": "Créer l’ID client OAuth et le code secret",
+            "items": [
+              "Dans le menu de gauche, cliquez sur « Identifiants ».",
+              "En haut de la page, cliquez sur « + Créer des identifiants », puis choisissez « ID client OAuth ».",
+              "Dans le menu déroulant « Type d’application », sélectionnez « Application Web ».",
+              "Sous « Origines JavaScript autorisées », cliquez sur « + Ajouter une URI » et collez la première adresse affichée ci-dessous.",
+              "Sous « URI de redirection autorisés », cliquez sur « + Ajouter une URI » et collez la seconde adresse affichée ci-dessous.",
+              "Cliquez sur « Créer » tout en bas.",
+              "Une fenêtre apparaît avec deux informations très importantes : l’ID client et le code secret du client. Copiez-les et collez-les dans les champs ci-dessous."
+            ]
+          },
+          "apiKey": {
+            "title": "Générer la clé API",
+            "items": [
+              "Toujours sur la page « Identifiants », cliquez de nouveau sur « + Créer des identifiants » en haut de l’écran.",
+              "Choisissez cette fois « Clé API ».",
+              "Une petite fenêtre s’ouvre en affichant votre clé API.",
+              "Copiez cette clé et collez-la dans le champ ci-dessous.",
+              "Cliquez sur « Fermer »."
+            ]
+          }
+        },
+        "origin": "Origine JavaScript autorisée (à copier chez Google)",
+        "redirectUri": "URI de redirection autorisé (à copier chez Google)",
+        "clientId": "ID client",
+        "clientSecret": "Code secret du client",
+        "apiKey": "Clé d’API",
+        "secretHelp": "Le code secret est enregistré chiffré et n’est plus jamais affiché. Pour modifier ces valeurs, ressaisissez-les toutes.",
+        "save": "Enregistrer"
+      }
     },
     "onedrive": {
       "title": "OneDrive / SharePoint",

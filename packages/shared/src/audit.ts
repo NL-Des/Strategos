@@ -42,6 +42,7 @@ export const AuditAction = {
   SOURCE_EDIT_CELL: 'source.edit_cell',
   SOURCE_ADD: 'source.add',
   ONEDRIVE_CONNECT: 'onedrive.connect',
+  GOOGLE_CONFIGURE: 'google.configure',
   GOOGLE_CONNECT: 'google.connect',
   FORM_CREATE: 'form.create',
   FORM_UPDATE: 'form.update',

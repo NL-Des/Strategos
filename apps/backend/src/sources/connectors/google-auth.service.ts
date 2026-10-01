@@ -3,11 +3,13 @@ import {
   AuditAction,
   AuditTargetType,
   ErrorCode,
+  type GoogleConfigInput,
   type GooglePickerSession,
   type GoogleStatus,
   SourceStatus,
   SourceType,
 } from '@strategos/shared';
+import type { AuditActor } from '../../audit/audit-actor.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { AppException } from '../../common/app-exception.js';
 import { config } from '../../config.js';
@@ -29,13 +31,24 @@ interface TokenResponse {
   expires_in: number;
 }
 
+/** Identifiants du projet Google Cloud, secret en clair, tels qu'ils sont envoyés à Google. */
+interface GoogleAppCredentials {
+  clientId: string;
+  clientSecret: string;
+  apiKey: string | null;
+  /** Fournis au déploiement : non modifiables depuis l'écran Sources. */
+  managed: boolean;
+}
+
 const authFailed = () => new AppException(HttpStatus.BAD_REQUEST, ErrorCode.SOURCE_AUTH_FAILED);
 
 /**
- * Connexion Google de l'admin (08) : accès délégué, flux OAuth « code ». Le
- * refresh token est stocké chiffré (`google_credentials`), jamais renvoyé par
- * l'API. Un rafraîchissement refusé rend la connexion expirée, signalée dans
- * l'espace admin.
+ * Connexion Google de l'admin (08) : accès délégué, flux OAuth « code ». Les
+ * identifiants du projet Google Cloud sont ceux du déploiement s'il les fournit,
+ * sinon ceux saisis par l'admin (`google_app`) ;
+ * le secret du client et le refresh token (`google_credentials`) sont stockés
+ * chiffrés, jamais renvoyés par l'API. Un rafraîchissement refusé rend la
+ * connexion expirée, signalée dans l'espace admin.
  */
 @Injectable()
 export class GoogleAuthService {
@@ -48,29 +61,92 @@ export class GoogleAuthService {
     private readonly audit: AuditService,
   ) {}
 
-  configured(): boolean {
-    const { clientId, clientSecret } = config.google;
-    return !!(clientId && clientSecret && config.tokenEncryptionKey);
+  /**
+   * Identifiants du projet Google Cloud : ceux du déploiement ont priorité ;
+   * sinon ceux saisis par l'admin. `null` s'il n'y en a pas, ou si le secret
+   * est illisible (clé de chiffrement perdue) : ils sont alors à ressaisir.
+   */
+  private async credentials(): Promise<GoogleAppCredentials | null> {
+    const { clientId, clientSecret, apiKey } = config.google;
+    if (clientId && clientSecret) return { clientId, clientSecret, apiKey, managed: true };
+    const app = await this.prisma.googleApp.findUnique({ where: { id: 1 } });
+    if (!app) return null;
+    try {
+      return {
+        clientId: app.clientId,
+        clientSecret: decryptToken(config.tokenEncryptionKey, app.clientSecretEncrypted),
+        apiKey: app.apiKey,
+        managed: false,
+      };
+    } catch {
+      return null;
+    }
   }
 
   async status(): Promise<GoogleStatus> {
-    const row = await this.prisma.googleCredential.findUnique({ where: { id: 1 } });
+    const [app, row] = await Promise.all([
+      this.credentials(),
+      this.prisma.googleCredential.findUnique({ where: { id: 1 } }),
+    ]);
     return {
-      configured: this.configured(),
+      configured: !!app,
+      managed: app?.managed ?? false,
+      clientId: app?.clientId ?? null,
+      hasApiKey: !!app?.apiKey,
+      redirectUri: config.google.redirectUri,
       connected: !!row && !row.expiredAt,
       accountLabel: row?.accountLabel ?? null,
       expired: !!row?.expiredAt,
     };
   }
 
+  /**
+   * Saisie des identifiants par l'admin. Le jeton de la connexion en cours est
+   * lié au client OAuth : changer d'identifiant de client la rend expirée.
+   */
+  async configure(input: GoogleConfigInput, actor: AuditActor): Promise<GoogleStatus> {
+    if ((await this.credentials())?.managed) {
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN);
+    }
+    const data = {
+      clientId: input.clientId,
+      clientSecretEncrypted: encryptToken(config.tokenEncryptionKey, input.clientSecret),
+      apiKey: input.apiKey || null,
+    };
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.googleApp.findUnique({ where: { id: 1 } });
+      await tx.googleApp.upsert({ where: { id: 1 }, create: { id: 1, ...data }, update: data });
+      if (before && before.clientId !== input.clientId) {
+        const { count } = await tx.googleCredential.updateMany({
+          where: { expiredAt: null },
+          data: { expiredAt: new Date() },
+        });
+        if (count > 0) {
+          await tx.source.updateMany({
+            where: { type: SourceType.gsheet, deletedAt: null },
+            data: { status: SourceStatus.auth_expired },
+          });
+        }
+      }
+      await this.audit.record(tx, actor, {
+        action: AuditAction.GOOGLE_CONFIGURE,
+        targetType: AuditTargetType.GOOGLE,
+        ...(before ? { before: { clientId: before.clientId } } : {}),
+        after: { clientId: input.clientId },
+      });
+    });
+    this.access = null;
+    return this.status();
+  }
+
   /** Adresse de connexion chez Google, avec un `state` à usage unique lié à l'admin. */
-  connectUrl(userId: string): string {
-    if (!this.configured()) throw authFailed();
-    const { clientId, redirectUri } = config.google;
+  async connectUrl(userId: string): Promise<string> {
+    const app = await this.credentials();
+    if (!app) throw authFailed();
     const params = new URLSearchParams({
-      client_id: clientId!,
+      client_id: app.clientId,
       response_type: 'code',
-      redirect_uri: redirectUri,
+      redirect_uri: config.google.redirectUri,
       scope: SCOPES,
       // Sans ces deux réglages, Google ne renvoie un refresh token qu'à la première connexion.
       access_type: 'offline',
@@ -98,7 +174,7 @@ export class GoogleAuthService {
       .then((r) => (r.ok ? (r.json() as Promise<{ email?: string }>) : {}))
       .catch(() => ({}));
     const accountLabel = me.email ?? '';
-    const encrypted = encryptToken(config.tokenEncryptionKey!, tokens.refresh_token);
+    const encrypted = encryptToken(config.tokenEncryptionKey, tokens.refresh_token);
     const accessExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
     await this.prisma.$transaction(async (tx) => {
       const data = {
@@ -134,12 +210,12 @@ export class GoogleAuthService {
     if (this.access && this.access.expiresAt - EXPIRY_MARGIN_MS > Date.now())
       return this.access.value;
     const row = await this.prisma.googleCredential.findUnique({ where: { id: 1 } });
-    if (!row || row.expiredAt || !this.configured()) throw new SourceAuthExpiredError(sourceId);
+    if (!row || row.expiredAt) throw new SourceAuthExpiredError(sourceId);
     let tokens: TokenResponse;
     try {
       tokens = await this.token({
         grant_type: 'refresh_token',
-        refresh_token: decryptToken(config.tokenEncryptionKey!, row.refreshTokenEncrypted),
+        refresh_token: decryptToken(config.tokenEncryptionKey, row.refreshTokenEncrypted),
       });
     } catch (error) {
       if (!(error instanceof RefusedError)) throw new SourceUnavailableError(sourceId);
@@ -159,11 +235,8 @@ export class GoogleAuthService {
    */
   async pickerSession(): Promise<GooglePickerSession> {
     const accessToken = await this.accessToken('google');
-    return {
-      accessToken,
-      apiKey: config.google.apiKey,
-      appId: config.google.clientId!.split('-')[0]!,
-    };
+    const app = (await this.credentials())!;
+    return { accessToken, apiKey: app.apiKey, appId: app.clientId.split('-')[0]! };
   }
 
   /** Connexion expirée : signalée dans l'espace admin, Google Sheets en `auth_expired`. */
@@ -180,11 +253,16 @@ export class GoogleAuthService {
   }
 
   private async token(grant: Record<string, string>): Promise<TokenResponse> {
-    const { clientId, clientSecret } = config.google;
+    const app = await this.credentials();
+    if (!app) throw new RefusedError();
     const response = await fetch(config.apis.googleToken, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: clientId!, client_secret: clientSecret!, ...grant }),
+      body: new URLSearchParams({
+        client_id: app.clientId,
+        client_secret: app.clientSecret,
+        ...grant,
+      }),
     });
     // 400 / 401 : jeton révoqué ou expiré (`invalid_grant`) ; le reste est une panne.
     if (response.status === 400 || response.status === 401) throw new RefusedError();

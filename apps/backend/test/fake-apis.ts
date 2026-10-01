@@ -58,6 +58,8 @@ export class FakeApis {
   refreshValid = true;
   /** De même pour le refresh token Google. */
   googleRefreshValid = true;
+  /** Identifiants `[client_id, client_secret]` reçus par le faux Google. */
+  readonly googleClients: [string, string][] = [];
   private server?: Server;
   private refreshCount = 0;
 
@@ -82,6 +84,7 @@ export class FakeApis {
     this.sheetReads = 0;
     this.refreshValid = true;
     this.googleRefreshValid = true;
+    this.googleClients.length = 0;
   }
 
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -110,6 +113,7 @@ export class FakeApis {
     // Google : jetons OAuth. Comme le vrai, le rafraîchissement ne renvoie pas de refresh token.
     if (path === '/google/token' && req.method === 'POST') {
       const form = new URLSearchParams(body);
+      this.googleClients.push([form.get('client_id') ?? '', form.get('client_secret') ?? '']);
       this.refreshCount += 1;
       // Durée courte : chaque appel repasse par le rafraîchissement.
       const access = { access_token: `google-access-${this.refreshCount}`, expires_in: 30 };

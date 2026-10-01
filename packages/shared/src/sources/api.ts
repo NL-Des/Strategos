@@ -35,12 +35,32 @@ export type AddSourceInput =
 
 /** Connexion du compte Google de l'admin (accès délégué, limité aux fichiers qu'il choisit). */
 export interface GoogleStatus {
-  /** Le client OAuth Google est configuré au déploiement. */
+  /** Les identifiants du projet Google Cloud sont en place. */
   configured: boolean;
+  /** Ils sont fournis au déploiement : non modifiables depuis l'écran Sources. */
+  managed: boolean;
+  /** Identifiant du client OAuth ; le secret n'est jamais renvoyé. */
+  clientId: string | null;
+  hasApiKey: boolean;
+  /** Adresse de retour à déclarer dans le client OAuth, chez Google. */
+  redirectUri: string;
   connected: boolean;
   accountLabel: string | null;
   /** La connexion a expiré : l'admin doit se reconnecter. */
   expired: boolean;
+}
+
+export const GOOGLE_CLIENT_ID_PATTERN = /^\d+-[a-z0-9-]+\.apps\.googleusercontent\.com$/;
+export const GOOGLE_SECRET_MAX_LENGTH = 200;
+
+/**
+ * `PUT /admin/google/config` : identifiants du projet Google Cloud, copiés par
+ * l'admin depuis la console Google. La clé d'API sert au sélecteur de fichiers.
+ */
+export interface GoogleConfigInput {
+  clientId: string;
+  clientSecret: string;
+  apiKey?: string;
 }
 
 /**

@@ -7,7 +7,7 @@ Ce guide installe Strategos sur une machine accessible depuis Internet, avec un 
 
 Les étapes sont les mêmes ; les différences sont signalées par **VPS** ou **À domicile**. L'architecture déployée est décrite dans [architecture.md §7](architecture.md#7-déploiement).
 
-Google Sheets et OneDrive ne sont pas nécessaires : ils restent désactivés tant que leurs secrets ne sont pas fournis, et le reste du site fonctionne sans eux (Excel uploadés compris).
+Google Sheets et OneDrive ne sont pas nécessaires : ils restent désactivés tant qu'ils ne sont pas configurés (Google Sheets depuis le site, section 10), et le reste du site fonctionne sans eux (Excel uploadés compris).
 
 ## 1. Prérequis
 
@@ -71,9 +71,8 @@ cp .env.example .env
 | `TZ` | `Europe/Paris` (fuseau de la sauvegarde de 3 h) |
 | `POSTGRES_PASSWORD` | Un mot de passe fort, généré par `openssl rand -base64 24` |
 | `POSTGRES_USER`, `POSTGRES_DB` | Garder les valeurs proposées |
-| `GOOGLE_*` | Laisser vides (Google Sheets désactivé) ; pour l'activer, voir la [section 10](#10-activer-google-sheets-facultatif) |
 | `AZURE_*` | Laisser vides (OneDrive désactivé) |
-| `TOKEN_ENCRYPTION_KEY` | Vide tant que ni Google Sheets ni OneDrive ne sont activés |
+| `TOKEN_ENCRYPTION_KEY` | Laisser vide : le site crée lui-même sa clé de chiffrement |
 
 Le fichier `.env` n'est jamais versionné ; gardez-en une copie en lieu sûr.
 
@@ -114,7 +113,7 @@ La commande affiche un mot de passe temporaire, à changer à la connexion suiva
 - Sauvegarde immédiate : `docker compose exec backend node dist/src/cli/run-backup.js`.
 - Restauration : voir les commandes de la section « Exploitation » du [README](../README.md#exploitation-docker).
 
-Les documents Google Sheets et OneDrive ne sont pas sauvegardés par Strategos : leur historique reste chez Google ou Microsoft. La connexion au compte Google ou Microsoft, elle, est dans la sauvegarde, chiffrée avec `TOKEN_ENCRYPTION_KEY` : sans votre copie de `.env`, il suffit de reconnecter le compte dans **Admin › Sources**.
+Les documents Google Sheets et OneDrive ne sont pas sauvegardés par Strategos : leur historique reste chez Google ou Microsoft. Les identifiants Google et les connexions aux comptes Google et Microsoft sont dans la sauvegarde, mais chiffrés avec une clé qui n'y est pas (volume Docker `keys`) : après une restauration sur une autre machine, ressaisissez les identifiants Google et reconnectez les comptes dans **Admin › Sources**.
 
 ## 8. Mises à jour
 
@@ -142,30 +141,35 @@ Pour les mises à jour du système : `sudo apt update && sudo apt upgrade`, et d
 
 ## 10. Activer Google Sheets (facultatif)
 
-À faire une fois, par la personne qui installe le site. Ensuite, l'administrateur n'a plus qu'à cliquer sur **Connecter mon compte Google** dans **Admin › Sources**, puis à choisir ses Sheets : Strategos n'accède qu'aux Sheets choisis.
+Rien à faire sur le serveur : tout se passe dans le site, dans **Admin › Sources**, carte « Google Sheets ». L'écran affiche le même pas à pas que ci-dessous, avec les deux adresses de votre site prêtes à copier.
 
-Dans la [console Google Cloud](https://console.cloud.google.com/), avec n'importe quel compte Google :
+À faire une fois, dans la [console Google Cloud](https://console.cloud.google.com/), avec n'importe quel compte Google :
 
 1. **Créer un projet** (menu des projets, en haut › « Nouveau projet »).
 2. **Activer deux API** (« API et services » › « Bibliothèque ») : **Google Sheets API** et **Google Picker API**.
-3. **Écran de consentement** (« API et services » › « Écran de consentement OAuth ») : type **Externe**, un nom d'application, votre adresse e-mail. Ajoutez le scope `…/auth/drive.file` (« Consulter et modifier les fichiers Google Drive que vous utilisez avec cette application »).
-4. **Publier l'application** : sur le même écran, bouton « Publier l'application ». Sans cela, la connexion expire tous les 7 jours. Aucune validation par Google n'est demandée : `drive.file` n'est pas un accès sensible.
-5. **Client OAuth** (« Identifiants » › « Créer des identifiants » › « ID client OAuth ») : type **Application Web**.
+3. **Écran de consentement** (« API et services » › « Écran de consentement OAuth ») : type **Externe**, un nom d'application, votre adresse e-mail.
+4. **Publier l'application** : sur le même écran, bouton « Publier l'application ». Sans cela, la connexion expire tous les 7 jours. Aucune validation par Google n'est demandée : Strategos ne demande l'accès qu'aux fichiers que vous choisissez.
+5. **Client OAuth** (« Identifiants » › « Créer des identifiants » › « ID client OAuth ») : type **Application Web**. Copiez-y les deux adresses affichées par l'écran Sources :
    - Origines JavaScript autorisées : `https://strategos.mon-domaine.fr`
    - URI de redirection autorisés : `https://strategos.mon-domaine.fr/api/v1/google/callback`
 
    Notez l'**ID client** et le **code secret**.
 6. **Clé d'API** (« Identifiants » › « Créer des identifiants » › « Clé API ») : restreignez-la aux sites web `https://strategos.mon-domaine.fr/*` et à l'API **Google Picker API**.
 
-Reportez ces valeurs dans `.env` :
+Collez l'ID client, le code secret et la clé d'API dans le formulaire de l'écran Sources, puis **Enregistrer**. Le bouton **Connecter mon compte Google** apparaît ; une fois connecté, **Choisir des Google Sheets** ouvre le sélecteur de fichiers de Google. Strategos n'accède qu'aux Sheets choisis.
+
+Si la connexion échoue, vérifiez l'ID client, le code secret et les deux adresses déclarées chez Google : une faute de frappe ne se voit qu'à ce moment-là. Les identifiants se remplacent depuis le même écran (« Identifiants Google »).
+
+### Vous installez le site pour quelqu'un d'autre
+
+Pour que le gérant n'ait rien à saisir, faites vous-même les six étapes ci-dessus, puis mettez les valeurs dans `.env` au lieu du formulaire :
 
 | Variable | Valeur |
 |---|---|
 | `GOOGLE_CLIENT_ID` | L'ID client (`123456789-….apps.googleusercontent.com`) |
 | `GOOGLE_CLIENT_SECRET` | Le code secret du client |
 | `GOOGLE_API_KEY` | La clé d'API |
-| `TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32`, si elle n'est pas déjà remplie. **Ne la changez plus ensuite** : la connexion enregistrée deviendrait illisible |
 
-Puis `docker compose up -d` pour que le backend relise `.env`.
+Puis `docker compose up -d`. Ces valeurs ont priorité sur celles du formulaire, qui n'est alors plus affiché : le gérant voit directement **Connecter mon compte Google**.
 
 Si la connexion Google expire (accès révoqué depuis le compte Google, mot de passe changé, six mois sans usage), un bandeau le signale dans l'espace admin : **Reconnecter** suffit.

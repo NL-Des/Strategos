@@ -5,9 +5,9 @@ Mettre la conception à l'épreuve avec des scénarios complets, qui traversent 
 
 ## Parcours A — Première installation (communauté « Les Loups Gris »)
 
-1. Nadia, l'admin, dépose le Compose sur son serveur, renseigne le nom de domaine et les identifiants du projet Google Cloud, puis lance `docker compose up`. Caddy obtient le certificat HTTPS ([11](11-transverse.md#stack-technique)).
+1. Nadia, l'admin, dépose le Compose sur son serveur, renseigne le nom de domaine, puis lance `docker compose up`. Caddy obtient le certificat HTTPS ([11](11-transverse.md#stack-technique)).
 2. Elle se connecte avec `admin` / `admin` et doit immédiatement changer d'identifiants ([02](02-comptes-authentification.md#compte-administrateur)).
-3. Elle veut relier le Google Sheet de la guilde. Elle connecte son compte Google, puis choisit le Sheet dans le sélecteur de fichiers de Google ([08](08-sources-donnees.md#trois-types-de-source)).
+3. Elle veut relier le Google Sheet de la guilde. Guidée par l'écran Sources, elle déclare le site chez Google et colle les identifiants obtenus ; elle connecte ensuite son compte Google, puis choisit le Sheet dans le sélecteur de fichiers de Google ([08](08-sources-donnees.md#trois-types-de-source)).
    - **✔ Trou 1** : aucun écran n'est décrit pour **gérer les sources** (ajouter un Sheet, tester la connexion, voir l'état et la date de synchro, uploader et télécharger un Excel, reconnecter OneDrive). → *Résolu* : écran **Sources** dans l'espace admin, qui connecte le compte Google, ouvre le sélecteur de fichiers et teste l'accès ([04](04-administration.md#sources)).
 4. Elle crée les groupes « Partie commune », « Membres » et « Officiers », puis les comptes des joueurs ([03](03-droits-groupes.md), [04](04-administration.md)).
    - **✔ Trou 2** : le mot de passe saisi à la **création** d'un compte est-il temporaire, comme lors d'une réinitialisation ? Sinon, Nadia connaît durablement le mot de passe de chacun. → *Résolu* : oui, le mot de passe de création est **temporaire** ([02](02-comptes-authentification.md#cycle-de-vie-des-comptes)).

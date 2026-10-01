@@ -13,6 +13,7 @@ L'administrateur dispose d'un **espace d'administration dédié** pour gérer le
 
 ### Sources
 Un écran liste les sources de données et permet de les gérer (voir [Sources de données](08-sources-donnees.md)) :
+- **activer Google Sheets** : tant que rien n'est configuré, l'écran affiche le pas à pas à suivre dans la console Google, les deux adresses à y déclarer et un formulaire où coller l'ID client, le code secret et la clé d'API ; ces identifiants se remplacent ensuite depuis le même écran, le code secret n'étant jamais réaffiché. S'ils sont fournis au déploiement, le guide et le formulaire ne sont pas affichés ;
 - **connecter ou reconnecter** son compte Google, puis **choisir** ses Google Sheets dans le sélecteur de fichiers de Google ; l'accès de chaque Sheet choisi est testé à l'ajout ;
 - **connecter ou reconnecter** le compte OneDrive, puis ajouter un fichier ;
 - **uploader** un Excel, le **télécharger** et le **réimporter** (avec l'avertissement prévu) ;
@@ -53,7 +54,7 @@ Sont tracées (action, cible, état avant/après, date) :
 - les actions sur les comptes (y compris le changement d'identifiants ou de mot de passe fait par l'utilisateur lui-même), les appartenances aux groupes et les permissions ;
 - les réglages de l'instance ;
 - la **validation, le refus et la modification des soumissions**, y compris les validations automatiques, avec la valeur réellement écrite (avant/après pour un mouvement), la cellule et la source ;
-- les sources : upload, ajout d'un Google Sheet ou d'un fichier OneDrive, connexion du compte Google ou OneDrive (compte connecté, jamais le jeton), téléchargement d'un Excel uploadé, modification d'une cellule dans la grille (cellule, contenu avant et après), réimport avec le choix fait (annuler, écraser, réappliquer) et retrait ;
+- les sources : upload, ajout d'un Google Sheet ou d'un fichier OneDrive, saisie des identifiants Google (ID client, jamais le code secret), connexion du compte Google ou OneDrive (compte connecté, jamais le jeton), téléchargement d'un Excel uploadé, modification d'une cellule dans la grille (cellule, contenu avant et après), réimport avec le choix fait (annuler, écraser, réappliquer) et retrait ;
 - la modération par l'admin : masquage et rétablissement d'un message, modification ou suppression du message d'un autre, suppression d'un sujet ;
 - les modifications et **publications** de pages, du header et du footer partagés, les modifications, publications et réglages de formulaires ;
 - l'upload et la suppression des images de la médiathèque ;
