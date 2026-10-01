@@ -1,4 +1,5 @@
 import type { AssembledRow, ColumnWidth } from '@strategos/shared';
+import type { CSSProperties } from 'react';
 import { BlockRenderer } from './blocks';
 
 const FRACTION: Record<ColumnWidth, string> = {
@@ -8,15 +9,15 @@ const FRACTION: Record<ColumnWidth, string> = {
   '2/3': '2fr',
 };
 
-/** Une zone : pile de rangées ; sur mobile, les colonnes s'empilent (CSS). */
+/** Une zone : pile de rangées ; la répartition passe par `--cols`, que le CSS replie sur mobile et tablette. */
 export function Rows({ rows }: { rows: AssembledRow[] }) {
   return (
     <>
       {rows.map((row) => (
         <div
           key={row.id}
-          className="layout-row"
-          style={{ gridTemplateColumns: row.columns.map((c) => FRACTION[c.width]).join(' ') }}
+          className={`layout-row cols-${row.columns.length}`}
+          style={{ '--cols': row.columns.map((c) => FRACTION[c.width]).join(' ') } as CSSProperties}
         >
           {row.columns.map((column, i) => (
             <div key={column.block?.id ?? i} className="layout-column">

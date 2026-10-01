@@ -99,7 +99,7 @@ test('2. écran Sources : identifiants Google saisis, compte connecté, Sheet ch
   await loginAsAdmin(page);
   await adminNav(page, 'sources');
   // Rien n'est configuré : le guide donne les deux adresses à déclarer chez Google.
-  await expect(page.getByText(t('sources.gsheet.setup.steps.publish'))).toBeVisible();
+  await expect(page.getByText(t('sources.gsheet.setup.steps.consent.note'))).toBeVisible();
   await expect(page.getByLabel(t('sources.gsheet.setup.origin'))).toHaveValue(
     new URL(page.url()).origin,
   );

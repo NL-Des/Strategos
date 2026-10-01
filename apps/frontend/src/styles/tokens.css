@@ -1,0 +1,75 @@
+/*
+ * Jetons de l'interface. Les pages construites (`.themed`) redéfinissent les
+ * couleurs à partir du thème de l'admin (voir render.css) : tout composant qui
+ * n'utilise que ces jetons suit donc le thème.
+ *
+ * Paliers responsive (les media queries ne lisent pas les variables) :
+ *   mobile  : jusqu'à 700px — colonnes empilées
+ *   tablette : 701 à 899px  — deux colonnes au plus, sidebar sous le contenu
+ *   bureau  : 900px et plus
+ */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1c2330;
+  --muted: #5b6475;
+  --border: #d9dde5;
+  /* Bordure des champs : 3:1 au moins sur la surface. */
+  --border-strong: #848da0;
+  --accent: #2f5bd3;
+  --danger: #b3261e;
+  --ok: #1d7a46;
+  --warn: #8a5a00;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 6%);
+  --shadow-md: 0 2px 8px rgb(16 24 40 / 10%);
+  --shadow-lg: 0 12px 32px rgb(16 24 40 / 18%);
+
+  /* En `em` : suivent la taille de texte du thème dans les pages construites. */
+  --text-xs: 0.8em;
+  --text-sm: 0.875em;
+  --text-lg: 1.125em;
+  --text-xl: 1.35em;
+  --text-2xl: 1.75em;
+
+  --z-sticky: 10;
+  --z-menu: 50;
+  --z-toast: 90;
+
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Références de formule (assistant de la grille). */
+  --ref-0: #2563eb;
+  --ref-1: #c2410c;
+  --ref-2: #15803d;
+  --ref-3: #9333ea;
+  --ref-4: #be123c;
+  --ref-5: #0e7490;
+
+  color-scheme: light;
+}
+
+/*
+ * Teintes dérivées : déclarées aussi sur `.themed` pour être recalculées à
+ * partir des couleurs du thème (une variable se résout là où elle est déclarée).
+ */
+:root,
+.themed {
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  --danger-soft: color-mix(in srgb, var(--danger) 9%, var(--surface));
+  --ok-soft: color-mix(in srgb, var(--ok) 10%, var(--surface));
+  --warn-soft: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  --hover: color-mix(in srgb, var(--text) 6%, transparent);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}

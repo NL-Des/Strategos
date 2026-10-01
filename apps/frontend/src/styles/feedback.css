@@ -1,0 +1,93 @@
+/*
+ * Messages : un encadré teinté avec un filet, jamais la couleur du texte seule.
+ * Le texte garde la couleur courante, donc reste lisible sur tout thème.
+ */
+
+.notice,
+.error {
+  --tone: var(--ok);
+  --tone-soft: var(--ok-soft);
+  margin: var(--space-3) 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--tone-soft);
+  border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+  border-left: 4px solid var(--tone);
+  border-radius: var(--radius-md);
+  color: var(--text);
+}
+
+.error {
+  --tone: var(--danger);
+  --tone-soft: var(--danger-soft);
+}
+
+.notice.warning {
+  --tone: var(--warn);
+  --tone-soft: var(--warn-soft);
+}
+
+.notice.info {
+  --tone: var(--accent);
+  --tone-soft: var(--accent-soft);
+}
+
+.notice > :last-child,
+.error > :last-child {
+  margin-bottom: 0;
+}
+
+.notice p,
+.error p,
+.error ul {
+  margin: 0 0 var(--space-1);
+}
+
+.error ul {
+  padding-left: 1.25rem;
+}
+
+/* Statuts des soumissions : pastille (forme + couleur). */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--tone-soft, var(--accent-soft));
+  color: var(--tone, var(--accent));
+}
+
+.status::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-pending {
+  --tone: var(--accent);
+  --tone-soft: var(--accent-soft);
+}
+
+.status-validated,
+.status-modified {
+  --tone: var(--ok);
+  --tone-soft: var(--ok-soft);
+}
+
+.status-rejected,
+.status-invalidated {
+  --tone: var(--danger);
+  --tone-soft: var(--danger-soft);
+}
+
+.needs-recalc {
+  margin-left: 0.15rem;
+  color: var(--danger);
+  font-weight: 700;
+  cursor: help;
+}

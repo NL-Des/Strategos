@@ -1,0 +1,556 @@
+/* ---- Pages construites : thème, zones, rangées, modules ---- */
+
+/*
+ * Le thème de l'admin (variables `--t-*`, posées par ThemeScope) remplace les
+ * jetons de l'interface : champs, messages, menus et badges le suivent sans
+ * règle particulière, y compris sur un fond sombre.
+ */
+.themed {
+  --bg: var(--t-bg);
+  --surface: var(--t-surface);
+  --text: var(--t-text);
+  --border: var(--t-border);
+  --accent: var(--t-link);
+  --muted: color-mix(in srgb, var(--t-text) 68%, var(--t-bg));
+  --border-strong: color-mix(in srgb, var(--t-text) 50%, var(--t-surface));
+  --btn-bg: var(--t-btn-bg);
+  --btn-fg: var(--t-btn-color);
+  --btn-border: var(--t-btn-border);
+  --btn-radius: var(--t-btn-radius);
+
+  min-height: 100vh;
+  background: var(--t-bg) var(--t-bg-image) center / cover;
+  color: var(--t-text);
+  font-family: var(--t-font);
+  font-size: var(--t-size);
+}
+
+.themed h1,
+.themed h2,
+.themed h3,
+.themed h4 {
+  color: var(--t-heading);
+  font-family: var(--t-heading-font);
+}
+
+.zone {
+  padding: var(--space-3) var(--space-4);
+}
+
+.zone-header,
+.zone-footer {
+  background: var(--surface);
+  border: 0 solid var(--border);
+}
+
+.zone-header {
+  border-bottom-width: 1px;
+}
+
+.zone-footer {
+  border-top-width: 1px;
+}
+
+.zone-header .layout-row:last-child,
+.zone-footer .layout-row:last-child {
+  margin-bottom: 0;
+}
+
+.zone-body {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 900px) {
+  .zone-body.with-sidebar {
+    grid-template-columns: 3fr 1fr;
+  }
+}
+
+/* `--cols` : répartition des colonnes, posée par Rows. */
+.layout-row {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: var(--cols, 1fr);
+  margin-bottom: var(--space-4);
+}
+
+.layout-column {
+  min-width: 0;
+}
+
+/* Tablette : trois colonnes passent à deux, la dernière sur toute la largeur. */
+@media (max-width: 899px) {
+  .layout-row.cols-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .layout-row.cols-3 > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Mobile : les colonnes d'une rangée s'empilent. */
+@media (max-width: 700px) {
+  .layout-row,
+  .layout-row.cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.align-left {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.align-center {
+  text-align: center;
+  justify-content: center;
+}
+
+.align-right {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.block-image.size-fit {
+  width: 100%;
+  height: auto;
+}
+
+.block-image.size-original {
+  max-width: 100%;
+  height: auto;
+}
+
+.block-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.block-buttons.vertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.theme-button {
+  padding: var(--space-2) var(--space-4);
+  background: var(--btn-bg, var(--accent));
+  color: var(--btn-fg, #fff);
+  border: 1px solid var(--btn-border, var(--accent));
+  border-radius: var(--btn-radius, var(--radius-md));
+}
+
+/* Plus spécifique que `.themed a`. */
+.themed a.theme-button {
+  color: var(--btn-fg);
+}
+
+.theme-button:hover {
+  filter: brightness(0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.block-rich img {
+  max-width: 100%;
+  height: auto;
+}
+
+.block-rich table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.block-rich th,
+.block-rich td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+}
+
+.block-rich > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Modules de données (06 — Tableau, Catalogue, Contenu libre) ---- */
+
+.block-unavailable {
+  padding: var(--space-3);
+  border: 1px dashed var(--border);
+  border-radius: var(--t-radius, var(--radius-md));
+  opacity: 0.8;
+}
+
+.block-search {
+  margin-bottom: var(--space-2);
+  max-width: 20rem;
+  width: 100%;
+}
+
+.block-table .table-wrap {
+  border-color: var(--t-table-border, var(--border));
+}
+
+.block-table thead th {
+  background: var(--t-table-head-bg, transparent);
+  color: var(--t-table-head-color, var(--muted));
+}
+
+.block-table th,
+.block-table td {
+  border-bottom-color: var(--t-table-border, var(--border));
+}
+
+.block-table tbody tr:nth-child(even) {
+  background: var(--t-table-stripe, transparent);
+}
+
+.block-table th button.sort {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.block-table .format-number,
+.block-table .format-currency {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalog-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(var(--per-row, 3), minmax(0, 1fr));
+}
+
+.catalog-grid.per-row-1 {
+  --per-row: 1;
+}
+.catalog-grid.per-row-2 {
+  --per-row: 2;
+}
+.catalog-grid.per-row-3 {
+  --per-row: 3;
+}
+.catalog-grid.per-row-4 {
+  --per-row: 4;
+}
+
+@media (max-width: 899px) {
+  .catalog-grid.per-row-4 {
+    --per-row: 2;
+  }
+}
+
+@media (max-width: 700px) {
+  .catalog-grid,
+  .catalog-grid.per-row-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--t-card-bg, var(--surface));
+  border: 1px solid var(--t-card-border, var(--border));
+  border-radius: var(--t-card-radius, var(--radius-lg));
+  box-shadow: var(--t-card-shadow, none);
+}
+
+.catalog-card h3 {
+  color: var(--t-card-title, inherit);
+}
+
+.catalog-card.image_left {
+  flex-direction: row;
+}
+
+.catalog-card.image_right {
+  flex-direction: row-reverse;
+}
+
+.catalog-card.image_left .card-image,
+.catalog-card.image_right .card-image {
+  width: 40%;
+  aspect-ratio: auto;
+}
+
+.catalog-card.image_background {
+  min-height: 12rem;
+  justify-content: flex-end;
+}
+
+.catalog-card.image_background .card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.catalog-card.image_background .card-body {
+  position: relative;
+  background: color-mix(in srgb, var(--t-card-bg, var(--surface)) 85%, transparent);
+}
+
+.card-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* Mobile : une carte par rangée, image moins haute pour garder la liste lisible. */
+@media (max-width: 700px) {
+  .catalog-card.image_top .card-image {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.card-body {
+  padding: var(--space-3);
+}
+
+.card-body h3 {
+  margin: 0 0 var(--space-1);
+}
+
+.card-subtitle {
+  margin: 0 0 var(--space-2);
+  opacity: 0.8;
+}
+
+.card-body dl {
+  margin: 0;
+}
+
+.card-body dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.card-body dt {
+  font-weight: 600;
+}
+
+.card-body dd {
+  margin: 0;
+  text-align: right;
+}
+
+.cell-image {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+/* Image par défaut d'un catalogue (image introuvable). */
+.image-placeholder {
+  display: block;
+  background:
+    linear-gradient(135deg, transparent 45%, var(--border) 45% 55%, transparent 55%), var(--bg);
+}
+
+/* ---- Formulaires (09) ---- */
+
+.block-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.block-form > h3,
+.block-form > p {
+  margin: 0;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Le libellé et son astérisque restent sur une ligne. */
+.form-field > label {
+  display: block;
+}
+
+.form-field.inline {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.row-forms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.row-form-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--surface);
+  min-width: min(20rem, 80vw);
+}
+
+/* ---- Discussions et chat (07) : encadrés et messages du thème ---- */
+
+.block-discussion,
+.block-chat {
+  padding: var(--space-3);
+  background: var(--t-disc-bg, var(--surface));
+  border: 1px solid var(--t-disc-border, var(--border));
+  border-radius: var(--t-disc-radius, var(--radius-lg));
+}
+
+.topic-list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.topic-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--t-disc-border, var(--border));
+}
+
+.topic-list li > button.link {
+  flex: 1 1 12rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.topic-list li > button.link:hover {
+  text-decoration: underline;
+}
+
+.topic-list .muted {
+  font-size: var(--text-sm);
+}
+
+.topic-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.topic-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.topic-heading h3 {
+  margin: 0;
+}
+
+.chat-messages {
+  overflow-y: auto;
+  margin-bottom: var(--space-2);
+}
+
+.topic-message,
+.chat-message {
+  position: relative;
+  margin: var(--space-2) 0;
+  /* À droite : place du rouage. */
+  padding: var(--space-2) 2.75rem var(--space-2) var(--space-3);
+  background: var(--t-disc-msg-bg, var(--bg));
+  border-radius: var(--t-disc-radius, var(--radius-lg));
+}
+
+/* Message masqué par la modération : visible de l'admin seul. */
+.topic-message.hidden,
+.chat-message.hidden {
+  opacity: 0.65;
+  outline: 1px dashed var(--border-strong);
+}
+
+.topic-message header,
+.chat-message header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+}
+
+.topic-message header strong,
+.chat-message header strong {
+  color: var(--t-disc-author, inherit);
+}
+
+.topic-message header time,
+.chat-message header time {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.chat-message > .action-menu,
+.topic-message > .action-menu {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+}
+
+.message-body {
+  overflow-wrap: anywhere;
+}
+
+.message-body p {
+  margin: 0 0 var(--space-1);
+}
+
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.message-attachments img {
+  display: block;
+  width: 8rem;
+  height: 8rem;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.message-composer {
+  margin-top: var(--space-3);
+}
+
+.attach {
+  font-weight: 400;
+  font-size: var(--text-sm);
+}
+
+.block-form.chat-composer {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.chat-composer input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.chat-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}

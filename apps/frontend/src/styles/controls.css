@@ -1,0 +1,407 @@
+/* ---- Champs ---- */
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: 500;
+}
+
+label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 400;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  color: var(--text);
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--text);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--bg);
+  color: var(--muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+input:read-only:not([type='checkbox'], [type='radio'], [type='file'], [type='color']),
+textarea:read-only {
+  background: var(--bg);
+  border-style: dashed;
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'],
+textarea[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+input[type='file'] {
+  padding: var(--space-1);
+  border-style: dashed;
+  font-size: var(--text-sm);
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+legend {
+  padding: 0 var(--space-1);
+  font-weight: 600;
+}
+
+.checks {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  border: none;
+  padding: 0;
+}
+
+/* Champs côte à côte dans les éditeurs de modules (colonnes, plage), et filtres. */
+.inline-fields,
+.form.inline-fields {
+  display: flex;
+  /* Aussi quand la carte est un `.form` (en colonne par défaut). */
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.inline-fields > label {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.field-error,
+.error-text {
+  color: var(--danger);
+}
+
+/* Listes de cases à cocher longues (membres, groupes, pages). */
+.check-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-1) var(--space-4);
+  max-height: 20rem;
+  overflow: auto;
+  padding: var(--space-2) 0;
+}
+
+/* Bouton qui ouvre un sélecteur de fichier (réimport). */
+.file-button input[type='file'] {
+  display: none;
+}
+
+/* ---- Boutons ----
+ * Le bouton nu est l'action principale ; `.secondary` et `.danger` sont en
+ * contour. `--btn-*` : couleurs du thème dans les pages construites.
+ */
+
+button,
+a.button,
+.theme-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: 500;
+  line-height: 1.3;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button {
+  align-self: flex-start;
+  background: var(--btn-bg, var(--accent));
+  border-color: var(--btn-border, var(--accent));
+  color: var(--btn-fg, #fff);
+  border-radius: var(--btn-radius, var(--radius-md));
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+button:active:not(:disabled) {
+  filter: brightness(0.82);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.secondary,
+a.button {
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--btn-radius, var(--radius-md));
+  color: var(--text);
+}
+
+button.secondary:hover:not(:disabled),
+a.button:hover {
+  filter: none;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.danger {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--surface));
+  color: var(--danger);
+}
+
+button.danger:hover:not(:disabled) {
+  filter: none;
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+/* Rouge plein : réservé à la confirmation d'une action destructive. */
+button.danger.solid {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+button.danger.solid:hover:not(:disabled) {
+  filter: brightness(0.9);
+  background: var(--danger);
+}
+
+button.link {
+  display: inline;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-weight: inherit;
+  text-align: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+button.link:hover:not(:disabled) {
+  filter: none;
+  box-shadow: none;
+  text-decoration-thickness: 2px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ---- Badges ---- */
+
+.badge {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--accent);
+  color: #fff;
+}
+
+.badge.muted {
+  background: var(--hover);
+  color: var(--muted);
+}
+
+/* ---- Menus déroulants (compte, actions d'un message ou d'un sujet) ---- */
+
+.account-menu {
+  position: fixed;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: var(--z-menu);
+}
+
+/* Dans la barre du cadre applicatif, le menu reste dans le flux. */
+.topbar .account-menu {
+  position: relative;
+  top: auto;
+  right: auto;
+}
+
+.account-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  padding: 0;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+}
+
+.account-dropdown,
+.action-menu-dropdown {
+  position: absolute;
+  right: 0;
+  z-index: var(--z-menu);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-1);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.account-dropdown {
+  margin-top: var(--space-2);
+  min-width: 13rem;
+}
+
+.action-menu-dropdown {
+  min-width: 10rem;
+}
+
+.account-dropdown a,
+.account-dropdown button,
+.action-menu-dropdown button {
+  align-self: stretch;
+  justify-content: flex-start;
+  padding: 0.45rem var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font-weight: 400;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.account-dropdown a:hover,
+.account-dropdown button:hover:not(:disabled),
+.action-menu-dropdown button:hover:not(:disabled) {
+  filter: none;
+  box-shadow: none;
+  background: var(--hover);
+}
+
+.action-menu-dropdown button.danger {
+  color: var(--danger);
+}
+
+.account-name {
+  margin: 0 0 var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.action-menu {
+  position: relative;
+  display: inline-block;
+}
+
+/* Rouage : cible assez grande pour le doigt. */
+button.action-menu-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  color: inherit;
+  text-decoration: none;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+.action-menu-button:hover,
+.action-menu-button[aria-expanded='true'] {
+  opacity: 1;
+  background: var(--hover);
+}
+
+/* ---- Pagination ---- */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin-top: var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.pagination button {
+  padding: 0.35rem var(--space-3);
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.pagination button:hover:not(:disabled) {
+  filter: none;
+  border-color: var(--accent);
+  color: var(--accent);
+}

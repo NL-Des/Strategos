@@ -1,0 +1,158 @@
+/* ---- Page builder ---- */
+
+.editor-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--bg);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-header h1 {
+  margin-bottom: var(--space-1);
+}
+
+.row-toolbar,
+.block-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.row-columns {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  margin-top: var(--space-3);
+}
+
+.column-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  min-width: 0;
+}
+
+.zone-editor {
+  margin-top: var(--space-5);
+}
+
+.hint {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.link-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.link-editor > * {
+  flex: 1 1 10rem;
+}
+
+.form-editor .field-editor {
+  border-left: 3px solid var(--border-strong);
+}
+
+/* « Enregistrer comme modèle » : bouton, puis petite carte de saisie. */
+span.save-template {
+  display: inline-flex;
+}
+
+/* ---- Éditeur de texte riche (contenu libre, notes) ---- */
+
+.rich-editor {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.rich-editor:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tool {
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  font-weight: 400;
+}
+
+button.tool:hover:not(:disabled) {
+  filter: none;
+  background: var(--hover);
+}
+
+.tool.active,
+button.tool.active:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.rich-editor-content .ProseMirror {
+  min-height: 8rem;
+  padding: var(--space-3);
+  outline: none;
+}
+
+.cell-value-tag {
+  padding: 0 0.2rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+/* ---- Aperçu ---- */
+
+.preview {
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  margin: var(--space-4) 0;
+  overflow: hidden;
+}
+
+.preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--accent);
+  color: #fff;
+}
+
+.preview-bar label.inline {
+  color: #fff;
+}
+
+/* `transform` : le menu de compte fixe reste dans le cadre de l'aperçu. */
+.preview-frame {
+  max-height: 70vh;
+  overflow: auto;
+  transform: translateZ(0);
+}
+
+.preview-frame .themed {
+  min-height: auto;
+}

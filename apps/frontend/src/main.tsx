@@ -5,7 +5,7 @@ import { App } from './App';
 import { ApiRequestError } from './api/client';
 import { ME_KEY } from './auth/useMe';
 import './i18n';
-import './styles.css';
+import './styles/index.css';
 
 const queryClient = new QueryClient({
   // Session expirée ou révoquée : on revient à l'état « non connecté ».

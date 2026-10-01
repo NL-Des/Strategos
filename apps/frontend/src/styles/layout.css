@@ -1,0 +1,181 @@
+/* ---- Cadre applicatif (écrans hors page builder) ---- */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: var(--text-lg);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+}
+
+.page.wide {
+  max-width: 80rem;
+}
+
+.narrow {
+  max-width: 28rem;
+}
+
+/* Une carte étroite se centre dans une page large (changement d'identifiants). */
+.page > .narrow {
+  margin-inline: auto;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+}
+
+.card.warning {
+  border-color: var(--danger);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form h1,
+.form h2,
+.form p {
+  margin: 0;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+
+.filters input {
+  flex: 1 1 12rem;
+}
+
+/* ---- Tableaux ---- */
+
+/*
+ * Un tableau large défile dans son cadre ; les ombres de bord signalent qu'il
+ * reste des colonnes hors de l'écran.
+ */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) left / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--surface) 30%, transparent) right / 2.5rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgb(16 24 40 / 22%), transparent) left / 0.9rem 100%
+      no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgb(16 24 40 / 22%), transparent) right / 0.9rem 100%
+      no-repeat scroll,
+    var(--surface);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+thead th {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.table-wrap tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+.table-wrap tbody tr:hover {
+  background: var(--hover);
+}
+
+.changes {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+/* Fiche en lecture seule (profil). */
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 var(--space-4);
+}
+
+.facts dt {
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 0;
+}
+
+a.usage {
+  display: block;
+}
+
+/* ---- Soumissions (04 — Tableau de bord, et « Mes soumissions ») ---- */
+
+.submission-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.submission-item.conflict {
+  border-left: 4px solid var(--danger);
+}
+
+.submission-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+.submission-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+}
+
+.submission-values dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.submission-values dd {
+  margin: 0;
+}
