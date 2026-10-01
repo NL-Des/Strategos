@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { ADMIN, SHEET_URL, TEMPORARY_PASSWORD } from '../stack.ts';
+import { ADMIN, SHEET_ID, TEMPORARY_PASSWORD } from '../stack.ts';
 import {
   adminNav,
   clickAndWait,
@@ -13,7 +13,7 @@ import {
 
 /**
  * Parcours A — Première installation (12) : Nadia change les identifiants par
- * défaut, relie le Google Sheet de la guilde, crée groupes et comptes, construit
+ * défaut, connecte son compte Google et choisit le Sheet de la guilde, crée groupes et comptes, construit
  * le header et l'accueil ; Kira se connecte et arrive sur l'accueil.
  */
 test.describe.configure({ mode: 'serial' });
@@ -52,12 +52,54 @@ test('1. identifiants par défaut changés à la première connexion', async ({ 
   await expect(page.getByText(t('errors.AUTH_INVALID_CREDENTIALS'))).toBeVisible();
 });
 
-test('2. écran Sources : adresse du compte de service, Sheet relié et testé', async ({ page }) => {
+/**
+ * Le sélecteur de fichiers de Google, remplacé par un faux qui choisit aussitôt
+ * le Sheet de la guilde : les tests n'appellent jamais Google.
+ */
+const FAKE_PICKER = `
+  class Builder {
+    addView() { return this; }
+    enableFeature() { return this; }
+    setOAuthToken(token) { this.token = token; return this; }
+    setDeveloperKey() { return this; }
+    setAppId() { return this; }
+    setOrigin() { return this; }
+    setLocale() { return this; }
+    setCallback(callback) { this.callback = callback; return this; }
+    build() {
+      return {
+        setVisible: () =>
+          this.callback(
+            this.token.startsWith('google-access-')
+              ? { action: 'picked', docs: [{ id: '${SHEET_ID}' }] }
+              : { action: 'cancel' },
+          ),
+      };
+    }
+  }
+  window.google = {
+    picker: {
+      PickerBuilder: Builder,
+      DocsView: class { setMode() { return this; } },
+      ViewId: { SPREADSHEETS: 'spreadsheets' },
+      DocsViewMode: { LIST: 'list' },
+      Feature: { MULTISELECT_ENABLED: 'multiselect' },
+      Action: { PICKED: 'picked', CANCEL: 'cancel' },
+    },
+  };
+  window.gapi = { load: (api, options) => options.callback() };
+`;
+
+test('2. écran Sources : compte Google connecté, Sheet choisi et testé', async ({ page }) => {
+  await page.route('https://apis.google.com/js/api.js', (route) =>
+    route.fulfill({ contentType: 'text/javascript', body: FAKE_PICKER }),
+  );
   await loginAsAdmin(page);
   await adminNav(page, 'sources');
-  await expect(page.getByText('strategos@projet-test.iam.gserviceaccount.com')).toBeVisible();
-  await page.getByLabel(t('sources.gsheet.url')).fill(SHEET_URL);
-  await page.getByRole('button', { name: t('sources.gsheet.add') }).click();
+  await page.getByRole('link', { name: t('sources.gsheet.connect') }).click();
+  await expect(page.getByText(t('sources.gsheet.connectedNow'))).toBeVisible();
+  await expect(page.getByText(/nadia@exemple\.fr/)).toBeVisible();
+  await page.getByRole('button', { name: t('sources.gsheet.pick') }).click();
   const row = page.getByRole('row', { name: /Guilde/ });
   await expect(row).toBeVisible();
   await expect(row.getByText(t('sources.statuses.ok'))).toBeVisible();

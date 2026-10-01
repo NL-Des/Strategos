@@ -575,6 +575,22 @@ model OnedriveCredential {
   @@map("onedrive_credentials")
 }
 
+/// Connexion du compte Google de l'admin (accès délégué, limité aux fichiers
+/// qu'il choisit) : une seule ligne, `id = 1` (`CHECK` ajouté dans la migration).
+/// Le refresh token est chiffré (AES-256-GCM).
+model GoogleCredential {
+  id                    Int       @id @default(1)
+  /// Compte Google connecté, affiché dans l'espace admin.
+  accountLabel          String    @map("account_label")
+  refreshTokenEncrypted Bytes     @map("refresh_token_encrypted")
+  accessExpiresAt       DateTime? @map("access_expires_at") @db.Timestamptz
+  /// Rafraîchissement refusé par Google : l'admin doit se reconnecter.
+  expiredAt             DateTime? @map("expired_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("google_credentials")
+}
+
 model ReimportPreview {
   id               String   @id @default(uuid(7)) @db.Uuid
   sourceId         String   @map("source_id") @db.Uuid

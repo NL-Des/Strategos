@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 /**
- * Chiffrement du jeton OneDrive en base (08) : AES-256-GCM, clé fournie au
+ * Chiffrement des jetons Google et OneDrive en base (08) : AES-256-GCM, clé fournie au
  * déploiement. Format : IV (12 octets) · étiquette (16 octets) · texte chiffré.
  */
 const IV_BYTES = 12;

@@ -144,14 +144,6 @@ export function rawValue(value: StoredValue): string | number | boolean {
   }
 }
 
-/** Identifiant d'un Google Sheet depuis son lien (`/spreadsheets/d/<id>/…`) ou l'identifiant seul. */
-export function spreadsheetIdOf(url: string): string | null {
-  const trimmed = url.trim();
-  const m = /\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/.exec(trimmed);
-  if (m) return m[1]!;
-  return /^[A-Za-z0-9_-]{20,}$/.test(trimmed) ? trimmed : null;
-}
-
 /** « 'Mes stocks'!B2 » : feuille citée dans une plage A1. */
 export function quoteSheet(sheet: string): string {
   return `'${sheet.replaceAll("'", "''")}'`;

@@ -38,19 +38,21 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-strategos}:${POSTGRES_PASSWORD:-strategos}@db:5432/${POSTGRES_DB:-strategos}
       UPLOADS_DIR: /data/uploads
       BACKUPS_DIR: /data/backups
-      # Google Sheets : clé du compte de service, fichier secret monté (jamais dans l'image).
-      GOOGLE_SERVICE_ACCOUNT_FILE: /run/secrets/strategos/google-service-account.json
-      # OneDrive : application Azure et clé de chiffrement du jeton (voir .env.example).
+      # Google Sheets : client OAuth et clé d'API du projet Google Cloud (voir .env.example).
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_REDIRECT_URI: https://${DOMAIN:-localhost}/api/v1/google/callback
+      # OneDrive : application Azure (voir .env.example).
       AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:-}
       AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:-}
       AZURE_TENANT: ${AZURE_TENANT:-common}
       AZURE_REDIRECT_URI: https://${DOMAIN:-localhost}/api/v1/onedrive/callback
+      # Clé de chiffrement des jetons Google et OneDrive.
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
     volumes:
       - uploads:/data/uploads
       - backups:/data/backups
-      # Secrets du déploiement (dossier ignoré par git) ; sans clé, Google Sheets est désactivé.
-      - ./secrets:/run/secrets/strategos:ro
     depends_on:
       db:
         condition: service_healthy

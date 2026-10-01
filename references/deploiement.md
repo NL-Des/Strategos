@@ -61,7 +61,6 @@ La base de données n'est **pas** exposée : seul Caddy écoute sur Internet.
 git clone <adresse-du-dépôt> strategos
 cd strategos
 cp .env.example .env
-mkdir -p secrets
 ```
 
 Éditez `.env` (`nano .env`) :
@@ -72,9 +71,11 @@ mkdir -p secrets
 | `TZ` | `Europe/Paris` (fuseau de la sauvegarde de 3 h) |
 | `POSTGRES_PASSWORD` | Un mot de passe fort, généré par `openssl rand -base64 24` |
 | `POSTGRES_USER`, `POSTGRES_DB` | Garder les valeurs proposées |
-| `AZURE_*`, `TOKEN_ENCRYPTION_KEY` | Laisser vides (OneDrive désactivé) |
+| `GOOGLE_*` | Laisser vides (Google Sheets désactivé) ; pour l'activer, voir la [section 10](#10-activer-google-sheets-facultatif) |
+| `AZURE_*` | Laisser vides (OneDrive désactivé) |
+| `TOKEN_ENCRYPTION_KEY` | Vide tant que ni Google Sheets ni OneDrive ne sont activés |
 
-Le dossier `secrets/` peut rester vide (Google Sheets désactivé) ; la clé Google peut y être déposée plus tard, sans redémarrer. Le fichier `.env` et `secrets/` ne sont jamais versionnés ; gardez une copie de `.env` en lieu sûr.
+Le fichier `.env` n'est jamais versionné ; gardez-en une copie en lieu sûr.
 
 > Choisissez `POSTGRES_PASSWORD` **avant** le premier lancement : la base est initialisée avec lui. Le changer ensuite demande de le changer aussi dans PostgreSQL.
 
@@ -113,7 +114,7 @@ La commande affiche un mot de passe temporaire, à changer à la connexion suiva
 - Sauvegarde immédiate : `docker compose exec backend node dist/src/cli/run-backup.js`.
 - Restauration : voir les commandes de la section « Exploitation » du [README](../README.md#exploitation-docker).
 
-Les documents Google Sheets et OneDrive ne sont pas sauvegardés par Strategos : leur historique reste chez Google ou Microsoft.
+Les documents Google Sheets et OneDrive ne sont pas sauvegardés par Strategos : leur historique reste chez Google ou Microsoft. La connexion au compte Google ou Microsoft, elle, est dans la sauvegarde, chiffrée avec `TOKEN_ENCRYPTION_KEY` : sans votre copie de `.env`, il suffit de reconnecter le compte dans **Admin › Sources**.
 
 ## 8. Mises à jour
 
@@ -138,3 +139,33 @@ Pour les mises à jour du système : `sudo apt update && sudo apt upgrade`, et d
 | Mot de passe admin perdu | `reset-admin` (section 6) |
 | Disque plein | Réduire la durée de conservation des sauvegardes, `docker system prune`, vérifier la taille des volumes : `docker system df -v` |
 | À domicile : site joignable chez vous mais pas de l'extérieur | Redirection de ports de la box, ou CGNAT (section 2) |
+
+## 10. Activer Google Sheets (facultatif)
+
+À faire une fois, par la personne qui installe le site. Ensuite, l'administrateur n'a plus qu'à cliquer sur **Connecter mon compte Google** dans **Admin › Sources**, puis à choisir ses Sheets : Strategos n'accède qu'aux Sheets choisis.
+
+Dans la [console Google Cloud](https://console.cloud.google.com/), avec n'importe quel compte Google :
+
+1. **Créer un projet** (menu des projets, en haut › « Nouveau projet »).
+2. **Activer deux API** (« API et services » › « Bibliothèque ») : **Google Sheets API** et **Google Picker API**.
+3. **Écran de consentement** (« API et services » › « Écran de consentement OAuth ») : type **Externe**, un nom d'application, votre adresse e-mail. Ajoutez le scope `…/auth/drive.file` (« Consulter et modifier les fichiers Google Drive que vous utilisez avec cette application »).
+4. **Publier l'application** : sur le même écran, bouton « Publier l'application ». Sans cela, la connexion expire tous les 7 jours. Aucune validation par Google n'est demandée : `drive.file` n'est pas un accès sensible.
+5. **Client OAuth** (« Identifiants » › « Créer des identifiants » › « ID client OAuth ») : type **Application Web**.
+   - Origines JavaScript autorisées : `https://strategos.mon-domaine.fr`
+   - URI de redirection autorisés : `https://strategos.mon-domaine.fr/api/v1/google/callback`
+
+   Notez l'**ID client** et le **code secret**.
+6. **Clé d'API** (« Identifiants » › « Créer des identifiants » › « Clé API ») : restreignez-la aux sites web `https://strategos.mon-domaine.fr/*` et à l'API **Google Picker API**.
+
+Reportez ces valeurs dans `.env` :
+
+| Variable | Valeur |
+|---|---|
+| `GOOGLE_CLIENT_ID` | L'ID client (`123456789-….apps.googleusercontent.com`) |
+| `GOOGLE_CLIENT_SECRET` | Le code secret du client |
+| `GOOGLE_API_KEY` | La clé d'API |
+| `TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32`, si elle n'est pas déjà remplie. **Ne la changez plus ensuite** : la connexion enregistrée deviendrait illisible |
+
+Puis `docker compose up -d` pour que le backend relise `.env`.
+
+Si la connexion Google expire (accès révoqué depuis le compte Google, mot de passe changé, six mois sans usage), un bandeau le signale dans l'espace admin : **Reconnecter** suffit.

@@ -28,7 +28,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   FILE_TOO_LARGE: 'Le fichier est trop volumineux.',
   UNSUPPORTED_FILE_TYPE: 'Ce type de fichier n’est pas accepté.',
   EXCEL_PARSE_FAILED: 'Ce fichier Excel n’a pas pu être lu.',
-  SOURCE_AUTH_FAILED: 'La connexion au compte Microsoft a échoué.',
+  SOURCE_AUTH_FAILED: 'La connexion au compte a échoué.',
   SOURCE_NOT_UPLOAD: 'Cette action ne concerne que les fichiers Excel uploadés.',
   FORMULA_EXTERNAL_REF: 'Une formule saisie dans Strategos ne peut pas citer un autre classeur.',
   FORM_CLOSED: 'Ce formulaire est fermé.',

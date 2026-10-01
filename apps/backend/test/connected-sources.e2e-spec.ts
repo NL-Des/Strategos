@@ -1,13 +1,12 @@
 import { randomBytes } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type {
   AdminPage,
   AssembledPage,
   Block,
   FormDefinition,
+  GooglePickerSession,
+  GoogleStatus,
   OneDriveItem,
   OneDriveStatus,
   Paginated,
@@ -17,7 +16,7 @@ import type {
   TableRow,
 } from '@strategos/shared';
 import { PrismaService } from '../src/prisma/prisma.service.js';
-import { FakeApis, type FakeSheets, SERVICE_ACCOUNT } from './fake-apis.js';
+import { FakeApis, type FakeSheets, GOOGLE_ACCOUNT } from './fake-apis.js';
 import {
   TestClient,
   adminClient,
@@ -63,11 +62,13 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
 
   beforeAll(async () => {
     const base = await fake.start();
-    const keyFile = join(tmpdir(), `strategos-sa-${process.pid}.json`);
-    writeFileSync(keyFile, JSON.stringify(SERVICE_ACCOUNT));
     Object.assign(process.env, {
-      GOOGLE_SERVICE_ACCOUNT_FILE: keyFile,
+      GOOGLE_AUTH_URL: `${base}/google/authorize`,
       GOOGLE_TOKEN_URL: `${base}/google/token`,
+      GOOGLE_USERINFO_URL: `${base}/google/userinfo`,
+      GOOGLE_CLIENT_ID: '123456789-client-test.apps.googleusercontent.com',
+      GOOGLE_CLIENT_SECRET: 'secret-test',
+      GOOGLE_API_KEY: 'api-key-test',
       GOOGLE_SHEETS_API: `${base}/sheets`,
       MICROSOFT_LOGIN_URL: `${base}/ms`,
       GRAPH_API: `${base}/graph`,
@@ -83,7 +84,6 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
   beforeEach(async () => {
     fake.reset();
     await resetDatabase(app);
-    await prisma.onedriveCredential.deleteMany();
     admin = await adminClient(app);
     kira = await userClient(app, admin, 'kira');
   });
@@ -93,12 +93,29 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
     await fake.stop();
   });
 
-  async function addSheet(shared = true): Promise<SourceSummary> {
-    fake.spreadsheets.set(SHEET_ID, { title: 'Stock guilde', shared, sheets: stock() });
-    const res = await admin.send('post', '/admin/sources', {
-      type: 'gsheet',
-      url: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=0`,
-    });
+  /** Lance la connexion Google ; renvoie le `state` attendu au retour. */
+  async function googleState(): Promise<string> {
+    const res = await admin.get('/admin/google/connect');
+    expect(res.status).toBe(302);
+    const location = new URL(res.headers.location as string);
+    expect(location.pathname).toBe('/google/authorize');
+    return location.searchParams.get('state')!;
+  }
+
+  async function connectGoogle(): Promise<void> {
+    const state = await googleState();
+    const back = await new TestClient(app).get(`/google/callback?code=good-code&state=${state}`);
+    expect(back.headers.location).toBe('/admin/sources?google=connected');
+  }
+
+  const pickSheet = () =>
+    admin.send('post', '/admin/sources', { type: 'gsheet', spreadsheetId: SHEET_ID });
+
+  /** Compte Google connecté, Sheet choisi dans le sélecteur et ajouté. */
+  async function addSheet(): Promise<SourceSummary> {
+    await connectGoogle();
+    fake.spreadsheets.set(SHEET_ID, { title: 'Stock guilde', picked: true, sheets: stock() });
+    const res = await pickSheet();
     expectStatus(res, 201);
     return res.body as SourceSummary;
   }
@@ -189,20 +206,69 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
   };
 
   describe('Google Sheets', () => {
-    it('adresse du compte de service ; Sheet non partagé refusé ; ajout avec son nom et ses feuilles', async () => {
-      expect((await admin.get('/admin/sources/service-account')).body).toEqual({
-        email: SERVICE_ACCOUNT.client_email,
+    it('connexion : réservée à l’admin, state vérifié, jeton chiffré jamais renvoyé, tracée', async () => {
+      expect((await admin.get('/admin/google/status')).body).toEqual({
+        configured: true,
+        connected: false,
+        accountLabel: null,
+        expired: false,
       });
-      fake.spreadsheets.set(SHEET_ID, { title: 'Stock guilde', shared: false, sheets: stock() });
-      const refused = await admin.send('post', '/admin/sources', {
-        type: 'gsheet',
-        url: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`,
+      expect((await kira.get('/admin/google/connect')).status).toBe(404);
+      expect((await kira.get('/admin/google/picker')).status).toBe(404);
+      // Pas encore connecté : pas de sélecteur.
+      const early = await admin.get('/admin/google/picker');
+      expect(early.status).toBe(503);
+      expect(early.body.code).toBe('SOURCE_AUTH_EXPIRED');
+
+      const connect = await admin.get('/admin/google/connect');
+      const consent = new URL(connect.headers.location as string).searchParams;
+      // Seulement les fichiers choisis par l'admin, jamais tout son Drive.
+      expect(consent.get('scope')).toBe('openid email https://www.googleapis.com/auth/drive.file');
+      expect(consent.get('access_type')).toBe('offline');
+
+      const state = consent.get('state')!;
+      // Retour de Google : navigation venue d'un autre site, sans cookie de session.
+      const browser = new TestClient(app);
+      const forged = await browser.get('/google/callback?code=good-code&state=faux');
+      expect(forged.headers.location).toBe('/admin/sources?google=failed');
+      const ok = await browser.get(`/google/callback?code=good-code&state=${state}`);
+      expect(ok.headers.location).toBe('/admin/sources?google=connected');
+      const replay = await browser.get(`/google/callback?code=good-code&state=${state}`);
+      expect(replay.headers.location).toBe('/admin/sources?google=failed');
+
+      expect((await admin.get('/admin/google/status')).body as GoogleStatus).toEqual({
+        configured: true,
+        connected: true,
+        accountLabel: GOOGLE_ACCOUNT,
+        expired: false,
       });
+      const row = await prisma.googleCredential.findUniqueOrThrow({ where: { id: 1 } });
+      expect(Buffer.from(row.refreshTokenEncrypted).toString('latin1')).not.toContain(
+        'google-refresh',
+      );
+      const entry = await prisma.auditLog.findFirstOrThrow({ where: { action: 'google.connect' } });
+      expect(entry.after).toEqual({ accountLabel: GOOGLE_ACCOUNT });
+
+      // Sélecteur : jeton d'accès court, clé d'API et numéro du projet ; jamais le refresh token.
+      const picker = await admin.get('/admin/google/picker');
+      expectStatus(picker, 200);
+      const session = picker.body as GooglePickerSession;
+      expect(session).toEqual({
+        accessToken: expect.stringMatching(/^google-access-/) as string,
+        apiKey: 'api-key-test',
+        appId: '123456789',
+      });
+    });
+
+    it('Sheet non choisi refusé ; ajout avec son nom et ses feuilles ; choisi de nouveau, pas dupliqué', async () => {
+      await connectGoogle();
+      fake.spreadsheets.set(SHEET_ID, { title: 'Stock guilde', picked: false, sheets: stock() });
+      const refused = await pickSheet();
       expect(refused.status).toBe(503);
       expect(refused.body.code).toBe('SOURCE_UNAVAILABLE');
       const bad = await admin.send('post', '/admin/sources', {
         type: 'gsheet',
-        url: 'https://ex.org',
+        spreadsheetId: 'https://ex.org',
       });
       expect(bad.status).toBe(400);
 
@@ -216,12 +282,29 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       expect(
         await prisma.auditLog.count({ where: { action: 'source.add', targetId: source.id } }),
       ).toBe(1);
-      // La clé du compte de service n'est jamais en base.
-      const stored = JSON.stringify([
-        await prisma.source.findMany(),
-        await prisma.auditLog.findMany(),
-      ]);
-      expect(stored).not.toContain('PRIVATE KEY');
+      expect(JSON.stringify(source)).not.toContain('google-');
+
+      const again = await pickSheet();
+      expect((again.body as SourceSummary).id).toBe(source.id);
+      expect(await prisma.source.count()).toBe(1);
+    });
+
+    it('connexion révoquée : SOURCE_AUTH_EXPIRED, Sheets en auth_expired, reconnexion', async () => {
+      const source = await addSheet();
+      fake.googleRefreshValid = false;
+      const expired = await admin.send('post', `/admin/sources/${source.id}/test`);
+      expect(expired.status).toBe(503);
+      expect(expired.body.code).toBe('SOURCE_AUTH_EXPIRED');
+      expect(((await admin.get('/admin/google/status')).body as GoogleStatus).expired).toBe(true);
+      expect(((await admin.get('/admin/sources')).body as SourceSummary[])[0]!.status).toBe(
+        'auth_expired',
+      );
+
+      fake.googleRefreshValid = true;
+      await connectGoogle();
+      expect(((await admin.get('/admin/google/status')).body as GoogleStatus).connected).toBe(true);
+      expect(((await admin.get('/admin/sources')).body as SourceSummary[])[0]!.status).toBe('ok');
+      expectStatus(await admin.send('post', `/admin/sources/${source.id}/test`), 200);
     });
 
     it('tableau et formulaire de ligne : même interface, cache, écriture dans le Sheet, aucune copie en base', async () => {
@@ -259,10 +342,10 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       });
     });
 
-    it('Sheet plus partagé : test d’accès en SOURCE_UNAVAILABLE, module indisponible, page affichée', async () => {
+    it('accès au Sheet retiré : test d’accès en SOURCE_UNAVAILABLE, module indisponible, page affichée', async () => {
       const source = await addSheet();
       const { pageId } = await buildPage(source.id, false);
-      fake.spreadsheets.get(SHEET_ID)!.shared = false;
+      fake.spreadsheets.get(SHEET_ID)!.picked = false;
       const test = await admin.send('post', `/admin/sources/${source.id}/test`);
       expect(test.status).toBe(503);
       expect(test.body.code).toBe('SOURCE_UNAVAILABLE');
@@ -275,7 +358,7 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       const asAdmin = (await admin.get(`/pages/${pageId}`)).body as AssembledPage;
       expect(asAdmin.unavailableSources).toEqual([{ id: source.id, name: 'Stock guilde' }]);
 
-      fake.spreadsheets.get(SHEET_ID)!.shared = true;
+      fake.spreadsheets.get(SHEET_ID)!.picked = true;
       const back = await admin.send('post', `/admin/sources/${source.id}/test`);
       expectStatus(back, 200);
       expect(back.body.status).toBe('ok');

@@ -9,7 +9,7 @@ export class SourceUnavailableError extends Error {
   }
 }
 
-/** Connexion OneDrive expirée : l'admin doit se reconnecter (`SOURCE_AUTH_EXPIRED`). */
+/** Connexion Google ou OneDrive expirée : l'admin doit se reconnecter (`SOURCE_AUTH_EXPIRED`). */
 export class SourceAuthExpiredError extends SourceUnavailableError {}
 
 /** Erreur d'API d'une source injoignable : `503`, avec le code qui dit pourquoi. */

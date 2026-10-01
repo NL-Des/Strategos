@@ -29,8 +29,9 @@ const CELL_FIELDS =
   'sheets.data(startRow,startColumn,rowData.values(effectiveValue,userEnteredValue.formulaValue,effectiveFormat.numberFormat.type))';
 
 /**
- * Google Sheets (08) : API v4, avec le compte de service de l'instance. Un Sheet
- * non partagé avec lui répond `403` ou `404` : la source est injoignable.
+ * Google Sheets (08) : API v4, avec l'accès délégué de l'admin, limité aux
+ * fichiers qu'il a choisis. Tout autre Sheet répond `403` ou `404` : la source
+ * est injoignable.
  */
 @Injectable()
 export class GsheetConnector implements SourceConnector {

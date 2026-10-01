@@ -5,6 +5,7 @@ import { GsheetConnector } from './connectors/gsheet.connector.js';
 import { OneDriveAuthService } from './connectors/onedrive-auth.service.js';
 import { OneDriveConnector } from './connectors/onedrive.connector.js';
 import { SourceConnectors } from './connectors/source-connectors.service.js';
+import { GoogleController } from './google.controller.js';
 import { OneDriveController } from './onedrive.controller.js';
 import { SourceDataService } from './source-data.service.js';
 import { SourceGridService } from './source-grid.service.js';
@@ -13,7 +14,7 @@ import { SourcesService } from './sources.service.js';
 
 /** Moteur Excel/Sheets (08) : sources, staging, liaisons, lecture et écriture. */
 @Module({
-  controllers: [AdminSourcesController, OneDriveController],
+  controllers: [AdminSourcesController, GoogleController, OneDriveController],
   providers: [
     SourcesService,
     SourceDataService,

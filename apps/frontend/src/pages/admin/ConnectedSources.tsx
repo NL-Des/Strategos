@@ -1,69 +1,85 @@
 import type { OneDriveItem } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   addSource,
   browseOneDrive,
+  getGooglePicker,
+  getGoogleStatus,
   getOneDriveStatus,
-  getServiceAccount,
+  googleConnectUrl,
   oneDriveConnectUrl,
 } from '../../api/sources';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { pickGoogleSheets } from './googlePicker';
+
+/** Le sélecteur de Google n'a pas pu s'ouvrir (script bloqué, réseau…). */
+class PickerError extends Error {}
 
 const refreshSources = (queryClient: ReturnType<typeof useQueryClient>) =>
   queryClient.invalidateQueries({ queryKey: ['admin', 'sources'] });
 
 /**
- * Ajout d'un Google Sheet (04 — Sources) : l'admin le partage avec l'adresse
- * du compte de service, puis colle son lien ; l'accès est testé à l'ajout.
+ * Google Sheets (04 — Sources) : l'admin connecte son compte Google, puis
+ * choisit ses Sheets dans le sélecteur de Google. Strategos n'accède qu'aux
+ * fichiers choisis ; l'accès de chacun est testé à l'ajout.
  */
-export function GoogleSheetForm() {
+export function GoogleSheetsPanel() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [url, setUrl] = useState('');
-  const account = useQuery({ queryKey: ['admin', 'service-account'], queryFn: getServiceAccount });
-  const add = useMutation({
-    mutationFn: () => addSource({ type: 'gsheet', url }),
-    onSuccess: () => {
-      setUrl('');
+  const status = useQuery({ queryKey: ['admin', 'google'], queryFn: getGoogleStatus });
+  const pick = useMutation({
+    mutationFn: async () => {
+      const session = await getGooglePicker();
+      const ids = await pickGoogleSheets(session).catch(() => {
+        throw new PickerError();
+      });
+      for (const spreadsheetId of ids) await addSource({ type: 'gsheet', spreadsheetId });
+    },
+    onSettled: () => {
       void refreshSources(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'google'] });
     },
   });
-  if (account.data && !account.data.email) {
-    return (
-      <div className="card">
-        <h2>{t('sources.gsheet.title')}</h2>
-        <p className="muted">{t('sources.gsheet.notConfigured')}</p>
-      </div>
-    );
-  }
+  const outcome = new URLSearchParams(window.location.search).get('google');
+  const s = status.data;
+
   return (
-    <form
-      className="card form"
-      onSubmit={(e: FormEvent) => {
-        e.preventDefault();
-        add.mutate();
-      }}
-    >
+    <div className="card form">
       <h2>{t('sources.gsheet.title')}</h2>
-      <p>
-        {t('sources.gsheet.share')} <code>{account.data?.email ?? '…'}</code>
-      </p>
-      <label>
-        {t('sources.gsheet.url')}
-        <input
-          required
-          value={url}
-          placeholder="https://docs.google.com/spreadsheets/d/…"
-          onChange={(e) => setUrl(e.target.value)}
-        />
-      </label>
-      <ErrorMessage error={add.error} />
-      <button type="submit" disabled={add.isPending}>
-        {t('sources.gsheet.add')}
-      </button>
-    </form>
+      {outcome === 'connected' && <p className="notice">{t('sources.gsheet.connectedNow')}</p>}
+      {outcome === 'failed' && <p className="error">{t('errors.SOURCE_AUTH_FAILED')}</p>}
+      {s && !s.configured && <p className="muted">{t('sources.gsheet.notConfigured')}</p>}
+      {s?.configured && (
+        <>
+          <p>
+            {s.connected
+              ? t('sources.gsheet.connected', { account: s.accountLabel })
+              : s.expired
+                ? t('sources.gsheet.expired')
+                : t('sources.gsheet.notConnected')}
+          </p>
+          {pick.error instanceof PickerError ? (
+            <p className="error">{t('sources.gsheet.pickerFailed')}</p>
+          ) : (
+            <ErrorMessage error={pick.error} />
+          )}
+          <div className="actions">
+            <a className="button secondary" href={googleConnectUrl}>
+              {s.connected || s.expired
+                ? t('sources.gsheet.reconnect')
+                : t('sources.gsheet.connect')}
+            </a>
+            {s.connected && (
+              <button type="button" disabled={pick.isPending} onClick={() => pick.mutate()}>
+                {t('sources.gsheet.pick')}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

@@ -10,7 +10,7 @@ Le schéma complet de la base PostgreSQL : tables, colonnes, clés, index et con
 | Nommage | Tables et colonnes en `snake_case`, au pluriel pour les tables (`@@map` / `@map` côté Prisma) |
 | Identifiants | `uuid`, en **UUID v7** générés par l'application : ils sont ordonnés dans le temps, ce qui permet la pagination par curseur (chat) et de bons index |
 | Dates | `timestamptz`, en UTC |
-| Horodatage | `created_at` (défaut `now()`) sur les tables de contenu, pas sur les tables techniques (`settings`, `layout_parts`, `onedrive_credentials`, `staging_cells`, `cell_references`, `form_versions`, qui ont leur propre date) ; `updated_at` sur les tables modifiables |
+| Horodatage | `created_at` (défaut `now()`) sur les tables de contenu, pas sur les tables techniques (`settings`, `layout_parts`, `google_credentials`, `onedrive_credentials`, `staging_cells`, `cell_references`, `form_versions`, qui ont leur propre date) ; `updated_at` sur les tables modifiables |
 | Verrouillage optimiste | `version int not null default 1` sur les objets édités par l'admin, incrémentée à chaque mise à jour (`409 EDIT_CONFLICT`, voir [API](13-api.md#modifications-concurrentes-admin)) |
 | Suppression douce | `deleted_at timestamptz null`. Les lectures courantes filtrent `deleted_at is null` |
 | Unicité et suppression douce | Les unicités « métier » (pseudo, nom de groupe, nom de fichier…) sont des **index uniques partiels** `where deleted_at is null` : un nom libéré par une suppression peut être réutilisé. Restaurer un élément dont le nom a été repris échoue avec `409` |
@@ -322,6 +322,9 @@ Index : `(source_id, sheet, row, col)` et `(referenced_source_id, referenced_she
 
 Index : `(source_id, created_at)`. Les lignes sont gardées après un réimport ; seules celles postérieures au dernier téléchargement comptent.
 
+### `google_credentials`
+Même forme que `onedrive_credentials` ci-dessous, pour la connexion du compte Google de l'admin : table à **une seule ligne** (`id = 1`, `CHECK`), `account_label` (adresse du compte Google connecté), `refresh_token_encrypted`, `access_expires_at`, `expired_at`, `updated_at`.
+
 ### `onedrive_credentials`
 Table à **une seule ligne** (`id` integer, `id = 1`, `CHECK`) : `account_label` (compte Microsoft connecté), `refresh_token_encrypted` (bytea, chiffré avec une clé fournie au déploiement), `access_expires_at`, `expired_at` (rafraîchissement refusé : l'admin doit se reconnecter), `updated_at`.
 
@@ -494,6 +497,7 @@ Chaque étape du [plan de réalisation](../plan-realisation.md) crée les tables
 12. `templates`.
 13. `backups`.
 14. `source_cell_edits`.
+15. `google_credentials`.
 
 ## Dépendances
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.

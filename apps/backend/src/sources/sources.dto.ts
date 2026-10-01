@@ -14,6 +14,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -22,16 +23,15 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-/** `POST /admin/sources` : un Google Sheet par son lien, ou un fichier du OneDrive connecté. */
+/** `POST /admin/sources` : un Google Sheet choisi dans le sélecteur, ou un fichier du OneDrive connecté. */
 export class AddSourceDto {
   @IsIn(['gsheet', 'onedrive'])
   type: 'gsheet' | 'onedrive';
 
   @ValidateIf((o: AddSourceDto) => o.type === 'gsheet')
   @IsString()
-  @MinLength(1)
-  @MaxLength(2000)
-  url?: string;
+  @Matches(/^[A-Za-z0-9_-]{20,200}$/)
+  spreadsheetId?: string;
 
   @ValidateIf((o: AddSourceDto) => o.type === 'onedrive')
   @IsString()

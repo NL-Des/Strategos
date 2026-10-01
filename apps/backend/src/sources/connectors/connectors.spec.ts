@@ -1,10 +1,10 @@
 import { randomBytes } from 'node:crypto';
 import { CellType } from '@strategos/shared';
-import { graphCell, isDateFormat, rawValue, sheetsCell, spreadsheetIdOf } from './cells.js';
+import { graphCell, isDateFormat, rawValue, sheetsCell } from './cells.js';
 import { SheetCache } from './sheet-cache.js';
 import { decryptToken, encryptToken } from './token-crypto.js';
 
-describe('chiffrement du jeton OneDrive', () => {
+describe('chiffrement des jetons', () => {
   it('aller-retour, et refus d’une clé fausse ou d’un contenu altéré', () => {
     const key = randomBytes(32);
     const payload = encryptToken(key, 'refresh-secret');
@@ -67,14 +67,10 @@ describe('cellules des sources connectées', () => {
     expect(isDateFormat('[$-fr-FR]dddd d mmmm yyyy')).toBe(true);
   });
 
-  it('valeurs écrites et lien d’un Sheet', () => {
+  it('valeurs écrites', () => {
     expect(rawValue({ type: CellType.date, text: '2026-09-26', number: 46291 })).toBe(46291);
     expect(rawValue({ type: CellType.bool, text: 'VRAI', number: 1 })).toBe(true);
     expect(rawValue({ type: CellType.empty, text: null, number: null })).toBe('');
-    const id = '1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789';
-    expect(spreadsheetIdOf(`https://docs.google.com/spreadsheets/d/${id}/edit#gid=0`)).toBe(id);
-    expect(spreadsheetIdOf(id)).toBe(id);
-    expect(spreadsheetIdOf('https://example.org')).toBeNull();
   });
 });
 

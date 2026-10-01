@@ -21,8 +21,6 @@ import { config } from '../config.js';
 import type { Prisma, Source } from '../generated/prisma/client.js';
 import { cleanFilename } from '../media/media.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { spreadsheetIdOf } from './connectors/cells.js';
-import { GoogleAuthService } from './connectors/google-auth.service.js';
 import { OneDriveConnector } from './connectors/onedrive.connector.js';
 import { isConnected, SourceConnectors } from './connectors/source-connectors.service.js';
 import { SourceUnavailableError, sourceException } from './source-errors.js';
@@ -62,29 +60,28 @@ export class SourcesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly connectors: SourceConnectors,
-    private readonly google: GoogleAuthService,
     private readonly onedrive: OneDriveConnector,
   ) {}
 
-  /** Adresse du compte de service avec laquelle l'admin partage ses Sheets. */
-  serviceAccount(): { email: string | null } {
-    return { email: this.google.email() };
-  }
-
   /**
-   * Ajoute un Google Sheet (par son lien) ou un fichier du OneDrive connecté,
-   * après un test d'accès : un Sheet non partagé avec le compte de service est
-   * refusé (`SOURCE_UNAVAILABLE`). Le nom et les feuilles viennent du document.
+   * Ajoute un Google Sheet choisi dans le sélecteur de Google ou un fichier du
+   * OneDrive connecté, après un test d'accès : un Sheet que l'admin n'a pas
+   * choisi est refusé (`SOURCE_UNAVAILABLE`). Le nom et les feuilles viennent
+   * du document. Un Sheet déjà ajouté est retesté, pas dupliqué : le choisir
+   * de nouveau lui rend l'accès après un changement de compte Google.
    */
   async add(input: AddSourceInput, actor: AuditActor & { kind: 'user' }): Promise<SourceSummary> {
     let connectionInfo: Record<string, string>;
     if (input.type === SourceType.gsheet) {
-      const spreadsheetId = spreadsheetIdOf(input.url);
-      if (!spreadsheetId) {
-        throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
-          fields: { url: ['invalid'] },
-        });
-      }
+      const { spreadsheetId } = input;
+      const existing = await this.prisma.source.findFirst({
+        where: {
+          type: SourceType.gsheet,
+          deletedAt: null,
+          connectionInfo: { path: ['spreadsheetId'], equals: spreadsheetId },
+        },
+      });
+      if (existing) return this.test(existing.id);
       connectionInfo = { spreadsheetId };
     } else {
       const { driveId, itemId } = await this.remote(() => this.onedrive.locate(input.itemId));

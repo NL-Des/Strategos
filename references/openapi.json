@@ -89,6 +89,7 @@
                 "template",
                 "source",
                 "onedrive",
+                "google",
                 "form",
                 "submission",
                 "message",
@@ -1391,29 +1392,7 @@
             }
           }
         },
-        "summary": "Ajouter un Google Sheet `{ type: \"gsheet\", url }` ou un fichier OneDrive `{ type: \"onedrive\", itemId }`.",
-        "tags": [
-          "AdminSources"
-        ]
-      }
-    },
-    "/api/v1/admin/sources/service-account": {
-      "get": {
-        "operationId": "AdminSources_serviceAccount",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Adresse du compte de service Google, à afficher pour le partage des Sheets.",
+        "summary": "Ajouter un Google Sheet `{ type: \"gsheet\", spreadsheetId }` ou un fichier OneDrive `{ type: \"onedrive\", itemId }`.",
         "tags": [
           "AdminSources"
         ]
@@ -1649,6 +1628,92 @@
         },
         "tags": [
           "AdminSources"
+        ]
+      }
+    },
+    "/api/v1/admin/google/status": {
+      "get": {
+        "operationId": "Google_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Google"
+        ]
+      }
+    },
+    "/api/v1/admin/google/connect": {
+      "get": {
+        "operationId": "Google_connect",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Démarre la connexion Google (redirection).",
+        "tags": [
+          "Google"
+        ]
+      }
+    },
+    "/api/v1/google/callback": {
+      "get": {
+        "operationId": "Google_callback",
+        "parameters": [
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Retour de Google. Le cookie de session (`SameSite=Strict`) n'est pas envoyé\npar cette navigation venue d'un autre site : la route est publique et ne se\nfie qu'au paramètre `state`, lié à l'admin qui a lancé la connexion.",
+        "tags": [
+          "Google"
+        ]
+      }
+    },
+    "/api/v1/admin/google/picker": {
+      "get": {
+        "operationId": "Google_picker",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Jeton court et identifiants du sélecteur de fichiers Google ; jamais le refresh token.",
+        "tags": [
+          "Google"
         ]
       }
     },
@@ -4611,10 +4676,9 @@
               "onedrive"
             ]
           },
-          "url": {
+          "spreadsheetId": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 2000
+            "pattern": "^[A-Za-z0-9_-]{20,200}$"
           },
           "itemId": {
             "type": "string",

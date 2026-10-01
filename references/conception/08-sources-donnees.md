@@ -8,11 +8,11 @@ La connexion de Strategos aux documents Excel et Google Sheets : comment ils son
 ### Trois types de source
 | Type | Connexion | Source de vérité | Lecture |
 |---|---|---|---|
-| **Google Sheets** | API, via un **compte de service** | Le Sheet | Cache mémoire court |
+| **Google Sheets** | API Google, accès **délégué**, limité aux Sheets choisis par l'admin | Le Sheet | Cache mémoire court |
 | **OneDrive / SharePoint** | API Microsoft (Graph), accès **délégué** | Le fichier en ligne | Cache mémoire court |
 | **Excel uploadé** | Fichier déposé par l'admin | La copie dans Strategos | Staging en base |
 
-- **Google Sheets** : l'administrateur partage ses Sheets avec l'adresse du compte de service de l'instance. Il n'a aucune connexion personnelle à faire, et aucun jeton n'expire.
+- **Google Sheets** : l'administrateur connecte son compte Google (accès délégué), puis choisit ses Sheets dans le **sélecteur de fichiers de Google**. Strategos n'accède qu'aux Sheets choisis, jamais au reste de son Drive : il n'y a ni lien à coller, ni partage à faire. La connexion se renouvelle automatiquement ; si elle expire (accès révoqué, mot de passe changé, six mois sans usage), l'espace admin demande à l'admin de se reconnecter. S'il se reconnecte avec un autre compte, il choisit de nouveau ses Sheets : ceux déjà ajoutés retrouvent leur accès, sans doublon.
 - **OneDrive / SharePoint** : l'administrateur connecte son compte Microsoft (accès délégué). C'est le seul mode qui fonctionne aussi bien sur un OneDrive personnel (communautés) que d'entreprise. La connexion se renouvelle automatiquement tant que l'instance est utilisée ; si elle expire, l'espace admin demande à l'admin de se reconnecter.
 - **Sources connectées = source de vérité vivante** : l'état réel du Sheet ou du fichier en ligne fait foi (pas de copie figée en base) ; Strategos ne fait que proposer des modifications par-dessus. En pratique, la lecture passe par un **cache court** (45 secondes par défaut) pour éviter de cogner les quotas de l'API à chaque affichage de page — quasi-live du point de vue utilisateur, sans appel API à chaque requête. Ce cache est gardé **en mémoire** : si la source est indisponible, un message d'erreur s'affiche à la place des données.
 - **Édition directe par l'administrateur** : rien n'empêche l'administrateur de modifier le Sheet/fichier directement en dehors de Strategos (édition Google Sheets native, etc.). Si la cellule visée a changé depuis qu'une soumission a été faite dessus, aucune détection automatique n'est prévue — la validation applique la modification telle quelle, la vigilance repose sur l'administrateur.
@@ -49,7 +49,7 @@ Moteur Excel/Sheets (**SourcesModule** pour la lecture, l'écriture et le réimp
 - **Écritures** : validations et modifications de la grille passent toutes par le même service d'écriture (verrou par `source_id`, `needs_recalc`) ; seule la grille, réservée à l'admin et aux Excel uploadés, écrit une formule.
 - À la validation d'une soumission, le backend écrit la valeur brute sur la cellule cible (API Sheets, API Graph ou réécriture de la copie Excel), sans se préoccuper des formules amont — cohérent avec l'écrasement de formule spécifié dans [Formulaires et soumissions](09-formulaires-soumissions.md).
 - OneDrive : enregistrement d'une application Azure (identifiants fournis au déploiement) ; le refresh token de l'admin est stocké **chiffré** en base (AES-256-GCM, clé `TOKEN_ENCRYPTION_KEY`), rafraîchi automatiquement, et son expiration est signalée dans l'espace admin (bandeau ; sources OneDrive en `auth_expired`). Le retour de Microsoft arrive sans cookie de session (`SameSite=Strict`, navigation venue d'un autre site) : la route de retour est publique et ne se fie qu'à `state`, aléatoire, à usage unique, lié à l'admin qui a lancé la connexion et valable 10 minutes.
-- La clé du compte de service Google est fournie au déploiement sous forme de fichier secret monté dans le conteneur backend (`secrets/google-service-account.json`, `GOOGLE_SERVICE_ACCOUNT_FILE`) ; sans clé, l'ajout de Sheets est désactivé. Tant qu'aucune clé valide n'a été lue, le backend relit le fichier à chaque besoin : on peut le déposer sans redémarrer.
+- Google Sheets : client OAuth d'un projet Google Cloud (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, fournis au déploiement ; sans eux, Google Sheets est désactivé), flux « code » avec `access_type=offline`. Scopes : `openid email` (compte affiché) et `drive.file`, qui ne donne accès qu'aux fichiers choisis par l'admin et n'est pas un scope « sensible » (pas de vérification de l'application par Google). Le refresh token est stocké **chiffré** en base (table `google_credentials`, même clé `TOKEN_ENCRYPTION_KEY`) ; son refus par Google rend la connexion expirée (bandeau ; sources Google Sheets en `auth_expired`). La route de retour suit la même règle que celle de OneDrive (`state`). Le **sélecteur de fichiers** (Google Picker) s'ouvre dans le navigateur de l'admin : le backend lui fournit un jeton d'accès court, la clé d'API du projet (`GOOGLE_API_KEY`) et le numéro du projet (préfixe de `GOOGLE_CLIENT_ID`), jamais le refresh token. Le script du sélecteur est le seul chargé depuis Google, et seulement sur l'écran Sources, à l'ouverture du sélecteur.
 - Le choix de rester en TypeScript pour ce moteur est justifié dans [Transverse](11-transverse.md#stack-technique).
 
 ## Dépendances
@@ -61,12 +61,15 @@ Moteur Excel/Sheets (**SourcesModule** pour la lecture, l'écriture et le réimp
 ## Questions ouvertes
 _Aucune pour l'instant._
 
+**Décisions (2026-10-01)**
+- Google Sheets en accès délégué, comme OneDrive, à la place du compte de service : l'admin connecte son compte Google et choisit ses Sheets dans le sélecteur de fichiers de Google (scope `drive.file`). Créer un compte de service et partager chaque Sheet avec son adresse était trop technique pour un admin non averti.
+
 **Décisions (2026-09-26)**
 - Liaisons des Excel uploadés : classeur lié retrouvé par son nom de fichier à l'import ; une formule qui n'est qu'une référence suit la cellule liée, les autres gardent leur valeur stockée.
 
 **Décisions (2026-09-25)**
 - Trois types de source : Excel uploadé, Google Sheets, OneDrive/SharePoint.
-- Google Sheets via un compte de service.
+- ~~Google Sheets via un compte de service.~~ Remplacé le 2026-10-01.
 - Pas de calcul de formules ; les cellules dépendantes des Excel uploadés sont marquées « à recalculer ».
 - Excel uploadé : la copie dans Strategos fait référence ; téléchargement, puis réimport avec avertissement et réapplication possible.
 - Cache mémoire pour les sources connectées ; staging en base pour les uploads seulement.

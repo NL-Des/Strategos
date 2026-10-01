@@ -20,7 +20,7 @@ import {
   uploadSource,
 } from '../../api/sources';
 import { ErrorMessage } from '../../components/ErrorMessage';
-import { GoogleSheetForm, OneDrivePanel } from './ConnectedSources';
+import { GoogleSheetsPanel, OneDrivePanel } from './ConnectedSources';
 
 interface InUse {
   source: SourceSummary;
@@ -116,7 +116,7 @@ export function SourcesPage() {
           {t('sources.uploadSubmit')}
         </button>
       </form>
-      <GoogleSheetForm />
+      <GoogleSheetsPanel />
       <OneDrivePanel />
 
       {inUse && (

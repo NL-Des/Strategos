@@ -21,7 +21,6 @@ import {
   EXCEL_MAX_BYTES,
   EXCEL_MIME,
   ErrorCode,
-  type ServiceAccountInfo,
   type SourceGrid,
   type SourceSummary,
 } from '@strategos/shared';
@@ -46,13 +45,7 @@ export class AdminSourcesController {
     return this.sources.list();
   }
 
-  /** Adresse du compte de service Google, à afficher pour le partage des Sheets. */
-  @Get('service-account')
-  serviceAccount(): ServiceAccountInfo {
-    return this.sources.serviceAccount();
-  }
-
-  /** Ajouter un Google Sheet `{ type: "gsheet", url }` ou un fichier OneDrive `{ type: "onedrive", itemId }`. */
+  /** Ajouter un Google Sheet `{ type: "gsheet", spreadsheetId }` ou un fichier OneDrive `{ type: "onedrive", itemId }`. */
   @Post()
   add(@Body() dto: AddSourceDto, @Actor() actor: AuditActor): Promise<SourceSummary> {
     return this.sources.add(dto as AddSourceInput, actor as AuditActor & { kind: 'user' });

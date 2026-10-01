@@ -234,22 +234,22 @@ L'Excel uploadé passe en premier parce qu'il se teste sans compte externe ; les
 **À lire avant de coder**
 - [08 — Trois types de source](conception/08-sources-donnees.md#trois-types-de-source), [Points techniques](conception/08-sources-donnees.md#points-techniques)
 - [04 — Sources](conception/04-administration.md#sources)
-- [13 — routes Sources](conception/13-api.md#sources--08-04) (compte de service, ajout, OneDrive)
-- [14 — `sources`](conception/14-modele-donnees.md#sources), [`onedrive_credentials`](conception/14-modele-donnees.md#onedrive_credentials)
+- [13 — routes Sources](conception/13-api.md#sources--08-04) (Google, ajout, OneDrive)
+- [14 — `sources`](conception/14-modele-donnees.md#sources), [`google_credentials`](conception/14-modele-donnees.md#google_credentials), [`onedrive_credentials`](conception/14-modele-donnees.md#onedrive_credentials)
 - [architecture.md §7 Déploiement](architecture.md#7-déploiement) (secrets)
 
 - Adaptateurs Google Sheets puis OneDrive, derrière l'interface commune de l'étape 5.
 - Cache mémoire de 30 à 60 secondes, invalidé par `source_id` après chaque écriture ; erreurs `SOURCE_UNAVAILABLE` et `SOURCE_AUTH_EXPIRED`.
-- Google : clé du compte de service en secret monté, affichage de son adresse, test d'accès.
+- Google : accès délégué (`drive.file`), table `google_credentials` (jeton chiffré), sélecteur de fichiers, test d'accès.
 - OneDrive : accès délégué, table `onedrive_credentials` (jeton chiffré), reconnexion signalée dans l'espace admin.
 
 **Critères d'acceptation**
 - [x] Les modules de page et les formulaires ne connaissent pas le type de source (même interface que l'Excel uploadé).
 - [x] Cache mémoire de 30 à 60 secondes, invalidé par `source_id` après chaque écriture ; aucune copie en base.
-- [x] Sheet non partagé avec le compte de service → `SOURCE_UNAVAILABLE` au test d'accès.
+- [x] Sheet non choisi dans le sélecteur de Google → `SOURCE_UNAVAILABLE` au test d'accès.
 - [x] Jeton OneDrive chiffré en base, jamais renvoyé par l'API ; le callback vérifie `state`.
 - [x] Connexion OneDrive expirée → `SOURCE_AUTH_EXPIRED` et signalement dans l'espace admin.
-- [x] La clé Google n'est ni en base ni dans une image Docker.
+- [x] Jeton Google chiffré en base, jamais renvoyé par l'API ; le callback vérifie `state` ; connexion expirée signalée comme pour OneDrive.
 
 **Démo** : Parcours B sur un vrai Google Sheet, Parcours C sur OneDrive.
 

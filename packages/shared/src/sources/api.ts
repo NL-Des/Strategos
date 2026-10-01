@@ -26,12 +26,34 @@ export interface SourceSummary {
   version: number;
 }
 
-/** `POST /admin/sources` : un Google Sheet par son lien, ou un fichier du OneDrive connecté. */
-export type AddSourceInput = { type: 'gsheet'; url: string } | { type: 'onedrive'; itemId: string };
+/**
+ * `POST /admin/sources` : un Google Sheet choisi dans le sélecteur de fichiers
+ * Google, ou un fichier du OneDrive connecté.
+ */
+export type AddSourceInput =
+  { type: 'gsheet'; spreadsheetId: string } | { type: 'onedrive'; itemId: string };
 
-/** Adresse du compte de service avec laquelle partager les Sheets ; `null` s'il n'est pas configuré. */
-export interface ServiceAccountInfo {
-  email: string | null;
+/** Connexion du compte Google de l'admin (accès délégué, limité aux fichiers qu'il choisit). */
+export interface GoogleStatus {
+  /** Le client OAuth Google est configuré au déploiement. */
+  configured: boolean;
+  connected: boolean;
+  accountLabel: string | null;
+  /** La connexion a expiré : l'admin doit se reconnecter. */
+  expired: boolean;
+}
+
+/**
+ * `GET /admin/google/picker` : ce qu'il faut au sélecteur de fichiers Google,
+ * ouvert dans le navigateur de l'admin. Le jeton est court et ne donne accès
+ * qu'aux fichiers déjà choisis.
+ */
+export interface GooglePickerSession {
+  accessToken: string;
+  /** Clé d'API du projet Google Cloud ; `null` si elle n'est pas fournie. */
+  apiKey: string | null;
+  /** Numéro du projet Google Cloud. */
+  appId: string;
 }
 
 /** Connexion OneDrive de l'admin (accès délégué). */

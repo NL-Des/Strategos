@@ -1,9 +1,9 @@
 import { type ChildProcess, execSync, spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import pg from 'pg';
-import { FakeApis, type FakeSheets, SERVICE_ACCOUNT } from '../apps/backend/test/fake-apis.ts';
+import { FakeApis, type FakeSheets } from '../apps/backend/test/fake-apis.ts';
 import { PORTS, SHEET_ID, STOCK_ITEM } from './stack.ts';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -98,12 +98,10 @@ export default async function setup(): Promise<() => Promise<void>> {
 
   const fake = new FakeApis();
   const fakeUrl = await fake.start(PORTS.fakeApis);
-  fake.spreadsheets.set(SHEET_ID, { title: 'Guilde', shared: true, sheets: guildSheets() });
+  fake.spreadsheets.set(SHEET_ID, { title: 'Guilde', picked: true, sheets: guildSheets() });
   fake.workbooks.set(STOCK_ITEM, { name: 'stock.xlsx', sheets: stockSheets() });
 
   const work = mkdtempSync(join(tmpdir(), 'strategos-browser-'));
-  const serviceAccount = join(work, 'google-service-account.json');
-  writeFileSync(serviceAccount, JSON.stringify(SERVICE_ACCOUNT));
   const frontendUrl = `http://localhost:${PORTS.frontend}`;
 
   const processes: ChildProcess[] = [];
@@ -119,8 +117,12 @@ export default async function setup(): Promise<() => Promise<void>> {
       APP_ORIGINS: frontendUrl,
       UPLOADS_DIR: join(work, 'uploads'),
       BACKUPS_DIR: join(work, 'backups'),
-      GOOGLE_SERVICE_ACCOUNT_FILE: serviceAccount,
+      GOOGLE_AUTH_URL: `${fakeUrl}/google/authorize`,
       GOOGLE_TOKEN_URL: `${fakeUrl}/google/token`,
+      GOOGLE_USERINFO_URL: `${fakeUrl}/google/userinfo`,
+      GOOGLE_CLIENT_ID: '123456789-client-test.apps.googleusercontent.com',
+      GOOGLE_CLIENT_SECRET: 'secret-test',
+      GOOGLE_REDIRECT_URI: `${frontendUrl}/api/v1/google/callback`,
       GOOGLE_SHEETS_API: `${fakeUrl}/sheets`,
       MICROSOFT_LOGIN_URL: `${fakeUrl}/ms`,
       GRAPH_API: `${fakeUrl}/graph`,

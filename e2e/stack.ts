@@ -9,5 +9,4 @@ export const PLAYER_PASSWORD = 'mot-de-passe-joueur';
 export const TEMPORARY_PASSWORD = 'temporaire-1234';
 
 export const SHEET_ID = 'SHEET_guilde_loups_gris_0123456789';
-export const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
 export const STOCK_ITEM = 'item-stock';

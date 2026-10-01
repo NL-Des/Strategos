@@ -115,8 +115,8 @@ pnpm dev
 
 Non requises pour démarrer. Voir les commentaires de [.env.example](.env.example) et [apps/backend/.env.example](apps/backend/.env.example) :
 
-- **Google Sheets** : déposer la clé du compte de service dans `secrets/google-service-account.json` (montée en lecture seule, jamais dans l'image ni en base).
-- **OneDrive** : application Azure (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`) et clé de chiffrement du jeton `TOKEN_ENCRYPTION_KEY` (`openssl rand -base64 32`).
+- **Google Sheets** : projet Google Cloud (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_API_KEY`) et `TOKEN_ENCRYPTION_KEY` ; l'administrateur connecte ensuite son compte Google depuis **Admin › Sources** et choisit ses Sheets. Pas à pas : [deploiement.md](references/deploiement.md#10-activer-google-sheets-facultatif).
+- **OneDrive** : application Azure (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`) et clé de chiffrement des jetons `TOKEN_ENCRYPTION_KEY` (`openssl rand -base64 32`).
 
 ## Vérifier avant de committer
 
@@ -146,6 +146,7 @@ Mise en production sur un serveur ou une machine à domicile (domaine, HTTPS, sa
 | Réinitialiser le compte admin | `docker compose exec backend node dist/src/cli/reset-admin.js` |
 | Sauvegarde immédiate | `docker compose exec backend node dist/src/cli/run-backup.js` (sinon chaque nuit à 3 h, fuseau `TZ`) |
 | Restaurer une sauvegarde | `docker compose stop backend`, puis `docker compose run --rm backend node dist/src/cli/restore-backup.js /data/backups/<archive>.tar.gz`, puis `docker compose start backend` |
+| Repartir de zéro (**efface tout** : comptes, profils, pages, sources, fichiers uploadés) | `docker compose down`, puis `docker volume rm strategos_db_data strategos_uploads`, puis `docker compose up -d --build`. Le site revient à l'installation neuve (`admin` / `admin`). Les sauvegardes (volume `backups`) et le certificat HTTPS sont gardés ; `docker compose down -v` les efface aussi |
 
 ## Documentation
 

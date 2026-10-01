@@ -1,11 +1,10 @@
-import { createVerify, generateKeyPairSync } from 'node:crypto';
 import { type IncomingMessage, type Server, type ServerResponse, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { cellRef, columnNumber } from '@strategos/shared';
 
 /**
- * Faux serveur des API Google (jeton du compte de service, Sheets v4) et
- * Microsoft (OAuth, Graph `workbook`), pour tester les sources connectées sans
+ * Faux serveur des API Google (OAuth, Sheets v4) et Microsoft (OAuth, Graph
+ * `workbook`), pour tester les sources connectées sans
  * compte réel. Les feuilles sont `{ A1: valeur }` ; une formule s'écrit
  * `{ f: '=C2*D2', v: 200 }`, une date `{ date: 46291 }`.
  */
@@ -15,7 +14,8 @@ export type FakeSheets = Record<string, Record<string, FakeValue>>;
 
 interface FakeSpreadsheet {
   title: string;
-  shared: boolean;
+  /** L'admin a choisi ce Sheet dans le sélecteur : l'application y a accès (`drive.file`). */
+  picked: boolean;
   sheets: FakeSheets;
 }
 
@@ -24,13 +24,8 @@ interface FakeWorkbook {
   sheets: FakeSheets;
 }
 
-const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-
-/** Clé JSON d'un compte de service de test (le faux serveur vérifie la signature). */
-export const SERVICE_ACCOUNT = {
-  client_email: 'strategos@projet-test.iam.gserviceaccount.com',
-  private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
-};
+/** Compte Google de l'admin connecté par le faux serveur. */
+export const GOOGLE_ACCOUNT = 'nadia@exemple.fr';
 
 function parseRef(ref: string): { row: number; col: number } {
   const m = /^([A-Z]+)(\d+)$/.exec(ref)!;
@@ -61,6 +56,8 @@ export class FakeApis {
   sheetReads = 0;
   /** Le refresh token Microsoft est accepté ; `false` simule une connexion révoquée. */
   refreshValid = true;
+  /** De même pour le refresh token Google. */
+  googleRefreshValid = true;
   private server?: Server;
   private refreshCount = 0;
 
@@ -84,6 +81,7 @@ export class FakeApis {
     this.workbooks.clear();
     this.sheetReads = 0;
     this.refreshValid = true;
+    this.googleRefreshValid = true;
   }
 
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -100,22 +98,43 @@ export class FakeApis {
     };
     const auth = req.headers.authorization ?? '';
 
-    // Google : jeton du compte de service (JWT RS256 vérifié).
+    // Google : page de connexion, qui accepte aussitôt et renvoie au site avec un code.
+    if (path === '/google/authorize') {
+      const back = new URL(url.searchParams.get('redirect_uri')!);
+      back.searchParams.set('code', 'good-code');
+      back.searchParams.set('state', url.searchParams.get('state') ?? '');
+      res.writeHead(302, { Location: back.toString() }).end();
+      return;
+    }
+
+    // Google : jetons OAuth. Comme le vrai, le rafraîchissement ne renvoie pas de refresh token.
     if (path === '/google/token' && req.method === 'POST') {
-      const assertion = new URLSearchParams(body).get('assertion') ?? '';
-      const [header, claims, signature] = assertion.split('.');
-      const valid = createVerify('RSA-SHA256')
-        .update(`${header}.${claims}`)
-        .verify(publicKey, Buffer.from(signature ?? '', 'base64url'));
-      return valid ? json(200, { access_token: 'google-token', expires_in: 3600 }) : json(400, {});
+      const form = new URLSearchParams(body);
+      this.refreshCount += 1;
+      // Durée courte : chaque appel repasse par le rafraîchissement.
+      const access = { access_token: `google-access-${this.refreshCount}`, expires_in: 30 };
+      if (form.get('grant_type') === 'authorization_code') {
+        return form.get('code') === 'good-code'
+          ? json(200, { ...access, refresh_token: 'google-refresh' })
+          : json(400, { error: 'invalid_grant' });
+      }
+      return this.googleRefreshValid && form.get('refresh_token') === 'google-refresh'
+        ? json(200, access)
+        : json(400, { error: 'invalid_grant' });
+    }
+
+    if (path === '/google/userinfo') {
+      return auth.startsWith('Bearer google-access-')
+        ? json(200, { email: GOOGLE_ACCOUNT })
+        : json(401, {});
     }
 
     // Google Sheets.
     const sheet = /^\/sheets\/spreadsheets\/([^/]+?)(\/values:batchUpdate)?$/.exec(path);
     if (sheet) {
-      if (auth !== 'Bearer google-token') return json(401, {});
+      if (!auth.startsWith('Bearer google-access-')) return json(401, {});
       const doc = this.spreadsheets.get(sheet[1]!);
-      if (!doc?.shared) return json(doc ? 403 : 404, { error: { status: 'PERMISSION_DENIED' } });
+      if (!doc?.picked) return json(doc ? 403 : 404, { error: { status: 'PERMISSION_DENIED' } });
       if (sheet[2]) {
         const { data } = JSON.parse(body) as { data: { range: string; values: FakeValue[][] }[] };
         for (const d of data) {

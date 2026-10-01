@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   AuditAction,
@@ -13,11 +12,10 @@ import { AppException } from '../../common/app-exception.js';
 import { config } from '../../config.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { SourceAuthExpiredError, SourceUnavailableError } from '../source-errors.js';
+import { OAuthStates } from './oauth-states.js';
 import { decryptToken, encryptToken } from './token-crypto.js';
 
 const SCOPES = 'offline_access User.Read Files.ReadWrite';
-/** Durée de validité d'un `state` : le temps de se connecter chez Microsoft. */
-const STATE_TTL_MS = 10 * 60 * 1000;
 const EXPIRY_MARGIN_MS = 60_000;
 
 interface Me {
@@ -42,8 +40,7 @@ const authFailed = () => new AppException(HttpStatus.BAD_REQUEST, ErrorCode.SOUR
 @Injectable()
 export class OneDriveAuthService {
   private readonly logger = new Logger(OneDriveAuthService.name);
-  /** `state` → admin qui a lancé la connexion : il remplace le CSRF au retour de Microsoft. */
-  private readonly states = new Map<string, { userId: string; expiresAt: number }>();
+  private readonly states = new OAuthStates();
   private access: { value: string; expiresAt: number } | null = null;
 
   constructor(
@@ -69,10 +66,7 @@ export class OneDriveAuthService {
   /** Adresse de connexion chez Microsoft, avec un `state` à usage unique lié à l'admin. */
   connectUrl(userId: string): string {
     if (!this.configured()) throw authFailed();
-    const now = Date.now();
-    for (const [state, entry] of this.states) if (entry.expiresAt <= now) this.states.delete(state);
-    const state = randomBytes(24).toString('base64url');
-    this.states.set(state, { userId, expiresAt: now + STATE_TTL_MS });
+    const state = this.states.create(userId);
     const { clientId, tenant, redirectUri } = config.azure;
     const params = new URLSearchParams({
       client_id: clientId!,
@@ -87,9 +81,8 @@ export class OneDriveAuthService {
 
   /** Retour de Microsoft : `state` vérifié (inconnu, expiré ou déjà utilisé → refus). */
   async callback(code: string | undefined, state: string | undefined): Promise<void> {
-    const entry = state ? this.states.get(state) : undefined;
-    if (state) this.states.delete(state);
-    if (!entry || entry.expiresAt <= Date.now() || !code) throw authFailed();
+    const userId = this.states.consume(state);
+    if (!userId || !code) throw authFailed();
     const tokens = await this.token({ grant_type: 'authorization_code', code }).catch(() => {
       throw authFailed();
     });
@@ -120,7 +113,7 @@ export class OneDriveAuthService {
       });
       await this.audit.record(
         tx,
-        { kind: 'user', userId: entry.userId, ip: null },
+        { kind: 'user', userId, ip: null },
         {
           action: AuditAction.ONEDRIVE_CONNECT,
           targetType: AuditTargetType.ONEDRIVE,

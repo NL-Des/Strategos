@@ -2,9 +2,10 @@ import type {
   AddSourceInput,
   CellEditInput,
   GridCell,
+  GooglePickerSession,
+  GoogleStatus,
   OneDriveItem,
   OneDriveStatus,
-  ServiceAccountInfo,
   SourceGrid,
   SourceSummary,
 } from '@strategos/shared';
@@ -45,9 +46,12 @@ export const deleteSource = (id: string, confirm = false) =>
   apiFetch<void>(`/admin/sources/${id}`, { method: 'DELETE', body: { confirm } });
 
 // Sources connectées (08) : Google Sheets et OneDrive.
-export const getServiceAccount = () =>
-  apiFetch<ServiceAccountInfo>('/admin/sources/service-account');
-/** Teste l'accès : un Sheet non partagé renvoie `SOURCE_UNAVAILABLE`. */
+export const getGoogleStatus = () => apiFetch<GoogleStatus>('/admin/google/status');
+/** Jeton court et identifiants pour ouvrir le sélecteur de fichiers Google. */
+export const getGooglePicker = () => apiFetch<GooglePickerSession>('/admin/google/picker');
+/** Lancement de la connexion Google : navigation complète (redirection). */
+export const googleConnectUrl = '/api/v1/admin/google/connect';
+/** Teste l'accès : un Sheet que l'admin n'a pas choisi renvoie `SOURCE_UNAVAILABLE`. */
 export const addSource = (body: AddSourceInput) =>
   apiFetch<SourceSummary>('/admin/sources', { method: 'POST', body });
 export const testSource = (id: string) =>

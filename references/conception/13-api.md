@@ -169,8 +169,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | Méthode | Chemin | Rôle | Erreurs |
 |---|---|---|---|
 | GET | `/sources` | Liste : type, état, dernière lecture ou import, usages | — |
-| GET | `/sources/service-account` | Adresse du compte de service Google, à afficher pour le partage | — |
-| POST | `/sources` | Ajouter un Google Sheet `{ type: "gsheet", url }` ou un fichier OneDrive `{ type: "onedrive", itemId }` ; teste l'accès | `SOURCE_UNAVAILABLE` (Sheet non partagé), `SOURCE_AUTH_EXPIRED` |
+| POST | `/sources` | Ajouter un Google Sheet choisi dans le sélecteur `{ type: "gsheet", spreadsheetId }` ou un fichier OneDrive `{ type: "onedrive", itemId }` ; teste l'accès. Un Sheet déjà ajouté est retesté et renvoyé, pas dupliqué | `SOURCE_UNAVAILABLE` (Sheet non choisi dans le sélecteur), `SOURCE_AUTH_EXPIRED` |
 | POST | `/sources/upload` | Uploader un Excel `.xlsx` (`multipart`, champ `file`, 20 Mo au plus) → nouvelle source de type upload. La liste renvoie aussi les feuilles (`sheets`) pour les sélecteurs du page builder | `413`, `415`, `422 EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/test` | Tester l'accès ; renvoie la source avec son état et ses feuilles relues | `SOURCE_UNAVAILABLE`, `SOURCE_AUTH_EXPIRED` |
 | GET | `/sources/:id/cells` | Grille d'un Excel uploadé : `?sheet=&top=&left=&rows=&cols=` (première feuille, `A1`, 50 × 26 par défaut ; 200 lignes et 50 colonnes au plus). Renvoie `{ sheets, sheet, maxRow, maxCol, top, left, rows, cols, cells: [{ row, col, type, display, formula, needsRecalc }] }`, cellules non vides seulement ; `formula` est sans « = », dans la syntaxe du fichier (`SUM(A1,1.5)`) ; les liaisons inter-fichiers ne sont pas suivies | `404` si la source n'est pas un upload ou si la feuille est inconnue, `400` hors bornes |
@@ -179,6 +178,10 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | POST | `/sources/:id/reimport/preview` | Uploader le nouveau fichier ; renvoie un `reimportToken` et la liste des **validations et modifications de la grille qui seraient perdues** (voir [schéma](#aperçu-de-réimport)) | `415`, `EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/reimport/confirm` | `{ reimportToken, mode: "overwrite" \| "reapply" }` (annuler revient à ne pas confirmer ; le jeton expire) | `409 REIMPORT_TOKEN_EXPIRED`, `422` si une validation réappliquée échoue |
 | DELETE | `/sources/:id` | Retirer (avertissement si encore utilisée) | `409 CONFIRMATION_REQUIRED` |
+| GET | `/google/connect` | Démarre la connexion Google (redirection) | — |
+| GET | `/google/status` | État de la connexion : `{ configured, connected, accountLabel, expired }` (jamais le jeton) | — |
+| GET | `/api/v1/google/callback` (**hors** `/admin`, publique) | Retour de Google : même règle que le retour de Microsoft (`state`), puis redirection vers `/admin/sources?google=connected` ou `failed` | `400 SOURCE_AUTH_FAILED` |
+| GET | `/google/picker` | Ce qu'il faut au sélecteur de fichiers Google : `{ accessToken, apiKey, appId }` (jeton d'accès court, limité aux fichiers choisis ; jamais le refresh token) | `SOURCE_AUTH_EXPIRED` |
 | GET | `/onedrive/connect` | Démarre la connexion Microsoft (redirection) | — |
 | GET | `/onedrive/status` | État de la connexion : `{ configured, connected, accountLabel, expired }` (jamais le jeton) | — |
 | GET | `/api/v1/onedrive/callback` (**hors** `/admin`, publique) | Retour de Microsoft : vérifie le paramètre `state` (qui remplace le CSRF et la session, dont le cookie `SameSite=Strict` n'est pas envoyé), stocke le jeton chiffré, puis redirige vers `/admin/sources?onedrive=connected` ou `failed` | `400 SOURCE_AUTH_FAILED` |
