@@ -15,7 +15,9 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { deleteTheme, getTheme, updateTheme } from '../../api/themes';
 import { MediaPicker } from '../../builder/MediaPicker';
+import { useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { useToast } from '../../components/Toast';
 import { ThemeScope } from '../../render/ThemeScope';
 
 /** Admin › Thème : réglages par section et aperçu en direct (06 — Thèmes). */
@@ -41,7 +43,8 @@ function ThemeEditor({ theme }: { theme: Theme }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(theme.name);
   const [config, setConfig] = useState(theme.config);
-  const [notice, setNotice] = useState<string | null>(null);
+  const toast = useToast();
+  const confirmed = useConfirmed();
   const [pickingImage, setPickingImage] = useState(false);
 
   const set = <S extends Section>(section: S, patch: Partial<ThemeConfig[S]>) =>
@@ -52,7 +55,7 @@ function ThemeEditor({ theme }: { theme: Theme }) {
     onSuccess: (saved) => {
       queryClient.setQueryData(['admin', 'themes', saved.id], saved);
       void queryClient.invalidateQueries({ queryKey: ['admin', 'themes'], exact: true });
-      setNotice(t('themes.saved'));
+      toast(t('themes.saved'));
     },
   });
   const remove = useMutation({
@@ -86,17 +89,11 @@ function ThemeEditor({ theme }: { theme: Theme }) {
         {theme.name}
         {theme.isDefault && <span className="badge">{t('themes.default')}</span>}
       </h1>
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
-        </p>
-      )}
       <div className="theme-editor">
         <form
           className="form"
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
-            setNotice(null);
             save.mutate();
           }}
         >
@@ -243,11 +240,16 @@ function ThemeEditor({ theme }: { theme: Theme }) {
               className="danger"
               disabled={remove.isPending || theme.isDefault}
               title={theme.isDefault ? t('themes.defaultProtected') : undefined}
-              onClick={() => {
-                if (window.confirm(t('themes.deleteConfirm', { name: theme.name }))) {
-                  remove.mutate();
-                }
-              }}
+              onClick={() =>
+                confirmed(
+                  {
+                    title: t('themes.deleteConfirm', { name: theme.name }),
+                    confirmLabel: t('common.delete'),
+                    danger: true,
+                  },
+                  () => remove.mutate(),
+                )
+              }
             >
               {t('themes.delete')}
             </button>

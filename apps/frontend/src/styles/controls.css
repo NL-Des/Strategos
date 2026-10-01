@@ -405,3 +405,16 @@ button.action-menu-button {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* Place insuffisante : le menu s'ouvre vers le haut, ou vers la droite. */
+.account-dropdown.up,
+.action-menu-dropdown.up {
+  bottom: 100%;
+  margin: 0 0 var(--space-1);
+}
+
+.account-dropdown.start,
+.action-menu-dropdown.start {
+  right: auto;
+  left: 0;
+}

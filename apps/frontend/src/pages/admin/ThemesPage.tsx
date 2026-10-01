@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { createTheme, listThemes } from '../../api/themes';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Admin › Thèmes : liste et création (06 — Thèmes). */
 export function ThemesPage() {
@@ -49,7 +50,7 @@ export function ThemesPage() {
           </tbody>
         </table>
       </div>
-      {themes.data?.length === 0 && <p className="muted">{t('themes.empty')}</p>}
+      {themes.data?.length === 0 && <EmptyState>{t('themes.empty')}</EmptyState>}
     </section>
   );
 }

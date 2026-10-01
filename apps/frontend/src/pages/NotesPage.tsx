@@ -5,7 +5,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createNote, deleteNote, listNotes, type NoteInput, updateNote } from '../api/notes';
+import { useConfirmed, usePrompt } from '../components/Dialog';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { useToast } from '../components/Toast';
+import { ToolButton } from '../components/ToolButton';
+import { EmptyState } from '../components/EmptyState';
 
 const NOTES_KEY = ['me', 'notes'];
 
@@ -32,7 +36,7 @@ export function NotesPage() {
           {t('notes.new')}
         </button>
       )}
-      {notes.data?.length === 0 && !creating && <p className="muted">{t('notes.empty')}</p>}
+      {notes.data?.length === 0 && !creating && <EmptyState>{t('notes.empty')}</EmptyState>}
       {notes.data?.map((note) => (
         <NoteCard key={note.id} note={note} />
       ))}
@@ -44,6 +48,7 @@ function NoteCard({ note }: { note: Note }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const confirmed = useConfirmed();
   const remove = useMutation({
     mutationFn: () => deleteNote(note.id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: NOTES_KEY }),
@@ -67,9 +72,16 @@ function NoteCard({ note }: { note: Note }) {
           type="button"
           className="danger"
           disabled={remove.isPending}
-          onClick={() => {
-            if (window.confirm(t('notes.deleteConfirm', { title: note.title }))) remove.mutate();
-          }}
+          onClick={() =>
+            confirmed(
+              {
+                title: t('notes.deleteConfirm', { title: note.title }),
+                confirmLabel: t('common.delete'),
+                danger: true,
+              },
+              () => remove.mutate(),
+            )
+          }
         >
           {t('common.delete')}
         </button>
@@ -84,10 +96,12 @@ function NoteForm({ note, onDone }: { note?: Note; onDone: () => void }) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
+  const toast = useToast();
   const save = useMutation({
     mutationFn: (body: NoteInput) => (note ? updateNote(note.id, body) : createNote(body)),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+      toast(t('notes.saved'));
       onDone();
     },
   });
@@ -126,6 +140,7 @@ function NoteForm({ note, onDone }: { note?: Note; onDone: () => void }) {
 /** Mise en forme simple (05) : gras, italique, listes, liens. */
 function NoteEditor({ html, onChange }: { html: string; onChange: (html: string) => void }) {
   const { t } = useTranslation();
+  const prompt = usePrompt();
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -154,14 +169,7 @@ function NoteEditor({ html, onChange }: { html: string; onChange: (html: string)
 
   const chain = () => editor.chain().focus();
   const tool = (key: keyof typeof state, label: string, run: () => void) => (
-    <button
-      type="button"
-      className={`tool${state[key] ? ' active' : ''}`}
-      aria-pressed={state[key]}
-      onClick={run}
-    >
-      {label}
-    </button>
+    <ToolButton label={label} active={state[key]} onClick={run} />
   );
 
   return (
@@ -173,8 +181,13 @@ function NoteEditor({ html, onChange }: { html: string; onChange: (html: string)
         {tool('ordered', t('notes.editor.orderedList'), () => chain().toggleOrderedList().run())}
         {tool('link', t('notes.editor.link'), () => {
           if (state.link) return chain().unsetLink().run();
-          const url = window.prompt(t('notes.editor.linkPrompt'), 'https://');
-          if (url) chain().setLink({ href: url, target: '_blank' }).run();
+          void prompt({
+            title: t('notes.editor.link'),
+            label: t('notes.editor.linkPrompt'),
+            initial: 'https://',
+          }).then((url) => {
+            if (url) chain().setLink({ href: url, target: '_blank' }).run();
+          });
         })}
       </div>
       <EditorContent editor={editor} className="rich-editor-content block-rich" />

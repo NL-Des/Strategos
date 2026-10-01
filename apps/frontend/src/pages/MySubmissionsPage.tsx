@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { listMySubmissions } from '../api/forms';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Pagination } from '../components/Pagination';
+import { EmptyState } from '../components/EmptyState';
 
 const show = (value: SubmissionValue) =>
   value === null ? '—' : typeof value === 'boolean' ? (value ? '✓' : '✗') : String(value);
@@ -56,7 +57,7 @@ export function MySubmissionsPage() {
           )}
         </article>
       ))}
-      {submissions.data?.total === 0 && <p className="muted">{t('submissions.mine.empty')}</p>}
+      {submissions.data?.total === 0 && <EmptyState>{t('submissions.mine.empty')}</EmptyState>}
       {submissions.data && submissions.data.total > submissions.data.pageSize && (
         <Pagination
           page={page}

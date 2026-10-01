@@ -101,3 +101,8 @@ export async function openAdminPage(page: Page, name: string): Promise<void> {
   await page.getByRole('link', { name, exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 }
+
+/** Bouton de la fenêtre de confirmation ouverte (par défaut « Supprimer »). */
+export function dialogButton(page: Page, label = t('common.delete')): Locator {
+  return page.getByRole('dialog').getByRole('button', { name: label, exact: true });
+}

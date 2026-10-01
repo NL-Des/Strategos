@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { createGroup, listGroups } from '../../api/groups';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Admin › Groupes : liste et création (03 — Gestion des groupes). */
 export function GroupsPage() {
@@ -39,7 +40,7 @@ export function GroupsPage() {
           </tbody>
         </table>
       </div>
-      {groups.data?.length === 0 && <p className="muted">{t('admin.groups.empty')}</p>}
+      {groups.data?.length === 0 && <EmptyState>{t('admin.groups.empty')}</EmptyState>}
     </section>
   );
 }

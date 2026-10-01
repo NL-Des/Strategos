@@ -24,17 +24,20 @@ import { Warnings } from '../../builder/FormEditor';
 import { blocksOf, PageEditorContext } from '../../builder/PageEditorContext';
 import { RowsEditor } from '../../builder/RowsEditor';
 import { PreviewGroupSelect } from '../../builder/PreviewGroupSelect';
+import { useConfirm, useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { Loading } from '../../components/Loading';
+import { useToast } from '../../components/Toast';
+import { formatDateTime } from '../../format';
 import { SaveAsTemplate } from '../../components/SaveAsTemplate';
 import { PageRender } from '../../render/PageRender';
 
 /** Éditeur d'une page : on modifie toujours le brouillon, publié par un bouton dédié. */
 export function PageEditorPage() {
-  const { t } = useTranslation();
   const { id = '' } = useParams();
   const page = useQuery({ queryKey: ['admin', 'page', id], queryFn: () => getAdminPage(id) });
   if (page.error) return <ErrorMessage error={page.error} />;
-  if (!page.data) return <p>{t('common.loading')}</p>;
+  if (!page.data) return <Loading />;
   return <Editor key={page.data.id} initial={page.data} />;
 }
 
@@ -50,7 +53,9 @@ function Editor({ initial }: { initial: AdminPage }) {
     page: AssembledPage;
     layout: AssembledLayout;
   } | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const toast = useToast();
+  const confirm = useConfirm();
+  const confirmed = useConfirmed();
   const [previewGroup, setPreviewGroup] = useState('');
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const themes = useQuery({ queryKey: ['admin', 'themes'], queryFn: listThemes });
@@ -62,7 +67,6 @@ function Editor({ initial }: { initial: AdminPage }) {
   const edit = (patch: Partial<PageConfig>) => {
     setDraft({ ...draft, ...patch });
     setDirty(true);
-    setNotice(null);
   };
   const setZone = (zone: 'main' | 'sidebar', rows: Row[] | null) =>
     edit({ zones: { ...draft.zones, [zone]: rows } });
@@ -87,7 +91,7 @@ function Editor({ initial }: { initial: AdminPage }) {
 
   const saveMutation = useMutation({
     mutationFn: save,
-    onSuccess: () => setNotice(t('builder.saved')),
+    onSuccess: () => toast(t('builder.saved')),
   });
   const previewMutation = useMutation({
     mutationFn: async (asGroup: string) => {
@@ -106,7 +110,14 @@ function Editor({ initial }: { initial: AdminPage }) {
       if (dirty) await save();
       // Les soumissions en attente que la publication invaliderait sont annoncées avant.
       const { invalidatedSubmissions: count } = await getPublishPreview(saved.id);
-      if (count > 0 && !window.confirm(t('builder.publishInvalidates', { count }))) return null;
+      if (
+        count > 0 &&
+        !(await confirm({
+          title: t('builder.publishInvalidates', { count }),
+          confirmLabel: t('builder.publish'),
+        }))
+      )
+        return null;
       return publishPage(saved.id, count > 0);
     },
     onSuccess: (page) => {
@@ -114,7 +125,7 @@ function Editor({ initial }: { initial: AdminPage }) {
       onSaved(page);
       void queryClient.invalidateQueries({ queryKey: ['admin', 'submissions'] });
       void queryClient.invalidateQueries({ queryKey: ['page', page.id] });
-      setNotice(t('builder.published'));
+      toast(t('builder.published'));
     },
   });
   const deleteMutation = useMutation({
@@ -135,7 +146,7 @@ function Editor({ initial }: { initial: AdminPage }) {
         <p className="muted">
           {saved.publishedAt
             ? t('builder.lastPublished', {
-                date: new Date(saved.publishedAt).toLocaleString('fr-FR'),
+                date: formatDateTime(saved.publishedAt),
               })
             : t('builder.pages.neverPublished')}
           {dirty && ` · ${t('builder.unsaved')}`}
@@ -161,20 +172,21 @@ function Editor({ initial }: { initial: AdminPage }) {
           <button
             type="button"
             className="danger"
-            onClick={() => {
-              if (window.confirm(t('builder.pages.deleteConfirm', { name: saved.name })))
-                deleteMutation.mutate();
-            }}
+            onClick={() =>
+              confirmed(
+                {
+                  title: t('builder.pages.deleteConfirm', { name: saved.name }),
+                  confirmLabel: t('common.delete'),
+                  danger: true,
+                },
+                () => deleteMutation.mutate(),
+              )
+            }
           >
             {t('builder.pages.delete')}
           </button>
         </div>
         <SaveAsTemplate type="page" sourceId={saved.id} defaultName={saved.name} />
-        {notice && (
-          <p className="notice" role="status">
-            {notice}
-          </p>
-        )}
         <ErrorMessage error={error} />
         <Warnings warnings={warnings} />
       </div>

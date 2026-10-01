@@ -8,13 +8,15 @@ import { getSettings, updateSettings } from '../../api/settings';
 import { listThemes } from '../../api/themes';
 import { ME_KEY } from '../../auth/useMe';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { Loading } from '../../components/Loading';
+import { useToast } from '../../components/Toast';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Admin › Réglages de l'instance (04) et sauvegardes (11). */
 export function SettingsPage() {
-  const { t } = useTranslation();
   const settings = useQuery({ queryKey: ['admin', 'settings'], queryFn: getSettings });
   if (settings.error) return <ErrorMessage error={settings.error} />;
-  if (!settings.data) return <p>{t('common.loading')}</p>;
+  if (!settings.data) return <Loading />;
   return (
     <>
       <SettingsForm initial={settings.data} />
@@ -40,7 +42,7 @@ function Backups() {
       <h2>{t('backups.title')}</h2>
       <p className="muted">{t('backups.intro')}</p>
       <ErrorMessage error={backups.error} />
-      {backups.data?.length === 0 && <p className="muted">{t('backups.empty')}</p>}
+      {backups.data?.length === 0 && <EmptyState>{t('backups.empty')}</EmptyState>}
       {backups.data && backups.data.length > 0 && (
         <div className="table-wrap">
           <table>
@@ -89,7 +91,7 @@ function SettingsForm({ initial }: { initial: InstanceSettings }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initial);
-  const [notice, setNotice] = useState<string | null>(null);
+  const toast = useToast();
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: listPages });
   const themes = useQuery({ queryKey: ['admin', 'themes'], queryFn: listThemes });
   const save = useMutation({
@@ -98,7 +100,7 @@ function SettingsForm({ initial }: { initial: InstanceSettings }) {
       queryClient.setQueryData(['admin', 'settings'], next);
       setForm(next);
       void queryClient.invalidateQueries({ queryKey: ME_KEY });
-      setNotice(t('settings.saved'));
+      toast(t('settings.saved'));
     },
   });
 
@@ -151,11 +153,6 @@ function SettingsForm({ initial }: { initial: InstanceSettings }) {
           onChange={(e) => setForm({ ...form, backupRetentionDays: Number(e.target.value) })}
         />
       </label>
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
-        </p>
-      )}
       <ErrorMessage error={save.error} />
       <button type="submit" disabled={save.isPending}>
         {t('common.save')}

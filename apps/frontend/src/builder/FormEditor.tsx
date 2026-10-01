@@ -25,6 +25,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { SaveAsTemplate } from '../components/SaveAsTemplate';
 import { useSources } from './DataBlockEditors';
 import { usePageEditor } from './PageEditorContext';
+import { Loading } from '../components/Loading';
 
 type FormBlock = Extract<Block, { type: 'form' }>;
 
@@ -138,13 +139,12 @@ function NewForm({
 }
 
 function FormLoader({ formId }: { formId: string }) {
-  const { t } = useTranslation();
   const form = useQuery({
     queryKey: ['admin', 'form', formId],
     queryFn: () => getAdminForm(formId),
   });
   if (form.error) return <ErrorMessage error={form.error} />;
-  if (!form.data) return <p>{t('common.loading')}</p>;
+  if (!form.data) return <Loading />;
   return <DefinitionEditor key={form.data.id} initial={form.data} />;
 }
 

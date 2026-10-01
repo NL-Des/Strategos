@@ -4,6 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ApiRequestError } from './api/client';
 import { ME_KEY } from './auth/useMe';
+import { DialogProvider } from './components/Dialog';
+import { ToastProvider } from './components/Toast';
 import './i18n';
 import './styles/index.css';
 
@@ -27,7 +29,11 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <ToastProvider>
+        <DialogProvider>
+          <App />
+        </DialogProvider>
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

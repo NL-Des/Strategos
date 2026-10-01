@@ -91,3 +91,217 @@
   font-weight: 700;
   cursor: help;
 }
+
+/* ---- Icônes ---- */
+
+.icon {
+  flex: none;
+  vertical-align: -0.2em;
+}
+
+/* Message avec icône (composant Notice) : l'icône porte la teinte. */
+.notice.with-icon,
+.error.with-icon {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.with-icon > .icon {
+  margin-top: 0.2em;
+  color: var(--tone);
+}
+
+.notice-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Chargement ---- */
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  color: var(--muted);
+}
+
+.loading.page {
+  justify-content: center;
+  padding-top: 20vh;
+}
+
+.spinner {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinner {
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Liste vide ---- */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  padding: var(--space-5) var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.empty-state button {
+  align-self: center;
+}
+
+/* ---- Fenêtre de dialogue ---- */
+
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.dialog.wide {
+  width: min(44rem, calc(100vw - 2rem));
+}
+
+.dialog::backdrop {
+  background: rgb(16 24 40 / 45%);
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.dialog-body h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.dialog-message {
+  overflow-wrap: anywhere;
+}
+
+.dialog-message > :last-child {
+  margin-bottom: 0;
+}
+
+.dialog-message ul {
+  margin: var(--space-2) 0;
+  padding-left: 1.25rem;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.dialog-actions button {
+  align-self: auto;
+}
+
+/* ---- Confirmations éphémères ---- */
+
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-4);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(28rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: #1c2330;
+  color: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+}
+
+.toast > .icon {
+  color: #7ddba3;
+}
+
+.toast > span {
+  flex: 1;
+}
+
+button.toast-close {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  color: #fff;
+  text-decoration: none;
+  opacity: 0.75;
+}
+
+button.toast-close:hover {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toast {
+    animation: toast-in 160ms ease-out;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

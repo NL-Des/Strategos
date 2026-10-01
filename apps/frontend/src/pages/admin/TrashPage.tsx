@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { listTrash, restoreFromTrash } from '../../api/trash';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { Pagination } from '../../components/Pagination';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Admin › Corbeille (04) : éléments supprimés, filtrables par type, restaurables. */
 export function TrashPage() {
@@ -104,7 +105,7 @@ export function TrashPage() {
           </tbody>
         </table>
       </div>
-      {trash.data?.items.length === 0 && <p className="muted">{t('trash.empty')}</p>}
+      {trash.data?.items.length === 0 && <EmptyState>{t('trash.empty')}</EmptyState>}
       {trash.data && (
         <Pagination
           page={page}

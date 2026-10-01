@@ -13,6 +13,7 @@ import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { getPrefill, getUserForm, submitForm } from '../api/forms';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { Loading } from '../components/Loading';
 
 /** Saisie d'un champ : texte brut pour les champs de saisie, booléen pour une case. */
 type Input = string | boolean;
@@ -152,7 +153,7 @@ export function FormView({
 
   if (form.error) return <ErrorMessage error={form.error} />;
   if (prefill.error) return <ErrorMessage error={prefill.error} />;
-  if (!form.data || (rowKey !== undefined && !prefill.data)) return <p>{t('common.loading')}</p>;
+  if (!form.data || (rowKey !== undefined && !prefill.data)) return <Loading />;
   const { fields, state, title, intro, successMessage, closesAt } = form.data;
   const initial = prefill.data?.values ?? {};
   const valueOf = (key: string) => (key in inputs ? inputs[key] : toInput(initial[key]));

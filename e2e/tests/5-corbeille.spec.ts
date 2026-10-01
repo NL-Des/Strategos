@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { PLAYER_PASSWORD } from '../stack.ts';
-import { adminNav, clickAndWait, login, loginAsAdmin, section, t } from './helpers.ts';
+import {
+  adminNav,
+  clickAndWait,
+  dialogButton,
+  login,
+  loginAsAdmin,
+  section,
+  t,
+} from './helpers.ts';
 
 /**
  * Corbeille (04) : un sujet et un groupe supprimés, retrouvés par type, puis
@@ -14,24 +22,16 @@ test('1. l’admin supprime un sujet et un groupe', async ({ page }) => {
   await page.getByRole('link', { name: 'Tournoi' }).click();
   await page.getByRole('button', { name: /Qui fait équipe avec moi/ }).click();
   await page.getByRole('button', { name: t('render.discussion.topicOptions') }).click();
-  page.once('dialog', (dialog) => void dialog.accept());
-  await clickAndWait(
-    page,
-    page.getByRole('menuitem', { name: t('render.discussion.deleteTopic') }),
-    '/admin/topics/',
-  );
+  await page.getByRole('menuitem', { name: t('render.discussion.deleteTopic') }).click();
+  await clickAndWait(page, dialogButton(page), '/admin/topics/');
   await expect(page.getByRole('button', { name: /Qui fait équipe avec moi/ })).toHaveCount(0);
 
   await adminNav(page, 'groups');
   const create = section(page, t('admin.groups.create'));
   await create.getByLabel(t('fields.name')).fill('Anciens');
   await create.getByRole('button', { name: t('admin.groups.createSubmit') }).click();
-  page.once('dialog', (dialog) => void dialog.accept());
-  await clickAndWait(
-    page,
-    page.getByRole('button', { name: t('admin.group.delete') }),
-    '/admin/groups/',
-  );
+  await page.getByRole('button', { name: t('admin.group.delete') }).click();
+  await clickAndWait(page, dialogButton(page), '/admin/groups/');
 });
 
 test('2. corbeille filtrée par type, restauration tracée au journal', async ({ page }) => {

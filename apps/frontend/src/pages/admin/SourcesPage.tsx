@@ -19,16 +19,19 @@ import {
   testSource,
   uploadSource,
 } from '../../api/sources';
+import { Modal, useConfirm } from '../../components/Dialog';
+import { EmptyState } from '../../components/EmptyState';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { useToast } from '../../components/Toast';
+import { formatDateTime } from '../../format';
 import { GoogleSheetsPanel, OneDrivePanel } from './ConnectedSources';
 
-interface InUse {
-  source: SourceSummary;
+interface Usages {
   pages: { id: string; name: string }[];
   layouts: string[];
 }
 
-const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString('fr-FR') : '—');
+const date = (iso: string | null) => (iso ? formatDateTime(iso) : '—');
 
 /** Contenu d'une cellule au réimport ; la formule d'une modification de la grille, en français. */
 const shownValue = (value: string | null, edit: boolean) =>
@@ -42,7 +45,8 @@ export function SourcesPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [inUse, setInUse] = useState<InUse | null>(null);
+  const ask = useConfirm();
+  const toast = useToast();
   const sources = useQuery({ queryKey: ['admin', 'sources'], queryFn: listSources });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'sources'] });
 
@@ -50,20 +54,43 @@ export function SourcesPage() {
     mutationFn: uploadSource,
     onSuccess: () => {
       if (fileInput.current) fileInput.current.value = '';
+      toast(t('sources.uploaded'));
       void refresh();
     },
   });
+
+  /** Suppression : une seule fenêtre, qui liste les pages touchées s'il y en a. */
+  const askDelete = async (source: SourceSummary, usages: Usages) => {
+    const inUse = usages.pages.length + usages.layouts.length > 0;
+    const ok = await ask({
+      title: t('sources.deleteConfirm', { name: source.name }),
+      message: inUse && (
+        <>
+          <p>{t('warnings.SOURCE_IN_USE', { name: source.name })}</p>
+          <ul>
+            {usages.pages.map((p) => (
+              <li key={p.id}>{p.name}</li>
+            ))}
+            {usages.layouts.map((kind) => (
+              <li key={kind}>{t(`builder.zoneNames.${kind}`)}</li>
+            ))}
+          </ul>
+        </>
+      ),
+      confirmLabel: inUse ? t('sources.deleteAnyway') : t('sources.delete'),
+      danger: true,
+    });
+    if (ok) remove.mutate({ source, confirm: inUse });
+  };
   const remove = useMutation({
     mutationFn: ({ source, confirm }: { source: SourceSummary; confirm: boolean }) =>
       deleteSource(source.id, confirm),
-    onSuccess: () => {
-      setInUse(null);
-      void refresh();
-    },
+    onSuccess: () => void refresh(),
+    // Un usage apparu depuis l'affichage de la liste : on redemande avec le détail du serveur.
     onError: (error, { source }) => {
       if (error instanceof ApiRequestError && error.code === 'CONFIRMATION_REQUIRED') {
-        const [warning] = (error.error.details.warnings ?? []) as Omit<InUse, 'source'>[];
-        setInUse({ source, pages: warning?.pages ?? [], layouts: warning?.layouts ?? [] });
+        const [warning] = (error.error.details.warnings ?? []) as Partial<Usages>[];
+        void askDelete(source, { pages: warning?.pages ?? [], layouts: warning?.layouts ?? [] });
       }
     },
   });
@@ -119,35 +146,12 @@ export function SourcesPage() {
       <GoogleSheetsPanel />
       <OneDrivePanel />
 
-      {inUse && (
-        <div className="card warning" role="alertdialog" aria-labelledby="source-in-use">
-          <p id="source-in-use">{t('warnings.SOURCE_IN_USE', { name: inUse.source.name })}</p>
-          <ul>
-            {inUse.pages.map((p) => (
-              <li key={p.id}>{p.name}</li>
-            ))}
-            {inUse.layouts.map((kind) => (
-              <li key={kind}>{t(`builder.zoneNames.${kind}`)}</li>
-            ))}
-          </ul>
-          <div className="actions">
-            <button
-              type="button"
-              className="danger"
-              onClick={() => remove.mutate({ source: inUse.source, confirm: true })}
-            >
-              {t('sources.deleteAnyway')}
-            </button>
-            <button type="button" className="secondary" onClick={() => setInUse(null)}>
-              {t('common.cancel')}
-            </button>
-          </div>
-        </div>
-      )}
-
       {reimport && (
-        <div className="card warning" role="alertdialog" aria-labelledby="reimport-title">
-          <h2 id="reimport-title">{t('sources.reimport.title', { name: reimport.source.name })}</h2>
+        <Modal
+          wide
+          title={t('sources.reimport.title', { name: reimport.source.name })}
+          onClose={() => setReimport(null)}
+        >
           {reimport.preview.lostValidations.length === 0 ? (
             <p>{t('sources.reimport.nothingLost')}</p>
           ) : (
@@ -173,7 +177,7 @@ export function SourcesPage() {
             </>
           )}
           <ErrorMessage error={reimportConfirm.error} />
-          <div className="actions">
+          <div className="dialog-actions">
             {reimport.preview.lostValidations.length > 0 && (
               <button
                 type="button"
@@ -185,7 +189,7 @@ export function SourcesPage() {
             )}
             <button
               type="button"
-              className={reimport.preview.lostValidations.length > 0 ? 'danger' : undefined}
+              className={reimport.preview.lostValidations.length > 0 ? 'danger solid' : undefined}
               disabled={reimportConfirm.isPending}
               onClick={() => reimportConfirm.mutate('overwrite')}
             >
@@ -199,7 +203,7 @@ export function SourcesPage() {
               {t('common.cancel')}
             </button>
           </div>
-        </div>
+        </Modal>
       )}
 
       <ErrorMessage error={sources.error ?? removeError ?? reimportPreview.error ?? test.error} />
@@ -287,11 +291,7 @@ export function SourcesPage() {
                     <button
                       type="button"
                       className="danger"
-                      onClick={() => {
-                        if (window.confirm(t('sources.deleteConfirm', { name: source.name }))) {
-                          remove.mutate({ source, confirm: false });
-                        }
-                      }}
+                      onClick={() => void askDelete(source, source.usages)}
                     >
                       {t('sources.delete')}
                     </button>
@@ -302,7 +302,7 @@ export function SourcesPage() {
           </tbody>
         </table>
       </div>
-      {sources.data?.length === 0 && <p className="muted">{t('sources.empty')}</p>}
+      {sources.data?.length === 0 && <EmptyState icon="database">{t('sources.empty')}</EmptyState>}
     </section>
   );
 }

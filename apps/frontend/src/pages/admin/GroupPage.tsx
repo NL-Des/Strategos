@@ -19,7 +19,9 @@ import {
 import { listPages } from '../../api/pages';
 import { getRightsMatrix } from '../../api/rights';
 import { listUsers } from '../../api/users';
+import { useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { useToast } from '../../components/Toast';
 
 /** Fiche d'un groupe : nom, membres et permissions qu'il déclare (vue « par groupe »). */
 export function GroupPage() {
@@ -52,13 +54,14 @@ function GroupDetails({ group }: { group: GroupDetail }) {
   const onUpdated = useOnGroupUpdated();
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? '');
-  const [notice, setNotice] = useState<string | null>(null);
+  const toast = useToast();
+  const confirmed = useConfirmed();
 
   const update = useMutation({
     mutationFn: () => updateGroup(group.id, { name, description, version: group.version }),
     onSuccess: (g) => {
       onUpdated(g);
-      setNotice(t('admin.group.saved'));
+      toast(t('admin.group.saved'));
     },
   });
   const remove = useMutation({
@@ -72,11 +75,6 @@ function GroupDetails({ group }: { group: GroupDetail }) {
   return (
     <>
       <h1>{group.name}</h1>
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
-        </p>
-      )}
       <form
         className="card form"
         onSubmit={(e: FormEvent) => {
@@ -110,11 +108,16 @@ function GroupDetails({ group }: { group: GroupDetail }) {
             type="button"
             className="danger"
             disabled={remove.isPending}
-            onClick={() => {
-              if (window.confirm(t('admin.group.deleteConfirm', { name: group.name }))) {
-                remove.mutate();
-              }
-            }}
+            onClick={() =>
+              confirmed(
+                {
+                  title: t('admin.group.deleteConfirm', { name: group.name }),
+                  confirmLabel: t('common.delete'),
+                  danger: true,
+                },
+                () => remove.mutate(),
+              )
+            }
           >
             {t('admin.group.delete')}
           </button>
@@ -130,6 +133,7 @@ function GroupDetails({ group }: { group: GroupDetail }) {
 function MembersEditor({ group }: { group: GroupDetail }) {
   const { t } = useTranslation();
   const onUpdated = useOnGroupUpdated();
+  const toast = useToast();
   const [selected, setSelected] = useState(() => new Set(group.members.map((m) => m.id)));
   const [q, setQ] = useState('');
   const users = useQuery({
@@ -138,7 +142,10 @@ function MembersEditor({ group }: { group: GroupDetail }) {
   });
   const save = useMutation({
     mutationFn: () => replaceMembers(group.id, [...selected]),
-    onSuccess: onUpdated,
+    onSuccess: (g) => {
+      onUpdated(g);
+      toast(t('admin.group.membersSaved'));
+    },
   });
   const toggle = (id: string, checked: boolean) => {
     const next = new Set(selected);
@@ -194,6 +201,7 @@ const SPACE_RIGHTS = [
 function PermissionsEditor({ group }: { group: GroupDetail }) {
   const { t } = useTranslation();
   const onUpdated = useOnGroupUpdated();
+  const toast = useToast();
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: listPages });
   // Les espaces existent dès que leur page est publiée ; la matrice des droits les liste.
   const spaces = useQuery({
@@ -237,7 +245,10 @@ function PermissionsEditor({ group }: { group: GroupDetail }) {
             ...rights,
           })),
       ]),
-    onSuccess: onUpdated,
+    onSuccess: (g) => {
+      onUpdated(g);
+      toast(t('admin.group.permissionsSaved'));
+    },
   });
   const setSpaceRight = (id: string, right: keyof SpaceRights, checked: boolean) => {
     const current = spaceRights.get(id) ?? {

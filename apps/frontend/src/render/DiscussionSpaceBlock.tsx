@@ -19,8 +19,11 @@ import {
 } from '../api/discussions';
 import { useMe } from '../auth/useMe';
 import { ActionMenu } from '../components/ActionMenu';
+import { useConfirmed } from '../components/Dialog';
 import { SaveAsTemplate } from '../components/SaveAsTemplate';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { Loading } from '../components/Loading';
+import { Icon } from '../components/Icon';
 
 /** Texte multi-ligne → HTML simple (le backend le nettoie à nouveau). */
 function toHtml(text: string): string {
@@ -148,6 +151,7 @@ function Message({
   const { t } = useTranslation();
   const { data: me } = useMe();
   const [editing, setEditing] = useState(false);
+  const confirmed = useConfirmed();
   const edit = useMutation({
     mutationFn: (content: string) => editMessage(message.id, { content }),
     onSuccess: () => {
@@ -200,9 +204,16 @@ function Message({
                 type="button"
                 className="menu-item"
                 role="menuitem"
-                onClick={() => {
-                  if (confirm(t('render.discussion.confirmDelete'))) remove.mutate();
-                }}
+                onClick={() =>
+                  confirmed(
+                    {
+                      title: t('render.discussion.confirmDelete'),
+                      confirmLabel: t('common.delete'),
+                      danger: true,
+                    },
+                    () => remove.mutate(),
+                  )
+                }
               >
                 {t('common.delete')}
               </button>
@@ -247,9 +258,10 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
     },
   });
   const { data: me } = useMe();
+  const confirmed = useConfirmed();
 
   if (query.error) return <ErrorMessage error={query.error} />;
-  if (!query.data) return <p>{t('common.loading')}</p>;
+  if (!query.data) return <Loading />;
   const { topic, messages } = query.data;
   const pageCount = Math.max(1, Math.ceil(messages.total / messages.pageSize));
 
@@ -287,9 +299,16 @@ function TopicView({ topicId, onBack }: { topicId: string; onBack: () => void })
                 className="menu-item danger"
                 role="menuitem"
                 disabled={remove.isPending}
-                onClick={() => {
-                  if (window.confirm(t('render.discussion.confirmDeleteTopic'))) remove.mutate();
-                }}
+                onClick={() =>
+                  confirmed(
+                    {
+                      title: t('render.discussion.confirmDeleteTopic'),
+                      confirmLabel: t('common.delete'),
+                      danger: true,
+                    },
+                    () => remove.mutate(),
+                  )
+                }
               >
                 {t('render.discussion.deleteTopic')}
               </button>
@@ -376,8 +395,7 @@ export function DiscussionSpaceBlock({ block }: { block: AssembledDiscussionSpac
         {topics.data?.items.map((topic) => (
           <li key={topic.id}>
             <button type="button" className="link" onClick={() => setOpenTopicId(topic.id)}>
-              {topic.pinned && <span aria-hidden="true">📌 </span>}
-              {topic.title}
+              {topic.pinned && <Icon name="pin" size={15} />} {topic.title}
             </button>
             <span className="muted">
               {topic.author.username} · {new Date(topic.lastActivityAt).toLocaleDateString('fr-FR')}

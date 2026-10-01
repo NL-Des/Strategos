@@ -16,20 +16,21 @@ import { Warnings } from '../../builder/FormEditor';
 import { RowsEditor } from '../../builder/RowsEditor';
 import { PreviewGroupSelect } from '../../builder/PreviewGroupSelect';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { Loading } from '../../components/Loading';
+import { useToast } from '../../components/Toast';
 import { Rows } from '../../render/Rows';
 
 const LAYOUT_TYPES = BLOCK_TYPES.filter((type) => !LAYOUT_FORBIDDEN_BLOCK_TYPES.includes(type));
 
 /** Header ou footer partagé : même cycle brouillon → publication que les pages. */
 export function LayoutEditorPage() {
-  const { t } = useTranslation();
   const { kind = 'header' } = useParams() as { kind: LayoutKind };
   const part = useQuery({
     queryKey: ['admin', 'layout', kind],
     queryFn: () => getLayoutPart(kind),
   });
   if (part.error) return <ErrorMessage error={part.error} />;
-  if (!part.data) return <p>{t('common.loading')}</p>;
+  if (!part.data) return <Loading />;
   return <Editor key={kind} initial={part.data} />;
 }
 
@@ -41,7 +42,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
   const [rows, setRows] = useState<Row[]>(initial.draft.rows);
   const [dirty, setDirty] = useState(false);
   const [preview, setPreview] = useState<AssembledRow[] | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const toast = useToast();
   const [previewGroup, setPreviewGroup] = useState('');
   const [warnings, setWarnings] = useState<Warning[]>([]);
 
@@ -61,7 +62,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
   };
   const saveMutation = useMutation({
     mutationFn: save,
-    onSuccess: () => setNotice(t('builder.saved')),
+    onSuccess: () => toast(t('builder.saved')),
   });
   const previewMutation = useMutation({
     mutationFn: async (asGroup: string) => {
@@ -78,7 +79,7 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
     onSuccess: (part) => {
       onSaved(part);
       void queryClient.invalidateQueries({ queryKey: ['layout'] });
-      setNotice(t('builder.published'));
+      toast(t('builder.published'));
     },
   });
   const error = saveMutation.error ?? previewMutation.error ?? publishMutation.error;
@@ -112,11 +113,6 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
             {t('builder.publish')}
           </button>
         </div>
-        {notice && (
-          <p className="notice" role="status">
-            {notice}
-          </p>
-        )}
         <ErrorMessage error={error} />
         <Warnings warnings={warnings} />
       </div>
@@ -148,7 +144,6 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
         onChange={(next) => {
           setRows(next);
           setDirty(true);
-          setNotice(null);
         }}
       />
     </section>

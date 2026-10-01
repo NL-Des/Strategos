@@ -11,6 +11,7 @@ import {
 } from '../api/chat';
 import { useMe } from '../auth/useMe';
 import { ActionMenu } from '../components/ActionMenu';
+import { useConfirmed } from '../components/Dialog';
 
 /** Texte multi-ligne → HTML simple (le backend le nettoie à nouveau). */
 function toHtml(text: string): string {
@@ -45,6 +46,7 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState('');
+  const confirmed = useConfirmed();
 
   const startEdit = () => {
     setText(toText(message.content));
@@ -91,9 +93,16 @@ function ChatMessage({ message, isAdmin }: { message: ChatMessageView; isAdmin: 
                 type="button"
                 className="menu-item"
                 role="menuitem"
-                onClick={() => {
-                  if (confirm(t('render.chat.confirmDelete'))) void deleteChatMessage(message.id);
-                }}
+                onClick={() =>
+                  confirmed(
+                    {
+                      title: t('render.chat.confirmDelete'),
+                      confirmLabel: t('common.delete'),
+                      danger: true,
+                    },
+                    () => void deleteChatMessage(message.id),
+                  )
+                }
               >
                 {t('common.delete')}
               </button>

@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { getRightsMatrix } from '../../api/rights';
 import { deleteTemplate, instantiateTemplate, listTemplates } from '../../api/templates';
+import { useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
 /**
  * Admin › Modèles (10) : bibliothèque des formulaires, pages et sujets
@@ -39,7 +41,7 @@ export function TemplatesPage() {
         </select>
       </div>
       <ErrorMessage error={templates.error} />
-      {templates.data?.length === 0 && <p className="muted">{t('templates.empty')}</p>}
+      {templates.data?.length === 0 && <EmptyState>{t('templates.empty')}</EmptyState>}
       {templates.data?.map((template) => (
         <TemplateCard key={template.id} template={template} />
       ))}
@@ -49,6 +51,7 @@ export function TemplatesPage() {
 
 function TemplateCard({ template }: { template: TemplateSummary }) {
   const { t } = useTranslation();
+  const confirmed = useConfirmed();
   const queryClient = useQueryClient();
   const remove = useMutation({
     mutationFn: () => deleteTemplate(template.id),
@@ -78,10 +81,16 @@ function TemplateCard({ template }: { template: TemplateSummary }) {
         type="button"
         className="danger"
         disabled={remove.isPending}
-        onClick={() => {
-          if (window.confirm(t('templates.deleteConfirm', { name: template.name })))
-            remove.mutate();
-        }}
+        onClick={() =>
+          confirmed(
+            {
+              title: t('templates.deleteConfirm', { name: template.name }),
+              confirmLabel: t('common.delete'),
+              danger: true,
+            },
+            () => remove.mutate(),
+          )
+        }
       >
         {t('common.delete')}
       </button>

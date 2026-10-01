@@ -12,6 +12,7 @@ import { fetchRows } from '../api/pages';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Pagination } from '../components/Pagination';
 import { RowFormButtons } from './FormBlock';
+import { Icon } from '../components/Icon';
 
 /** Source injoignable : le module l'annonce, le reste de la page s'affiche. */
 export function SourceUnavailable() {
@@ -138,7 +139,9 @@ export function TableBlock({ block }: { block: AssembledTableBlock }) {
                       }
                     >
                       {column.label}
-                      {sort?.col === i && (sort.dir === 'asc' ? ' ▲' : ' ▼')}
+                      {sort?.col === i && (
+                        <Icon name={sort.dir === 'asc' ? 'chevronUp' : 'chevronDown'} size={14} />
+                      )}
                     </button>
                   ) : (
                     column.label

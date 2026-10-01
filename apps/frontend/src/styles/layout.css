@@ -179,3 +179,8 @@ a.usage {
 .submission-values dd {
   margin: 0;
 }
+
+/* Liste vide ou en cours de chargement : pas d'en-têtes de colonnes orphelins. */
+.table-wrap:has(> table > tbody:empty) {
+  display: none;
+}

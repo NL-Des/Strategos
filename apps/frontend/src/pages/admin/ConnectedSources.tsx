@@ -14,6 +14,7 @@ import {
 } from '../../api/sources';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { pickGoogleSheets } from './googlePicker';
+import { Icon } from '../../components/Icon';
 
 /** Le sélecteur de Google n'a pas pu s'ouvrir (script bloqué, réseau…). */
 class PickerError extends Error {}
@@ -262,7 +263,7 @@ export function OneDrivePanel() {
               <li key={item.id}>
                 {item.folder ? (
                   <button type="button" className="link" onClick={() => setPath(item.path)}>
-                    📁 {item.name}
+                    <Icon name="folder" /> {item.name}
                   </button>
                 ) : (
                   <>

@@ -15,7 +15,9 @@ import {
   updateUser,
 } from '../../api/users';
 import { readUserNotes } from '../../api/notes';
+import { useConfirmed } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { useToast } from '../../components/Toast';
 import { RightsTable } from '../../components/RightsTable';
 
 /**
@@ -46,12 +48,13 @@ function UserDetails({ user }: { user: UserDetail }) {
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: listPages });
   const groups = useQuery({ queryKey: ['admin', 'groups'], queryFn: listGroups });
   const [temporaryPassword, setTemporaryPassword] = useState('');
-  const [notice, setNotice] = useState<string | null>(null);
+  const toast = useToast();
+  const confirmed = useConfirmed();
 
   const onUpdated = (updated: UserDetail, message: string) => {
     queryClient.setQueryData(['admin', 'users', user.id], updated);
     void queryClient.invalidateQueries({ queryKey: ['admin', 'users'], exact: false });
-    setNotice(message);
+    toast(message);
   };
 
   const saveIdentity = useMutation({
@@ -98,11 +101,6 @@ function UserDetails({ user }: { user: UserDetail }) {
         {t(`admin.users.status_${user.status}`)}
         {user.mustChangeCredentials && ` · ${t('admin.users.temporaryPassword')}`}
       </p>
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
-        </p>
-      )}
       <ErrorMessage error={error} />
 
       <form
@@ -207,11 +205,16 @@ function UserDetails({ user }: { user: UserDetail }) {
               type="button"
               className="danger"
               disabled={remove.isPending}
-              onClick={() => {
-                if (window.confirm(t('admin.user.deleteConfirm', { username: user.username }))) {
-                  remove.mutate();
-                }
-              }}
+              onClick={() =>
+                confirmed(
+                  {
+                    title: t('admin.user.deleteConfirm', { username: user.username }),
+                    confirmLabel: t('common.delete'),
+                    danger: true,
+                  },
+                  () => remove.mutate(),
+                )
+              }
             >
               {t('admin.user.delete')}
             </button>

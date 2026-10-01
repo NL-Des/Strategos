@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { logout } from '../api/auth';
 import { ME_KEY, useMe } from '../auth/useMe';
+import { useMenu } from './useMenu';
 
 /**
  * Menu de compte (06) : seul élément que l'admin ne construit pas, fixe dans un
@@ -12,8 +12,7 @@ import { ME_KEY, useMe } from '../auth/useMe';
 export function AccountMenu() {
   const { t } = useTranslation();
   const { data: me } = useMe();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const { open, setOpen, placement, rootRef, buttonRef, menuRef, onKeyDown } = useMenu();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const logoutMutation = useMutation({
@@ -25,19 +24,11 @@ export function AccountMenu() {
     },
   });
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [open]);
-
   if (!me) return null;
   return (
-    <div className="account-menu" ref={ref}>
+    <div className="account-menu" ref={rootRef} onKeyDown={onKeyDown}>
       <button
+        ref={buttonRef}
         type="button"
         className="account-button"
         aria-haspopup="menu"
@@ -48,7 +39,7 @@ export function AccountMenu() {
         <span aria-hidden="true">{me.username.slice(0, 1).toUpperCase()}</span>
       </button>
       {open && (
-        <div className="account-dropdown" role="menu">
+        <div ref={menuRef} className={`account-dropdown ${placement}`.trim()} role="menu">
           <p className="account-name">{me.username}</p>
           {!me.mustChangeCredentials && (
             <Link role="menuitem" to="/profile" onClick={() => setOpen(false)}>

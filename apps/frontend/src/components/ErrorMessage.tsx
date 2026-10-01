@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ApiRequestError } from '../api/client';
+import { Notice } from './Notice';
 
 /**
  * Chemin d'erreur du page builder rendu lisible :
@@ -51,7 +52,7 @@ export function ErrorMessage({ error }: { error: unknown }) {
   );
 
   return (
-    <div className="error" role="alert">
+    <Notice tone="error" role="alert">
       <p>{text}</p>
       {fieldMessages.length > 0 && (
         <ul>
@@ -60,6 +61,12 @@ export function ErrorMessage({ error }: { error: unknown }) {
           ))}
         </ul>
       )}
-    </div>
+      {/* Conflit d'édition : seule issue, repartir de la version enregistrée. */}
+      {code === 'EDIT_CONFLICT' && (
+        <button type="button" className="secondary" onClick={() => window.location.reload()}>
+          {t('common.reload')}
+        </button>
+      )}
+    </Notice>
   );
 }

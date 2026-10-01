@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { createPage, listPages } from '../../api/pages';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Admin › Pages : liste, état de publication, création. */
 export function PagesPage() {
@@ -70,7 +71,7 @@ export function PagesPage() {
           </tbody>
         </table>
       </div>
-      {pages.data?.length === 0 && <p className="muted">{t('builder.pages.empty')}</p>}
+      {pages.data?.length === 0 && <EmptyState>{t('builder.pages.empty')}</EmptyState>}
     </section>
   );
 }

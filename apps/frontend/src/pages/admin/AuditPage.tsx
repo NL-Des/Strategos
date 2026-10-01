@@ -12,6 +12,7 @@ import { listUsers } from '../../api/users';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { Pagination } from '../../components/Pagination';
 import { describeChanges, targetLabel } from './audit-format';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Début du jour local, en ISO ; `offsetDays = 1` donne le lendemain (borne exclue). */
 function dayBoundary(date: string, offsetDays = 0): string | undefined {
@@ -133,7 +134,7 @@ export function AuditPage() {
           </tbody>
         </table>
       </div>
-      {audit.data?.items.length === 0 && <p className="muted">{t('audit.empty')}</p>}
+      {audit.data?.items.length === 0 && <EmptyState>{t('audit.empty')}</EmptyState>}
       {audit.data && (
         <Pagination
           page={page}

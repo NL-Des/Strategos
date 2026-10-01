@@ -5,6 +5,8 @@ import StarterKit from '@tiptap/starter-kit';
 import { CELL_REF_PATTERN, INLINE_CELL_FORMATS, type InlineCellFormat } from '@strategos/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePrompt } from '../components/Dialog';
+import { ToolButton } from '../components/ToolButton';
 import { CellValue, type CellValueAttrs } from './CellValueNode';
 import { useSources } from './DataBlockEditors';
 import { MediaPicker } from './MediaPicker';
@@ -91,6 +93,7 @@ export function RichTextEditor({
   onChange: (html: string) => void;
 }) {
   const { t } = useTranslation();
+  const prompt = usePrompt();
   const [picking, setPicking] = useState(false);
   const [insertingValue, setInsertingValue] = useState(false);
   const editor = useEditor({
@@ -118,14 +121,7 @@ export function RichTextEditor({
 
   const chain = () => editor.chain().focus();
   const tool = (key: keyof typeof state, label: string, run: () => void) => (
-    <button
-      type="button"
-      className={`tool${state[key] ? ' active' : ''}`}
-      aria-pressed={state[key]}
-      onClick={run}
-    >
-      {label}
-    </button>
+    <ToolButton label={label} active={state[key]} onClick={run} />
   );
 
   return (
@@ -139,22 +135,28 @@ export function RichTextEditor({
         {tool('ordered', t('builder.rich.orderedList'), () => chain().toggleOrderedList().run())}
         {tool('link', t('builder.rich.link'), () => {
           if (state.link) return chain().unsetLink().run();
-          const url = window.prompt(t('builder.rich.linkPrompt'), 'https://');
-          if (url) chain().setLink({ href: url, target: '_blank' }).run();
+          void prompt({
+            title: t('builder.rich.link'),
+            label: t('builder.rich.linkPrompt'),
+            initial: 'https://',
+          }).then((url) => {
+            if (url) chain().setLink({ href: url, target: '_blank' }).run();
+          });
         })}
-        <button
-          type="button"
-          className="tool"
+        <ToolButton
+          label={t('builder.rich.table')}
           onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-        >
-          {t('builder.rich.table')}
-        </button>
-        <button type="button" className="tool" onClick={() => setPicking(!picking)}>
-          {t('builder.rich.image')}
-        </button>
-        <button type="button" className="tool" onClick={() => setInsertingValue(!insertingValue)}>
-          {t('builder.rich.value')}
-        </button>
+        />
+        <ToolButton
+          label={t('builder.rich.image')}
+          active={picking}
+          onClick={() => setPicking(!picking)}
+        />
+        <ToolButton
+          label={t('builder.rich.value')}
+          active={insertingValue}
+          onClick={() => setInsertingValue(!insertingValue)}
+        />
       </div>
       {insertingValue && (
         <CellValuePicker

@@ -14,7 +14,8 @@
     "close": "Fermer",
     "confirm": "Confirmer",
     "edit": "Modifier",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "reload": "Recharger"
   },
   "account": {
     "menu": "Menu du compte",
@@ -96,7 +97,9 @@
       "permissionsHint": "Une page n’accorde que la lecture. Un espace de discussion accorde la lecture, l’ouverture de sujets et la publication de messages ; il apparaît ici une fois sa page publiée.",
       "readPages": "Pages lisibles",
       "savePermissions": "Enregistrer les permissions",
-      "spaces": "Espaces de discussion"
+      "spaces": "Espaces de discussion",
+      "membersSaved": "Membres enregistrés.",
+      "permissionsSaved": "Permissions enregistrées."
     },
     "nav": {
       "pages": "Pages",
@@ -470,7 +473,8 @@
       "empty": "Aucune image.",
       "deleteConfirm": "Supprimer l’image « {{filename}} » ?",
       "deleteAnyway": "Supprimer quand même",
-      "themeUsage": "Fond du thème « {{name}} »"
+      "themeUsage": "Fond du thème « {{name}} »",
+      "uploaded": "Image ajoutée à la médiathèque."
     },
     "pages": {
       "title": "Pages",
@@ -898,7 +902,8 @@
           "reference": "Référence"
         }
       }
-    }
+    },
+    "uploaded": "Fichier importé."
   },
   "render": {
     "sourceUnavailable": "Ces données sont momentanément indisponibles.",
@@ -1010,9 +1015,11 @@
       "modify": "Modifier",
       "validateModified": "Valider avec ces valeurs",
       "reject": "Refuser",
-      "rejectReason": "Motif du refus (facultatif) :",
+      "rejectReason": "Motif du refus (facultatif)",
       "pendingCount_one": "1 soumission en attente",
-      "pendingCount_other": "{{count}} soumissions en attente"
+      "pendingCount_other": "{{count}} soumissions en attente",
+      "rejectTitle": "Refuser la soumission « {{form}} »",
+      "confirmTitle": "Valider malgré les avertissements ?"
     }
   },
   "notes": {

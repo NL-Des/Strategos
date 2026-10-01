@@ -5,6 +5,7 @@ import { getLayout, getPage } from '../api/pages';
 import { AccountMenu } from '../components/AccountMenu';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { PageRender } from '../render/PageRender';
+import { Loading } from '../components/Loading';
 
 /**
  * Page publiée, vue par un utilisateur. Une page d'arrivée illisible affiche
@@ -15,7 +16,7 @@ export function PageView({ pageId, landing = false }: { pageId: string; landing?
   const page = useQuery({ queryKey: ['page', pageId], queryFn: () => getPage(pageId) });
   const layout = useQuery({ queryKey: ['layout'], queryFn: getLayout });
 
-  if (page.isPending) return <p className="page">{t('common.loading')}</p>;
+  if (page.isPending) return <Loading className="page" />;
   if (page.error) {
     const notFound = page.error instanceof ApiRequestError && page.error.status === 404;
     return (

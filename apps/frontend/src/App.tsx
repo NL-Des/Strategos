@@ -1,9 +1,9 @@
 import { type ReactNode, Suspense, lazy } from 'react';
-import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { RequireAdmin, RequireAuth } from './auth/guards';
 import { AdminLayout } from './components/AdminNav';
 import { AppLayout } from './components/AppLayout';
+import { Loading } from './components/Loading';
 import { ChangeCredentialsPage } from './pages/ChangeCredentialsPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -39,11 +39,6 @@ const TemplatesPage = admin(() => import('./pages/admin/TemplatesPage'), 'Templa
 const ThemesPage = admin(() => import('./pages/admin/ThemesPage'), 'ThemesPage');
 const UserPage = admin(() => import('./pages/admin/UserPage'), 'UserPage');
 const UsersPage = admin(() => import('./pages/admin/UsersPage'), 'UsersPage');
-
-function Loading() {
-  const { t } = useTranslation();
-  return <p>{t('common.loading')}</p>;
-}
 
 /** Page construite par l'admin : sans cadre, le menu de compte est dans la page. */
 function Site({ children }: { children: ReactNode }) {

@@ -28,6 +28,9 @@ import {
 import { getAdminPage, listPages } from '../../api/pages';
 import { listUsers } from '../../api/users';
 import { Warnings } from '../../builder/FormEditor';
+import { Modal, usePrompt } from '../../components/Dialog';
+import { EmptyState } from '../../components/EmptyState';
+import { formatDateTime } from '../../format';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { Pagination } from '../../components/Pagination';
 
@@ -228,7 +231,7 @@ export function SubmissionsPage() {
           {t('submissions.admin.allUsers')}
         </button>
       )}
-      {queue.data?.total === 0 && <p className="muted">{t('submissions.admin.empty')}</p>}
+      {queue.data?.total === 0 && <EmptyState>{t('submissions.admin.empty')}</EmptyState>}
       {queue.data && queue.data.total > queue.data.pageSize && (
         <Pagination
           page={page}
@@ -257,6 +260,7 @@ function QueueItem({
   const { submission, user, form, targets } = item;
   const [editing, setEditing] = useState<Record<string, string | boolean> | null>(null);
   const [toConfirm, setToConfirm] = useState<{ action: Action; warnings: Warning[] } | null>(null);
+  const prompt = usePrompt();
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['admin', 'submissions'] });
     void queryClient.invalidateQueries({ queryKey: ['rows'] });
@@ -306,7 +310,7 @@ function QueueItem({
           <button type="button" className="link" onClick={filterByUser}>
             {user.username}
           </button>{' '}
-          · {new Date(submission.submittedAt).toLocaleString('fr-FR')} ·{' '}
+          · {formatDateTime(submission.submittedAt)} ·{' '}
           <Link to={`/admin/pages/${form.pageId}`}>{t('submissions.admin.openPage')}</Link>
         </span>
       </header>
@@ -381,20 +385,22 @@ function QueueItem({
       )}
       <Warnings warnings={item.warnings} />
       {toConfirm && (
-        <div className="card warning" role="alertdialog">
+        <Modal title={t('submissions.admin.confirmTitle')} onClose={() => setToConfirm(null)}>
           <Warnings warnings={toConfirm.warnings} />
-          <div className="actions">
+          <div className="dialog-actions">
+            <button type="button" className="secondary" onClick={() => setToConfirm(null)}>
+              {t('common.cancel')}
+            </button>
             <button
               type="button"
+              autoFocus
+              disabled={decide.isPending}
               onClick={() => decide.mutate({ action: toConfirm.action, confirm: true })}
             >
               {t('submissions.admin.validateAnyway')}
             </button>
-            <button type="button" className="secondary" onClick={() => setToConfirm(null)}>
-              {t('common.cancel')}
-            </button>
           </div>
-        </div>
+        </Modal>
       )}
       <ErrorMessage error={error} />
       {pending && (
@@ -446,10 +452,17 @@ function QueueItem({
                 type="button"
                 className="danger"
                 disabled={reject.isPending}
-                onClick={() => {
-                  const reason = window.prompt(t('submissions.admin.rejectReason'));
-                  if (reason !== null) reject.mutate(reason);
-                }}
+                onClick={() =>
+                  void prompt({
+                    title: t('submissions.admin.rejectTitle', { form: form.title }),
+                    label: t('submissions.admin.rejectReason'),
+                    confirmLabel: t('submissions.admin.reject'),
+                    multiline: true,
+                    optional: true,
+                  }).then((reason) => {
+                    if (reason !== null) reject.mutate(reason);
+                  })
+                }
               >
                 {t('submissions.admin.reject')}
               </button>
