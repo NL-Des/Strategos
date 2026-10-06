@@ -728,7 +728,7 @@
   "sources": {
     "title": "Sources",
     "intro": "Les documents dont les pages lisent les données : Excel uploadés, Google Sheets et fichiers OneDrive. Les utilisateurs ne voient jamais ces documents : seulement les valeurs affichées par les modules dans les pages que vous avez construit.",
-    "upload": "Ajouter un fichier Excel",
+    "upload": "Fichier Excel",
     "uploadSubmit": "Importer",
     "limits": "Classeur .xlsx, {{mb}} Mo au plus. La copie importée devient la version de référence.",
     "name": "Nom",
@@ -770,8 +770,8 @@
     },
     "test": "Tester",
     "gsheetLink": {
-      "title": "Google Sheets par lien public",
-      "intro": "Le plus simple, sans compte Google à connecter : le site lit le Sheet par son lien de partage. Lecture seule : aucun formulaire ne peut y écrire, vous modifiez le Sheet vous-même.",
+      "title": "Google Sheets : Lecture Seule",
+      "intro": "Le plus simple pour pouvoir seulement lire et afficher les données du Google Sheet. Aucun formulaire du site peut apporter des modifications. Seul le propriétaire du Google Sheet le peut, en allant directement à la source.",
       "steps": [
         "Dans Google Sheets, cliquez sur « Partager ».",
         "Sous « Accès général », choisissez « Tous les utilisateurs disposant du lien », avec le rôle « Lecteur ».",
@@ -784,8 +784,8 @@
       "added": "Sheet « {{name}} » ajouté."
     },
     "gsheetScript": {
-      "title": "Google Sheets par script",
-      "intro": "Lecture et écriture, sans projet Google Cloud : vous collez un petit script dans votre Sheet, qui reste privé. Comptez cinq minutes.",
+      "title": "Google Sheets : Lecture et Écriture",
+      "intro": "Lecture et écriture, sans projet Google Cloud : vous collez un petit script dans votre Google Sheet, qui reste privé. Attention : toute personne qui obtient l’adresse du script peut lire et modifier le Sheet. Ne la partagez pas. Cette option est fortement déconseillée si vous y mettez des données sensibles.",
       "prepare": "Préparer le script",
       "warning": "Ce script et l’adresse de son déploiement donnent accès à ce Sheet : ne les partagez pas.",
       "steps": [
@@ -814,7 +814,7 @@
       ]
     },
     "gsheet": {
-      "title": "Google Sheets",
+      "title": "Google Sheets : Lecture et Écriture sécurisée",
       "connected": "Connecté au compte {{account}}. Strategos n’accède qu’aux Sheets que vous choisissez.",
       "notConnected": "Aucun compte Google connecté.",
       "expired": "La connexion Google a expiré : reconnectez-vous pour que les Google Sheets restent lisibles.",

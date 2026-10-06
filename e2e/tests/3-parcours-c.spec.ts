@@ -56,6 +56,7 @@ async function propose(page: Page, movement: string): Promise<void> {
 test('1. OneDrive connecté (accès délégué), stock.xlsx relié', async ({ page }) => {
   await loginAsAdmin(page);
   await adminNav(page, 'sources');
+  await openCreate(page, t('sources.onedrive.title'));
   await page.getByRole('link', { name: t('sources.onedrive.connect') }).click();
   await expect(page.getByText(t('sources.onedrive.connectedNow'))).toBeVisible();
   await expect(page.getByText('marc@entreprise.fr')).toBeVisible();

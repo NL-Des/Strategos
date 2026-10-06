@@ -40,6 +40,22 @@ interface Usages {
 
 const date = (iso: string | null) => (iso ? formatDateTime(iso) : '—');
 
+/** Types de source à ajouter, du plus simple au plus complet ; valeur : clé du titre de la carte. */
+const ADD_KINDS = {
+  upload: 'sources.upload',
+  gsheetLink: 'sources.gsheetLink.title',
+  gsheetScript: 'sources.gsheetScript.title',
+  gsheet: 'sources.gsheet.title',
+  onedrive: 'sources.onedrive.title',
+} as const;
+type AddKind = keyof typeof ADD_KINDS;
+
+/** Au retour de Google ou de Microsoft, la carte concernée s'ouvre pour montrer le résultat. */
+function returnedFrom(): AddKind | null {
+  const query = new URLSearchParams(window.location.search);
+  return query.has('google') ? 'gsheet' : query.has('onedrive') ? 'onedrive' : null;
+}
+
 /** Contenu d'une cellule au réimport ; la formule d'une modification de la grille, en français. */
 const shownValue = (value: string | null, edit: boolean) =>
   value === null ? '∅' : edit && value.startsWith('=') ? `=${formulaToFr(value.slice(1))}` : value;
@@ -54,6 +70,7 @@ export function SourcesPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const ask = useConfirm();
   const toast = useToast();
+  const [adding, setAdding] = useState<AddKind | null>(returnedFrom);
   const sources = useQuery({ queryKey: ['admin', 'sources'], queryFn: listSources });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'sources'] });
 
@@ -356,29 +373,53 @@ export function SourcesPage() {
       {sources.data?.length === 0 && <EmptyState icon="database">{t('sources.empty')}</EmptyState>}
 
       <h2 className="section-title">{t('sources.add')}</h2>
-      <form
-        className="card form"
-        onSubmit={(e: FormEvent) => {
-          e.preventDefault();
-          const file = fileInput.current?.files?.[0];
-          if (file) upload.mutate(file);
-        }}
-      >
-        <h2>{t('sources.upload')}</h2>
-        <label>
-          {t('fields.file')}
-          <input ref={fileInput} type="file" required accept={`.xlsx,${EXCEL_MIME}`} />
-          <small>{t('sources.limits', { mb: EXCEL_MAX_BYTES / 1024 / 1024 })}</small>
-        </label>
-        <ErrorMessage error={upload.error} />
-        <button type="submit" disabled={upload.isPending}>
-          {t('sources.uploadSubmit')}
-        </button>
-      </form>
-      <GoogleSheetLinkPanel />
-      <GoogleSheetScriptPanel />
-      <GoogleSheetsPanel />
-      <OneDrivePanel />
+      <div className="actions source-kinds">
+        {(Object.keys(ADD_KINDS) as AddKind[]).map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            className={adding === kind ? undefined : 'secondary'}
+            aria-expanded={adding === kind}
+            onClick={() => setAdding(adding === kind ? null : kind)}
+          >
+            {t(ADD_KINDS[kind])}
+          </button>
+        ))}
+      </div>
+      {/* Les cartes restent montées : un script préparé ou un lien collé survit au changement de carte. */}
+      <div hidden={adding !== 'upload'}>
+        <form
+          className="card form"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            const file = fileInput.current?.files?.[0];
+            if (file) upload.mutate(file);
+          }}
+        >
+          <h2>{t('sources.upload')}</h2>
+          <label>
+            {t('fields.file')}
+            <input ref={fileInput} type="file" required accept={`.xlsx,${EXCEL_MIME}`} />
+            <small>{t('sources.limits', { mb: EXCEL_MAX_BYTES / 1024 / 1024 })}</small>
+          </label>
+          <ErrorMessage error={upload.error} />
+          <button type="submit" disabled={upload.isPending}>
+            {t('sources.uploadSubmit')}
+          </button>
+        </form>
+      </div>
+      <div hidden={adding !== 'gsheetLink'}>
+        <GoogleSheetLinkPanel />
+      </div>
+      <div hidden={adding !== 'gsheetScript'}>
+        <GoogleSheetScriptPanel />
+      </div>
+      <div hidden={adding !== 'gsheet'}>
+        <GoogleSheetsPanel />
+      </div>
+      <div hidden={adding !== 'onedrive'}>
+        <OneDrivePanel />
+      </div>
     </section>
   );
 }

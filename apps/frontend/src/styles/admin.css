@@ -140,6 +140,11 @@
   margin-top: var(--space-6);
 }
 
+/* Écran Sources : un bouton par type de source, la carte choisie se déplie dessous. */
+.source-kinds {
+  margin-bottom: var(--space-4);
+}
+
 /* ---- Droits ---- */
 
 /* Matrice des droits : lettres L, S, P. */

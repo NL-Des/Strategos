@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { buildXlsx } from '../../apps/backend/test/xlsx.ts';
-import { adminNav, clickAndWait, loginAsAdmin, t } from './helpers.ts';
+import { adminNav, clickAndWait, loginAsAdmin, openCreate, t } from './helpers.ts';
 
 /**
  * Grille d'un Excel uploadé (04 — Sources) : l'admin voit la version de
@@ -27,6 +27,7 @@ test('1. l’admin uploade inventaire.xlsx et ouvre ses cellules', async ({ page
   });
   await loginAsAdmin(page);
   await adminNav(page, 'sources');
+  await openCreate(page, t('sources.upload'));
   await page.getByLabel(t('fields.file')).setInputFiles({
     name: 'inventaire.xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

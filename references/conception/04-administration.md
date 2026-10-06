@@ -25,7 +25,7 @@ L'administrateur dispose d'un **espace d'administration dédié** pour gérer le
 - Un écran de liste montre **la liste d'abord** : le formulaire de création s'ouvre par un bouton.
 
 ### Sources
-Un écran liste les sources de données et permet de les gérer (voir [Sources de données](08-sources-donnees.md)) :
+Un écran liste les sources de données et permet de les gérer (voir [Sources de données](08-sources-donnees.md)). Sous la liste, « Ajouter une source » présente **un bouton par type de source** (fichier Excel, Google Sheets par lien public, par script, par compte connecté, OneDrive) : un clic déplie les instructions et les champs de ce type, un seul à la fois ; au retour d'une connexion Google ou Microsoft, la carte concernée est déjà ouverte. L'écran permet de :
 - **activer Google Sheets** : tant que rien n'est configuré, l'écran affiche le pas à pas à suivre dans la console Google, les deux adresses à y déclarer et un formulaire où coller l'ID client, le code secret et la clé d'API ; ces identifiants se remplacent ensuite depuis le même écran, le code secret n'étant jamais réaffiché. S'ils sont fournis au déploiement, le guide et le formulaire ne sont pas affichés ;
 - **connecter ou reconnecter** son compte Google, puis **choisir** ses Google Sheets dans le sélecteur de fichiers de Google ; l'accès de chaque Sheet choisi est testé à l'ajout ;
 - **ajouter un Google Sheet par son lien public**, sans compte Google : l'écran rappelle comment partager le Sheet, puis demande de confirmer qu'il est lisible par quiconque a le lien ; la source est marquée « lecture seule » dans la liste et n'est pas proposée aux formulaires ;
