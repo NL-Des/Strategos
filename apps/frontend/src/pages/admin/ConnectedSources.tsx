@@ -9,6 +9,7 @@ import {
   getGoogleStatus,
   getOneDriveStatus,
   googleConnectUrl,
+  newSourceScript,
   oneDriveConnectUrl,
   setGoogleConfig,
 } from '../../api/sources';
@@ -246,6 +247,99 @@ export function GoogleSheetLinkPanel() {
       <button type="submit" disabled={add.isPending}>
         {t('sources.gsheetLink.add')}
       </button>
+    </form>
+  );
+}
+
+/** Script à coller dans le Sheet : texte en lecture seule et bouton de copie. */
+export function ScriptBox({ script }: { script: string }) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  return (
+    <>
+      <label>
+        {t('sources.gsheetScript.script')}
+        <textarea readOnly rows={8} value={script} onFocus={(e) => e.target.select()} />
+      </label>
+      <button
+        type="button"
+        className="secondary"
+        onClick={() =>
+          void navigator.clipboard
+            .writeText(script)
+            .then(() => toast(t('sources.gsheetScript.copied')))
+        }
+      >
+        {t('sources.gsheetScript.copy')}
+      </button>
+    </>
+  );
+}
+
+/**
+ * Google Sheet relié par un script Apps Script (04 — Sources) : Strategos
+ * prépare le script et son secret, l'admin le déploie dans son Sheet, puis
+ * colle l'adresse du déploiement. Le secret ne quitte pas cet écran avant l'ajout.
+ */
+export function GoogleSheetScriptPanel() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [scriptUrl, setScriptUrl] = useState('');
+  const prepare = useMutation({ mutationFn: newSourceScript });
+  const prepared = prepare.data;
+  const add = useMutation({
+    mutationFn: () =>
+      addSource({ type: 'gsheet_script', scriptUrl, secret: prepared?.secret ?? '' }),
+    onSuccess: (source) => {
+      setScriptUrl('');
+      prepare.reset();
+      toast(t('sources.gsheetScript.added', { name: source.name }));
+      void refreshSources(queryClient);
+    },
+  });
+
+  return (
+    <form
+      className="card form"
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault();
+        add.mutate();
+      }}
+    >
+      <h2>{t('sources.gsheetScript.title')}</h2>
+      <p>{t('sources.gsheetScript.intro')}</p>
+      <ErrorMessage error={prepare.error} />
+      {!prepared && (
+        <button type="button" disabled={prepare.isPending} onClick={() => prepare.mutate()}>
+          {t('sources.gsheetScript.prepare')}
+        </button>
+      )}
+      {prepared && (
+        <>
+          <ol>
+            {(t('sources.gsheetScript.steps', { returnObjects: true }) as string[]).map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <ScriptBox script={prepared.script} />
+          <p className="notice">{t('sources.gsheetScript.warning')}</p>
+          <label>
+            {t('sources.gsheetScript.url')}
+            <input
+              required
+              type="url"
+              value={scriptUrl}
+              placeholder="https://script.google.com/macros/s/…/exec"
+              onChange={(e) => setScriptUrl(e.target.value)}
+            />
+          </label>
+          <ErrorMessage error={add.error} />
+          <button type="submit" disabled={add.isPending}>
+            {t('sources.gsheetScript.add')}
+          </button>
+        </>
+      )}
     </form>
   );
 }

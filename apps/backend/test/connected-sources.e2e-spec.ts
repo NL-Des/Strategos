@@ -14,6 +14,7 @@ import type {
   OneDriveStatus,
   Paginated,
   Row,
+  SourceScript,
   SourceSummary,
   Submission,
   TableRow,
@@ -79,6 +80,7 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       GOOGLE_USERINFO_URL: `${base}/google/userinfo`,
       GOOGLE_SHEETS_API: `${base}/sheets`,
       GOOGLE_EXPORT_URL: `${base}/export`,
+      GOOGLE_SCRIPT_URL: `${base}/script`,
       MICROSOFT_LOGIN_URL: `${base}/ms`,
       GRAPH_API: `${base}/graph`,
       AZURE_CLIENT_ID: 'client-test',
@@ -596,6 +598,117 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       expect(saved.body.details.fields).toMatchObject({
         'definition.sourceId': ['sourceReadOnly'],
       });
+    });
+  });
+
+  describe('Google Sheets relié par un script', () => {
+    const DEPLOYMENT = 'AKfycbx_deploiement_stock_guilde_0123456789';
+    const SCRIPT_URL = `https://script.google.com/macros/s/${DEPLOYMENT}/exec`;
+
+    /** Script préparé par Strategos, collé et déployé dans le Sheet (faux serveur). */
+    async function deploy(version?: number): Promise<string> {
+      const res = await admin.send('post', '/admin/sources/script');
+      expectStatus(res, 200);
+      const { script, secret } = res.body as Required<SourceScript>;
+      expect(script).toContain(`var SECRET = '${secret}';`);
+      const deployed = Number(/var VERSION = (\d+);/.exec(script)![1]);
+      fake.scripts.set(DEPLOYMENT, {
+        secret,
+        version: version ?? deployed,
+        title: 'Stock guilde',
+        sheets: stock(),
+      });
+      return secret;
+    }
+    const addScript = (secret: string, scriptUrl = SCRIPT_URL) =>
+      admin.send('post', '/admin/sources', { type: 'gsheet_script', scriptUrl, secret });
+
+    it('adresse hors de Google refusée ; secret faux : injoignable ; ajout, secret chiffré jamais renvoyé, pas dupliqué', async () => {
+      const secret = await deploy();
+      const elsewhere = await addScript(secret, `https://exemple.fr/macros/s/${DEPLOYMENT}/exec`);
+      expect(elsewhere.status).toBe(400);
+      expect(elsewhere.body.details.fields).toHaveProperty('scriptUrl');
+
+      const wrong = await addScript('x'.repeat(43));
+      expect(wrong.status).toBe(503);
+      expect(wrong.body.code).toBe('SOURCE_UNAVAILABLE');
+      const missing = await addScript(
+        secret,
+        'https://script.google.com/macros/s/AKfycbx_autre_deploiement_0123456789/exec',
+      );
+      expect(missing.status).toBe(503);
+      expect(await prisma.source.count()).toBe(0);
+
+      const res = await addScript(secret);
+      expectStatus(res, 201);
+      expect(res.body).toMatchObject({
+        type: 'gsheet_script',
+        name: 'Stock guilde',
+        sheets: ['Stock'],
+        status: 'ok',
+        writable: true,
+        scriptOutdated: false,
+      });
+      expect(JSON.stringify(res.body)).not.toContain(secret);
+      expect(JSON.stringify(res.body)).not.toContain(DEPLOYMENT);
+      const stored = await prisma.source.findFirstOrThrow();
+      expect(Buffer.from(stored.connectionSecret!).toString('utf8')).not.toContain(secret);
+      expect(JSON.stringify(await prisma.auditLog.findMany())).not.toContain(secret);
+
+      const again = await addScript(secret);
+      expectStatus(again, 201);
+      expect(again.body.id).toBe(res.body.id);
+      expect(await prisma.source.count()).toBe(1);
+    });
+
+    it('tableau et formulaire de ligne : lecture par le script, écriture dans le Sheet, aucune copie en base', async () => {
+      const source = (await addScript(await deploy())).body as SourceSummary;
+      const { tableId, formId } = await buildPage(source.id, true);
+      expect(await rows(kira, tableId)).toEqual([
+        ['Épée', '8'],
+        ['Bouclier', '5'],
+      ]);
+      const s = (
+        await kira.send('post', `/forms/${formId}/submissions`, {
+          values: { qte: -3 },
+          rowKey: '101',
+        })
+      ).body as Submission;
+      expectStatus(await admin.send('post', `/admin/submissions/${s.id}/validate`, {}), 200);
+      expect(fake.scripts.get(DEPLOYMENT)!.sheets.Stock!.C2).toBe(5);
+      expect(await rows(kira, tableId)).toEqual([
+        ['Épée', '5'],
+        ['Bouclier', '5'],
+      ]);
+      expect(await prisma.stagingCell.count({ where: { sourceId: source.id } })).toBe(0);
+    });
+
+    it('script périmé signalé au test d’accès ; script à jour rendu avec le même secret', async () => {
+      const secret = await deploy(0);
+      const source = (await addScript(secret)).body as SourceSummary;
+      expect(source.scriptOutdated).toBe(true);
+
+      const script = await admin.get(`/admin/sources/${source.id}/script`);
+      expectStatus(script, 200);
+      expect(script.body.script).toContain(`var SECRET = '${secret}';`);
+      expect(script.body.secret).toBeUndefined();
+      expect((await kira.get(`/admin/sources/${source.id}/script`)).status).toBe(404);
+
+      fake.scripts.get(DEPLOYMENT)!.version = 99;
+      const tested = await admin.send('post', `/admin/sources/${source.id}/test`);
+      expectStatus(tested, 200);
+      expect(tested.body.scriptOutdated).toBe(false);
+    });
+
+    it('déploiement retiré : SOURCE_UNAVAILABLE ; le script d’une autre source n’existe pas', async () => {
+      const source = (await addScript(await deploy())).body as SourceSummary;
+      fake.scripts.delete(DEPLOYMENT);
+      const test = await admin.send('post', `/admin/sources/${source.id}/test`);
+      expect(test.status).toBe(503);
+      expect(test.body.code).toBe('SOURCE_UNAVAILABLE');
+
+      const upload = await addSheet();
+      expect((await admin.get(`/admin/sources/${upload.id}/script`)).status).toBe(404);
     });
   });
 

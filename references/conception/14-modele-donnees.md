@@ -272,9 +272,10 @@ Voir [08](08-sources-donnees.md).
 | Colonne | Type | N | Défaut | Contrainte / rôle |
 |---|---|---|---|---|
 | `id` | uuid | | — | PK (`source_id` stable) |
-| `type` | enum `source_type` (`upload`, `gsheet`, `onedrive`, `gsheet_link`) | | — | |
+| `type` | enum `source_type` (`upload`, `gsheet`, `onedrive`, `gsheet_link`, `gsheet_script`) | | — | |
 | `name` | text | | — | Nom affiché (nom du fichier ou du Sheet) |
-| `connection_info` | jsonb | | — | `gsheet` et `gsheet_link` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId` ; `upload` : `storagePath` et `sheets` (feuilles, dans l'ordre du classeur) |
+| `connection_info` | jsonb | | — | `gsheet` et `gsheet_link` : `spreadsheetId` ; `gsheet_script` : `scriptUrl`, `scriptVersion` ; `onedrive` : `driveId`, `itemId` ; `upload` : `storagePath` et `sheets` (feuilles, dans l'ordre du classeur) |
+| `connection_secret` | bytea | N | — | `gsheet_script` : secret partagé avec le script, chiffré (AES-256-GCM) |
 | `status` | enum `source_status` (`ok`, `unavailable`, `auth_expired`) | | `ok` | Dernier état connu |
 | `last_read_at` | timestamptz | N | — | Dernière lecture réussie (sources connectées) |
 | `last_imported_at` | timestamptz | N | — | Dernier import ou réimport (upload) |
@@ -503,6 +504,7 @@ Chaque étape du [plan de réalisation](../plan-realisation.md) crée les tables
 15. `google_credentials`.
 16. `google_app`.
 17. `gsheet_link` : valeur ajoutée à `source_type`.
+18. `gsheet_script` : valeur ajoutée à `source_type`, et `sources.connection_secret`.
 
 ## Dépendances
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.

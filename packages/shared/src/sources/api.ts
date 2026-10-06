@@ -25,18 +25,39 @@ export interface SourceSummary {
   usages: SourceUsages;
   /** `false` : lecture seule (Google Sheet par lien public), aucun formulaire ne peut y écrire. */
   writable: boolean;
+  /** Google Sheet relié par un script : le script déployé est plus ancien que celui de Strategos. */
+  scriptOutdated: boolean;
   version: number;
 }
 
 /**
  * `POST /admin/sources` : un Google Sheet choisi dans le sélecteur de fichiers
- * Google, un fichier du OneDrive connecté, ou un Google Sheet partagé par lien
- * public (`url` : son lien ; `confirm` après l'avertissement `SOURCE_PUBLIC_LINK`).
+ * Google, un fichier du OneDrive connecté, un Google Sheet partagé par lien
+ * public (`url` : son lien ; `confirm` après l'avertissement `SOURCE_PUBLIC_LINK`),
+ * ou un Google Sheet relié par un script (`scriptUrl` : adresse du déploiement ;
+ * `secret` : celui du script préparé par `POST /admin/sources/script`).
  */
 export type AddSourceInput =
   | { type: 'gsheet'; spreadsheetId: string }
   | { type: 'onedrive'; itemId: string }
-  | { type: 'gsheet_link'; url: string; confirm?: boolean };
+  | { type: 'gsheet_link'; url: string; confirm?: boolean }
+  | { type: 'gsheet_script'; scriptUrl: string; secret: string };
+
+/** Adresse d'une application web Apps Script (compte personnel ou domaine Workspace). */
+export const SCRIPT_URL_PATTERN =
+  /^https:\/\/script\.google\.com\/(?:a\/macros\/[a-z0-9.-]+|macros)\/s\/[A-Za-z0-9_-]{20,200}\/exec$/;
+/** Secret d'un script : 32 octets en base64url. */
+export const SCRIPT_SECRET_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+/**
+ * Script Apps Script à coller dans le Sheet (`POST /admin/sources/script`,
+ * `GET /admin/sources/:id/script`). Il contient son secret.
+ */
+export interface SourceScript {
+  script: string;
+  /** À renvoyer à l'ajout de la source ; absent pour une source déjà reliée. */
+  secret?: string;
+}
 
 export const SPREADSHEET_ID_PATTERN = /^[A-Za-z0-9_-]{20,200}$/;
 export const SOURCE_URL_MAX_LENGTH = 500;

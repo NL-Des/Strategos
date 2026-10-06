@@ -51,6 +51,8 @@ enum SourceType {
   onedrive
   /// Google Sheet partagé par lien public : lecture seule, sans compte Google.
   gsheet_link
+  /// Google Sheet relié par un script Apps Script collé par l'admin : lecture et écriture.
+  gsheet_script
 
   @@map("source_type")
 }
@@ -481,8 +483,10 @@ model Source {
   type             SourceType
   /// Nom affiché : nom du fichier ou du Sheet.
   name             String
-  /// `upload` : `storagePath` ; `gsheet` et `gsheet_link` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId`.
+  /// `upload` : `storagePath` ; `gsheet` et `gsheet_link` : `spreadsheetId` ; `gsheet_script` : `scriptUrl`, `scriptVersion` ; `onedrive` : `driveId`, `itemId`.
   connectionInfo   Json         @map("connection_info")
+  /// `gsheet_script` : secret partagé avec le script, chiffré (AES-256-GCM).
+  connectionSecret Bytes?       @map("connection_secret")
   status           SourceStatus @default(ok)
   lastReadAt       DateTime?    @map("last_read_at") @db.Timestamptz
   lastImportedAt   DateTime?    @map("last_imported_at") @db.Timestamptz

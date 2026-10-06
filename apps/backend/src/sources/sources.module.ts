@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AdminSourcesController } from './admin-sources.controller.js';
 import { GoogleAuthService } from './connectors/google-auth.service.js';
 import { GsheetLinkConnector } from './connectors/gsheet-link.connector.js';
+import { GsheetScriptConnector } from './connectors/gsheet-script.connector.js';
 import { GsheetConnector } from './connectors/gsheet.connector.js';
 import { OneDriveAuthService } from './connectors/onedrive-auth.service.js';
 import { OneDriveConnector } from './connectors/onedrive.connector.js';
@@ -25,6 +26,7 @@ import { SourcesService } from './sources.service.js';
     GoogleAuthService,
     GsheetConnector,
     GsheetLinkConnector,
+    GsheetScriptConnector,
     OneDriveAuthService,
     OneDriveConnector,
   ],

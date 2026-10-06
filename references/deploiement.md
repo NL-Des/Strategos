@@ -113,7 +113,7 @@ La commande affiche un mot de passe temporaire, à changer à la connexion suiva
 - Sauvegarde immédiate : `docker compose exec backend node dist/src/cli/run-backup.js`.
 - Restauration : voir les commandes de la section « Exploitation » du [README](../README.md#exploitation-docker).
 
-Les documents Google Sheets et OneDrive ne sont pas sauvegardés par Strategos : leur historique reste chez Google ou Microsoft. Les identifiants Google et les connexions aux comptes Google et Microsoft sont dans la sauvegarde, mais chiffrés avec une clé qui n'y est pas (volume Docker `keys`) : après une restauration sur une autre machine, ressaisissez les identifiants Google et reconnectez les comptes dans **Admin › Sources**.
+Les documents Google Sheets et OneDrive ne sont pas sauvegardés par Strategos : leur historique reste chez Google ou Microsoft. Les identifiants Google et les connexions aux comptes Google et Microsoft sont dans la sauvegarde, mais chiffrés avec une clé qui n'y est pas (volume Docker `keys`) : après une restauration sur une autre machine, ressaisissez les identifiants Google et reconnectez les comptes dans **Admin › Sources** ; un Google Sheet relié par un script est à retirer puis à relier de nouveau (nouveau script).
 
 ## 8. Mises à jour
 
@@ -141,7 +141,15 @@ Pour les mises à jour du système : `sudo apt update && sudo apt upgrade`, et d
 
 ## 10. Activer Google Sheets (facultatif)
 
-Rien à faire sur le serveur : tout se passe dans le site, dans **Admin › Sources**, carte « Google Sheets ». L'écran affiche le même pas à pas que ci-dessous, avec les deux adresses de votre site prêtes à copier.
+Rien à faire sur le serveur : tout se passe dans le site, dans **Admin › Sources**. Trois façons de relier un Google Sheet, à choisir pour chaque document :
+
+| Carte de l'écran Sources | Mise en place | Écriture par les formulaires | Le Sheet |
+|---|---|---|---|
+| **Google Sheets par lien public** | Coller le lien de partage | Non (lecture seule) | Lisible par quiconque a le lien |
+| **Google Sheets par script** | Coller un script dans le Sheet et le déployer (5 minutes, guidé) | Oui | Reste privé |
+| **Google Sheets** (compte connecté) | Projet Google Cloud, décrit ci-dessous | Oui | Reste privé ; accès limité aux Sheets choisis |
+
+Les deux premières ne demandent rien de plus que ce que l'écran explique. La suite de cette section ne concerne que la troisième, carte « Google Sheets ». L'écran affiche le même pas à pas que ci-dessous, avec les deux adresses de votre site prêtes à copier.
 
 À faire une fois, dans la [console Google Cloud](https://console.cloud.google.com/), avec n'importe quel compte Google :
 

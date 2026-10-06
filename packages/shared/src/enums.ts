@@ -42,6 +42,7 @@ export const SourceType = {
   gsheet: 'gsheet',
   onedrive: 'onedrive',
   gsheet_link: 'gsheet_link',
+  gsheet_script: 'gsheet_script',
 } as const;
 export type SourceType = (typeof SourceType)[keyof typeof SourceType];
 

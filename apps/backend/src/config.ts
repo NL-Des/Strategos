@@ -81,6 +81,8 @@ export const config = {
       sheets: process.env.GOOGLE_SHEETS_API || 'https://sheets.googleapis.com/v4',
       /** Téléchargement d'un Google Sheet partagé par lien public. */
       googleExport: process.env.GOOGLE_EXPORT_URL || 'https://docs.google.com',
+      /** Applications web Apps Script (Google Sheets reliés par un script). */
+      googleScript: process.env.GOOGLE_SCRIPT_URL || 'https://script.google.com',
       microsoftLogin: process.env.MICROSOFT_LOGIN_URL || 'https://login.microsoftonline.com',
       graph: process.env.GRAPH_API || 'https://graph.microsoft.com/v1.0',
     };

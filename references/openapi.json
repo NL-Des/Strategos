@@ -1392,7 +1392,60 @@
             }
           }
         },
-        "summary": "Ajouter un Google Sheet `{ type: \"gsheet\", spreadsheetId }`, un fichier OneDrive\n`{ type: \"onedrive\", itemId }` ou un Google Sheet par lien public `{ type: \"gsheet_link\", url }`.",
+        "summary": "Ajouter un Google Sheet `{ type: \"gsheet\", spreadsheetId }`, un fichier OneDrive\n`{ type: \"onedrive\", itemId }`, un Google Sheet par lien public `{ type: \"gsheet_link\", url }`\nou un Google Sheet relié par un script `{ type: \"gsheet_script\", scriptUrl, secret }`.",
+        "tags": [
+          "AdminSources"
+        ]
+      }
+    },
+    "/api/v1/admin/sources/script": {
+      "post": {
+        "operationId": "AdminSources_newScript",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Script Apps Script à coller dans un Sheet, avec un secret neuf.",
+        "tags": [
+          "AdminSources"
+        ]
+      }
+    },
+    "/api/v1/admin/sources/{id}/script": {
+      "get": {
+        "operationId": "AdminSources_script",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Script à jour d'un Google Sheet déjà relié par un script, pour le recoller.",
         "tags": [
           "AdminSources"
         ]
@@ -4706,7 +4759,8 @@
             "enum": [
               "gsheet",
               "onedrive",
-              "gsheet_link"
+              "gsheet_link",
+              "gsheet_script"
             ]
           },
           "spreadsheetId": {
@@ -4719,6 +4773,13 @@
           },
           "confirm": {
             "type": "boolean"
+          },
+          "scriptUrl": {
+            "type": "string",
+            "description": "Adresse du déploiement : toujours chez Google, jamais une adresse libre."
+          },
+          "secret": {
+            "type": "string"
           },
           "itemId": {
             "type": "string",

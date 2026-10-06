@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { CellType } from '@strategos/shared';
-import { graphCell, isDateFormat, rawValue, sheetsCell } from './cells.js';
+import { graphCell, isDateFormat, rawValue, scriptCell, sheetsCell } from './cells.js';
 import { downloadName } from './gsheet-link.connector.js';
 import { SheetCache } from './sheet-cache.js';
 import { decryptToken, encryptToken } from './token-crypto.js';
@@ -66,6 +66,25 @@ describe('cellules des sources connectées', () => {
     expect(graphCell('', 'Empty', '', 'General')).toBeNull();
     expect(isDateFormat('"Qté "0')).toBe(false);
     expect(isDateFormat('[$-fr-FR]dddd d mmmm yyyy')).toBe(true);
+  });
+
+  it('script Apps Script : types, date en heure du classeur, erreur, formule', () => {
+    expect(scriptCell(8, '')).toMatchObject({ type: CellType.number, number: 8, formula: null });
+    expect(scriptCell({ d: '2026-09-26T00:00:00' }, '')).toMatchObject({
+      type: CellType.date,
+      text: '2026-09-26',
+      number: 46291,
+    });
+    expect(scriptCell({ d: '2026-09-26T14:30:00' }, '')).toMatchObject({
+      text: '2026-09-26T14:30',
+    });
+    expect(scriptCell(true, '')).toMatchObject({ type: CellType.bool, number: 1 });
+    expect(scriptCell('#DIV/0!', '=1/0')).toMatchObject({ type: CellType.error, formula: '=1/0' });
+    expect(scriptCell('Épée', '')).toMatchObject({ type: CellType.text, text: 'Épée' });
+    expect(scriptCell(200, '=C2*D2')).toMatchObject({ number: 200, formula: '=C2*D2' });
+    expect(scriptCell('', '')).toBeNull();
+    expect(scriptCell('', '=A1')).toMatchObject({ type: CellType.empty, formula: '=A1' });
+    expect(scriptCell({ d: 'pas une date' }, '')).toBeNull();
   });
 
   it('valeurs écrites', () => {

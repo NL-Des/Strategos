@@ -747,7 +747,8 @@
       "upload": "Excel uploadé",
       "gsheet": "Google Sheets",
       "onedrive": "OneDrive",
-      "gsheet_link": "Google Sheets (lien public)"
+      "gsheet_link": "Google Sheets (lien public)",
+      "gsheet_script": "Google Sheets (script)"
     },
     "readOnly": "Lecture seule",
     "statuses": {
@@ -781,6 +782,36 @@
       "confirmTitle": "Ajouter un Sheet public ?",
       "confirm": "Ajouter",
       "added": "Sheet « {{name}} » ajouté."
+    },
+    "gsheetScript": {
+      "title": "Google Sheets par script",
+      "intro": "Lecture et écriture, sans projet Google Cloud : vous collez un petit script dans votre Sheet, qui reste privé. Comptez cinq minutes.",
+      "prepare": "Préparer le script",
+      "warning": "Ce script et l’adresse de son déploiement donnent accès à ce Sheet : ne les partagez pas.",
+      "steps": [
+        "Ouvrez votre Sheet, puis le menu « Extensions » › « Apps Script ».",
+        "Effacez le contenu de l’éditeur et collez le script ci-dessous à la place, puis enregistrez (icône disquette).",
+        "Cliquez sur « Déployer » › « Nouveau déploiement », puis sur la roue dentée et choisissez « Application Web ».",
+        "Réglez « Exécuter en tant que » sur « Moi » et « Qui a accès » sur « Tout le monde », puis cliquez sur « Déployer ».",
+        "Google demande une autorisation : acceptez-la avec votre compte (« Paramètres avancés » › « Accéder au projet » si un avertissement s’affiche).",
+        "Copiez l’« URL de l’application Web » et collez-la ci-dessous."
+      ],
+      "script": "Script à coller",
+      "copy": "Copier le script",
+      "copied": "Script copié.",
+      "url": "URL de l’application Web",
+      "add": "Relier ce Sheet",
+      "added": "Sheet « {{name}} » relié.",
+      "outdated": "Script à mettre à jour",
+      "show": "Script",
+      "updateTitle": "Script de « {{name}} »",
+      "updateSteps": [
+        "Ouvrez votre Sheet, puis « Extensions » › « Apps Script ».",
+        "Remplacez tout le contenu de l’éditeur par le script ci-dessous, puis enregistrez.",
+        "Cliquez sur « Déployer » › « Gérer les déploiements », puis sur le crayon.",
+        "Dans « Version », choisissez « Nouvelle version », puis cliquez sur « Déployer » : l’adresse ne change pas.",
+        "Revenez ici et cliquez sur « Tester »."
+      ]
     },
     "gsheet": {
       "title": "Google Sheets",

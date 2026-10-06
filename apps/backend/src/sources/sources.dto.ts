@@ -6,6 +6,8 @@ import {
   GRID_MAX_COLS,
   GOOGLE_CLIENT_ID_PATTERN,
   GOOGLE_SECRET_MAX_LENGTH,
+  SCRIPT_SECRET_PATTERN,
+  SCRIPT_URL_PATTERN,
   SOURCE_URL_MAX_LENGTH,
   SPREADSHEET_ID_PATTERN,
   type GoogleConfigInput,
@@ -56,11 +58,12 @@ export class GoogleConfigDto implements GoogleConfigInput {
 
 /**
  * `POST /admin/sources` : un Google Sheet choisi dans le sélecteur, un fichier du
- * OneDrive connecté, ou un Google Sheet partagé par lien public.
+ * OneDrive connecté, un Google Sheet partagé par lien public, ou un Google Sheet
+ * relié par un script.
  */
 export class AddSourceDto {
-  @IsIn(['gsheet', 'onedrive', 'gsheet_link'])
-  type: 'gsheet' | 'onedrive' | 'gsheet_link';
+  @IsIn(['gsheet', 'onedrive', 'gsheet_link', 'gsheet_script'])
+  type: 'gsheet' | 'onedrive' | 'gsheet_link' | 'gsheet_script';
 
   @ValidateIf((o: AddSourceDto) => o.type === 'gsheet')
   @IsString()
@@ -77,6 +80,18 @@ export class AddSourceDto {
   @IsOptional()
   @IsBoolean()
   confirm?: boolean;
+
+  /** Adresse du déploiement : toujours chez Google, jamais une adresse libre. */
+  @ValidateIf((o: AddSourceDto) => o.type === 'gsheet_script')
+  @Trim()
+  @IsString()
+  @Matches(SCRIPT_URL_PATTERN)
+  scriptUrl?: string;
+
+  @ValidateIf((o: AddSourceDto) => o.type === 'gsheet_script')
+  @IsString()
+  @Matches(SCRIPT_SECRET_PATTERN)
+  secret?: string;
 
   @ValidateIf((o: AddSourceDto) => o.type === 'onedrive')
   @IsString()

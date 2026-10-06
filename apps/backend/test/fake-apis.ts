@@ -5,7 +5,7 @@ import { buildXlsx } from './xlsx.js';
 
 /**
  * Faux serveur des API Google (OAuth, Sheets v4, téléchargement d'un Sheet
- * public) et Microsoft (OAuth, Graph `workbook`), pour tester les sources
+ * public, script Apps Script) et Microsoft (OAuth, Graph `workbook`), pour tester les sources
  * connectées sans compte réel. Les feuilles sont `{ A1: valeur }` ; une formule s'écrit
  * `{ f: '=C2*D2', v: 200 }`, une date `{ date: 46291 }`.
  */
@@ -26,6 +26,14 @@ interface FakeLinkedSheet {
   /** Partagé en « toute personne disposant du lien ». */
   shared: boolean;
   sheets: Parameters<typeof buildXlsx>[0];
+}
+
+/** Script Apps Script déployé dans un Sheet (protocole de `gsheet-script.template.ts`). */
+interface FakeScript {
+  secret: string;
+  version: number;
+  title: string;
+  sheets: FakeSheets;
 }
 
 interface FakeWorkbook {
@@ -62,6 +70,8 @@ export class FakeApis {
   readonly spreadsheets = new Map<string, FakeSpreadsheet>();
   readonly workbooks = new Map<string, FakeWorkbook>();
   readonly linkedSheets = new Map<string, FakeLinkedSheet>();
+  /** Par identifiant de déploiement (`…/macros/s/<id>/exec`). */
+  readonly scripts = new Map<string, FakeScript>();
   /** Lectures de feuilles reçues (pour vérifier le cache). */
   sheetReads = 0;
   /** Téléchargements de Sheets publics reçus. */
@@ -94,6 +104,7 @@ export class FakeApis {
     this.spreadsheets.clear();
     this.workbooks.clear();
     this.linkedSheets.clear();
+    this.scripts.clear();
     this.sheetReads = 0;
     this.exports = 0;
     this.refreshValid = true;
@@ -163,6 +174,52 @@ export class FakeApis {
       });
       res.end(await buildXlsx(doc.sheets));
       return;
+    }
+
+    // Google : application web Apps Script. Déploiement retiré : page HTML, comme le vrai.
+    const script = /^\/script\/macros\/s\/([^/]+)\/exec$/.exec(path);
+    if (script && req.method === 'POST') {
+      const doc = this.scripts.get(script[1]!);
+      if (!doc) {
+        res.writeHead(200, { 'Content-Type': 'text/html' }).end('<html>Introuvable</html>');
+        return;
+      }
+      const request = JSON.parse(body) as {
+        secret: string;
+        action: string;
+        sheet: string;
+        writes: { sheet: string; row: number; col: number; value: FakeValue }[];
+      };
+      const reply = (payload: object) => json(200, { ...payload, version: doc.version });
+      if (request.secret !== doc.secret) return reply({ ok: false, error: 'forbidden' });
+      if (request.action === 'meta') {
+        return reply({ ok: true, name: doc.title, sheets: Object.keys(doc.sheets) });
+      }
+      if (request.action === 'read') {
+        this.sheetReads += 1;
+        const lines = grid(doc.sheets[request.sheet] ?? {});
+        return reply({
+          ok: true,
+          values: lines.map((l) =>
+            l.map((v) => {
+              if (v === undefined) return '';
+              if (isFormula(v)) return v.v;
+              // Numéro de série → date en heure du classeur, comme `Utilities.formatDate`.
+              return isDate(v)
+                ? { d: new Date((v.date - 25_569) * 86_400_000).toISOString().slice(0, 19) }
+                : v;
+            }),
+          ),
+          formulas: lines.map((l) => l.map((v) => (isFormula(v) ? v.f : ''))),
+        });
+      }
+      if (request.action === 'write') {
+        for (const w of request.writes) {
+          doc.sheets[w.sheet]![cellRef({ row: w.row, col: w.col })] = w.value;
+        }
+        return reply({ ok: true });
+      }
+      return reply({ ok: false, error: 'unknown action' });
     }
 
     // Google Sheets.

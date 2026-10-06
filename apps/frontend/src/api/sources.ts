@@ -8,6 +8,7 @@ import type {
   OneDriveItem,
   OneDriveStatus,
   SourceGrid,
+  SourceScript,
   SourceSummary,
 } from '@strategos/shared';
 import { apiFetch } from './client';
@@ -58,6 +59,12 @@ export const googleConnectUrl = '/api/v1/admin/google/connect';
 /** Teste l'accès : un Sheet que l'admin n'a pas choisi renvoie `SOURCE_UNAVAILABLE`. */
 export const addSource = (body: AddSourceInput) =>
   apiFetch<SourceSummary>('/admin/sources', { method: 'POST', body });
+/** Script Apps Script à coller dans un Sheet, avec un secret neuf (à renvoyer à l'ajout). */
+export const newSourceScript = () =>
+  apiFetch<SourceScript>('/admin/sources/script', { method: 'POST' });
+/** Script à jour d'un Google Sheet déjà relié par un script. */
+export const getSourceScript = (id: string) =>
+  apiFetch<SourceScript>(`/admin/sources/${id}/script`);
 export const testSource = (id: string) =>
   apiFetch<SourceSummary>(`/admin/sources/${id}/test`, { method: 'POST' });
 export const getOneDriveStatus = () => apiFetch<OneDriveStatus>('/admin/onedrive/status');

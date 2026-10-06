@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { SourceAuthExpiredError, SourceUnavailableError } from '../source-errors.js';
 import type { RemoteSheet, SourceConnector } from './connector.js';
 import { GsheetLinkConnector } from './gsheet-link.connector.js';
+import { GsheetScriptConnector } from './gsheet-script.connector.js';
 import { GsheetConnector } from './gsheet.connector.js';
 import { OneDriveConnector } from './onedrive.connector.js';
 import { SheetCache } from './sheet-cache.js';
@@ -30,12 +31,14 @@ export class SourceConnectors {
     private readonly gsheet: GsheetConnector,
     private readonly onedrive: OneDriveConnector,
     private readonly gsheetLink: GsheetLinkConnector,
+    private readonly gsheetScript: GsheetScriptConnector,
   ) {}
 
   for(type: Source['type']): SourceConnector {
     if (type === SourceType.gsheet) return this.gsheet;
     if (type === SourceType.onedrive) return this.onedrive;
     if (type === SourceType.gsheet_link) return this.gsheetLink;
+    if (type === SourceType.gsheet_script) return this.gsheetScript;
     throw new Error(`Pas d'adaptateur pour une source ${type}`);
   }
 

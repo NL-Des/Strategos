@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { HttpStatus, Injectable } from '@nestjs/common';
@@ -9,6 +9,7 @@ import {
   CellType,
   ErrorCode,
   SourceType,
+  type SourceScript,
   type SourceSummary,
   spreadsheetIdFromUrl,
   WarningCode,
@@ -22,12 +23,15 @@ import { config } from '../config.js';
 import type { Prisma, Source } from '../generated/prisma/client.js';
 import { cleanFilename } from '../media/media.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { GsheetScriptInfo } from './connectors/gsheet-script.connector.js';
+import { SCRIPT_VERSION, scriptSource } from './connectors/gsheet-script.template.js';
 import { OneDriveConnector } from './connectors/onedrive.connector.js';
 import {
   isConnected,
   isWritable,
   SourceConnectors,
 } from './connectors/source-connectors.service.js';
+import { decryptToken, encryptToken } from './connectors/token-crypto.js';
 import { SourceUnavailableError, sourceException } from './source-errors.js';
 import {
   ExcelParseError,
@@ -77,9 +81,14 @@ export class SourcesService {
    *
    * Un Google Sheet partagé par lien public s'ajoute par son lien, sans compte
    * Google, après confirmation (`SOURCE_PUBLIC_LINK`) ; il est en lecture seule.
+   *
+   * Un Google Sheet relié par un script s'ajoute par l'adresse de son
+   * déploiement et le secret du script préparé par `newScript` ; le secret est
+   * gardé chiffré.
    */
   async add(input: AddSourceInput, actor: AuditActor & { kind: 'user' }): Promise<SourceSummary> {
     let connectionInfo: Record<string, string>;
+    let connectionSecret: Uint8Array<ArrayBuffer> | undefined;
     if (input.type === SourceType.gsheet || input.type === SourceType.gsheet_link) {
       const spreadsheetId =
         input.type === SourceType.gsheet ? input.spreadsheetId : spreadsheetIdFromUrl(input.url);
@@ -107,19 +116,35 @@ export class SourcesService {
         });
       }
       connectionInfo = { spreadsheetId };
+    } else if (input.type === SourceType.gsheet_script) {
+      const existing = await this.prisma.source.findFirst({
+        where: {
+          type: SourceType.gsheet_script,
+          deletedAt: null,
+          connectionInfo: { path: ['scriptUrl'], equals: input.scriptUrl },
+        },
+      });
+      if (existing) return this.test(existing.id);
+      connectionInfo = { scriptUrl: input.scriptUrl };
+      connectionSecret = encryptToken(config.tokenEncryptionKey, input.secret);
     } else {
       const { driveId, itemId } = await this.remote(() => this.onedrive.locate(input.itemId));
       connectionInfo = { driveId, itemId };
     }
     const meta = await this.remote(() =>
-      this.connectors.for(input.type).metadata({ id: 'new', connectionInfo }),
+      this.connectors.for(input.type).metadata({ id: 'new', connectionInfo, connectionSecret }),
     );
     const source = await this.prisma.$transaction(async (tx) => {
       const created = await tx.source.create({
         data: {
           type: input.type,
           name: meta.name,
-          connectionInfo: { ...connectionInfo, sheets: meta.sheets } as Prisma.InputJsonValue,
+          connectionInfo: {
+            ...connectionInfo,
+            ...meta.info,
+            sheets: meta.sheets,
+          } as Prisma.InputJsonValue,
+          connectionSecret,
           lastReadAt: new Date(),
           createdBy: actor.userId,
         },
@@ -151,11 +176,31 @@ export class SourcesService {
       data: {
         connectionInfo: {
           ...(source.connectionInfo as object),
+          ...meta.info,
           sheets: meta.sheets,
         } as Prisma.InputJsonValue,
       },
     });
     return this.summary(updated);
+  }
+
+  /** Script à coller dans un Sheet, avec un secret neuf ; rien n'est enregistré avant l'ajout. */
+  newScript(): SourceScript {
+    const secret = randomBytes(32).toString('base64url');
+    return { script: scriptSource(secret), secret };
+  }
+
+  /** Script à jour d'un Google Sheet déjà relié, avec son secret : pour le recoller dans le Sheet. */
+  async script(id: string): Promise<SourceScript> {
+    const source = await this.get(id);
+    if (source.type !== SourceType.gsheet_script || !source.connectionSecret) throw notFound();
+    try {
+      const secret = decryptToken(config.tokenEncryptionKey, source.connectionSecret);
+      return { script: scriptSource(secret) };
+    } catch {
+      // Clé de chiffrement perdue : le secret est illisible, la source est à relier de nouveau.
+      throw sourceException(new SourceUnavailableError(id));
+    }
   }
 
   /** Appel à une source connectée ; injoignable → `503` avec son code. */
@@ -409,6 +454,10 @@ export class SourcesService {
       sheets: sheetsOf(source),
       usages: await findJsonUsages(this.prisma, source.id),
       writable: isWritable(source),
+      scriptOutdated:
+        source.type === SourceType.gsheet_script &&
+        ((source.connectionInfo as unknown as GsheetScriptInfo).scriptVersion ?? 0) <
+          SCRIPT_VERSION,
       version: source.version,
     };
   }

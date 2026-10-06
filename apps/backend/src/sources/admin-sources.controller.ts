@@ -22,6 +22,7 @@ import {
   EXCEL_MIME,
   ErrorCode,
   type SourceGrid,
+  type SourceScript,
   type SourceSummary,
 } from '@strategos/shared';
 import type { Response } from 'express';
@@ -47,11 +48,25 @@ export class AdminSourcesController {
 
   /**
    * Ajouter un Google Sheet `{ type: "gsheet", spreadsheetId }`, un fichier OneDrive
-   * `{ type: "onedrive", itemId }` ou un Google Sheet par lien public `{ type: "gsheet_link", url }`.
+   * `{ type: "onedrive", itemId }`, un Google Sheet par lien public `{ type: "gsheet_link", url }`
+   * ou un Google Sheet relié par un script `{ type: "gsheet_script", scriptUrl, secret }`.
    */
   @Post()
   add(@Body() dto: AddSourceDto, @Actor() actor: AuditActor): Promise<SourceSummary> {
     return this.sources.add(dto as AddSourceInput, actor as AuditActor & { kind: 'user' });
+  }
+
+  /** Script Apps Script à coller dans un Sheet, avec un secret neuf. */
+  @HttpCode(HttpStatus.OK)
+  @Post('script')
+  newScript(): SourceScript {
+    return this.sources.newScript();
+  }
+
+  /** Script à jour d'un Google Sheet déjà relié par un script, pour le recoller. */
+  @Get(':id/script')
+  script(@Param('id', ParseUUIDPipe) id: string): Promise<SourceScript> {
+    return this.sources.script(id);
   }
 
   @HttpCode(HttpStatus.OK)

@@ -14,6 +14,7 @@ import { ApiRequestError } from '../../api/client';
 import { confirmReimport, previewReimport } from '../../api/forms';
 import {
   deleteSource,
+  getSourceScript,
   listSources,
   sourceDownloadUrl,
   testSource,
@@ -24,7 +25,13 @@ import { EmptyState } from '../../components/EmptyState';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useToast } from '../../components/Toast';
 import { formatDateTime } from '../../format';
-import { GoogleSheetLinkPanel, GoogleSheetsPanel, OneDrivePanel } from './ConnectedSources';
+import {
+  GoogleSheetLinkPanel,
+  GoogleSheetScriptPanel,
+  GoogleSheetsPanel,
+  OneDrivePanel,
+  ScriptBox,
+} from './ConnectedSources';
 
 interface Usages {
   pages: { id: string; name: string }[];
@@ -115,6 +122,13 @@ export function SourcesPage() {
     mutationFn: (source: SourceSummary) => testSource(source.id),
     onSettled: () => void refresh(),
   });
+  /** Script d'un Google Sheet relié par un script, à recoller dans le Sheet (mise à jour). */
+  const script = useMutation({
+    mutationFn: async (source: SourceSummary) => ({
+      source,
+      script: (await getSourceScript(source.id)).script,
+    }),
+  });
   const removeError =
     remove.error instanceof ApiRequestError && remove.error.code === 'CONFIRMATION_REQUIRED'
       ? null
@@ -125,6 +139,30 @@ export function SourcesPage() {
       <h1>{t('sources.title')}</h1>
       <p className="muted">{t('sources.intro')}</p>
 
+      {script.data && (
+        <Modal
+          wide
+          title={t('sources.gsheetScript.updateTitle', { name: script.data.source.name })}
+          onClose={() => script.reset()}
+        >
+          <div className="form">
+            <ol>
+              {(t('sources.gsheetScript.updateSteps', { returnObjects: true }) as string[]).map(
+                (step) => (
+                  <li key={step}>{step}</li>
+                ),
+              )}
+            </ol>
+            <ScriptBox script={script.data.script} />
+            <p className="notice">{t('sources.gsheetScript.warning')}</p>
+            <div className="actions">
+              <button type="button" className="secondary" onClick={() => script.reset()}>
+                {t('common.close')}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {reimport && (
         <Modal
           wide
@@ -185,7 +223,9 @@ export function SourcesPage() {
         </Modal>
       )}
 
-      <ErrorMessage error={sources.error ?? removeError ?? reimportPreview.error ?? test.error} />
+      <ErrorMessage
+        error={sources.error ?? removeError ?? reimportPreview.error ?? test.error ?? script.error}
+      />
       <div className="table-wrap">
         <table>
           <thead>
@@ -213,6 +253,14 @@ export function SourcesPage() {
                     <>
                       <br />
                       <small>{t('sources.readOnly')}</small>
+                    </>
+                  )}
+                  {source.scriptOutdated && (
+                    <>
+                      <br />
+                      <span className="status status-rejected">
+                        {t('sources.gsheetScript.outdated')}
+                      </span>
                     </>
                   )}
                 </td>
@@ -271,6 +319,16 @@ export function SourcesPage() {
                         />
                       </label>
                     )}
+                    {source.type === 'gsheet_script' && (
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={script.isPending}
+                        onClick={() => script.mutate(source)}
+                      >
+                        {t('sources.gsheetScript.show')}
+                      </button>
+                    )}
                     {source.type !== 'upload' && (
                       <button
                         type="button"
@@ -318,6 +376,7 @@ export function SourcesPage() {
         </button>
       </form>
       <GoogleSheetLinkPanel />
+      <GoogleSheetScriptPanel />
       <GoogleSheetsPanel />
       <OneDrivePanel />
     </section>

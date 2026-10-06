@@ -1,11 +1,12 @@
 import { CellType } from '@strategos/shared';
 import type { StoredCell } from '../cell-format.js';
 import { fromSerial } from '../cell-format.js';
-import { dateText } from '../excel-parser.js';
+import { dateText, excelSerial } from '../excel-parser.js';
 import type { StoredValue } from '../source-write.service.js';
 
 /**
- * Conversion des cellules des API Google Sheets et Microsoft Graph vers la
+ * Conversion des cellules des API Google Sheets et Microsoft Graph, et du
+ * script Apps Script, vers la
  * représentation commune (celle du staging) : les appelants ne savent pas de
  * quel type est la source. Aucune formule n'est évaluée.
  */
@@ -124,6 +125,45 @@ export function graphCell(
     default:
       return f ? empty(f) : null;
   }
+}
+
+/** Valeur d'une cellule rendue par le script : une date arrive en heure du classeur. */
+export type ScriptValue = string | number | boolean | { d: string } | null;
+
+const SHEETS_ERROR = /^#(DIV\/0!|N\/A|NAME\?|NULL!|NUM!|REF!|VALUE!|ERROR!)$/;
+
+/** Cellule de `getDataRange` (script Apps Script) : valeur et formule (`=…`, ou vide). */
+export function scriptCell(value: ScriptValue | undefined, formula: unknown): RemoteCell | null {
+  const f = typeof formula === 'string' && formula !== '' ? formula : null;
+  if (typeof value === 'number') return numberCell(value, false, f);
+  if (typeof value === 'boolean') {
+    return {
+      type: CellType.bool,
+      text: value ? 'VRAI' : 'FAUX',
+      number: value ? 1 : 0,
+      needsRecalc: false,
+      formula: f,
+    };
+  }
+  if (typeof value === 'object' && value !== null) {
+    const date = new Date(`${value.d}Z`);
+    if (Number.isNaN(date.getTime())) return f ? empty(f) : null;
+    return {
+      type: CellType.date,
+      text: dateText(date),
+      number: excelSerial(date),
+      needsRecalc: false,
+      formula: f,
+    };
+  }
+  if (typeof value !== 'string' || value === '') return f ? empty(f) : null;
+  return {
+    type: SHEETS_ERROR.test(value) ? CellType.error : CellType.text,
+    text: value,
+    number: null,
+    needsRecalc: false,
+    formula: f,
+  };
 }
 
 /**
