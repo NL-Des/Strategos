@@ -24,7 +24,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useToast } from '../../components/Toast';
 import { formatDateTime } from '../../format';
-import { GoogleSheetsPanel, OneDrivePanel } from './ConnectedSources';
+import { GoogleSheetLinkPanel, GoogleSheetsPanel, OneDrivePanel } from './ConnectedSources';
 
 interface Usages {
   pages: { id: string; name: string }[];
@@ -207,7 +207,15 @@ export function SourcesPage() {
                   <br />
                   <small>{t('sources.sheets', { sheets: source.sheets.join(', ') })}</small>
                 </td>
-                <td>{t(`sources.types.${source.type}`)}</td>
+                <td>
+                  {t(`sources.types.${source.type}`)}
+                  {!source.writable && (
+                    <>
+                      <br />
+                      <small>{t('sources.readOnly')}</small>
+                    </>
+                  )}
+                </td>
                 <td>
                   <span
                     className={`status ${source.status === 'ok' ? 'status-validated' : 'status-rejected'}`}
@@ -309,6 +317,7 @@ export function SourcesPage() {
           {t('sources.uploadSubmit')}
         </button>
       </form>
+      <GoogleSheetLinkPanel />
       <GoogleSheetsPanel />
       <OneDrivePanel />
     </section>

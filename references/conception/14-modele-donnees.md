@@ -272,9 +272,9 @@ Voir [08](08-sources-donnees.md).
 | Colonne | Type | N | Défaut | Contrainte / rôle |
 |---|---|---|---|---|
 | `id` | uuid | | — | PK (`source_id` stable) |
-| `type` | enum `source_type` (`upload`, `gsheet`, `onedrive`) | | — | |
+| `type` | enum `source_type` (`upload`, `gsheet`, `onedrive`, `gsheet_link`) | | — | |
 | `name` | text | | — | Nom affiché (nom du fichier ou du Sheet) |
-| `connection_info` | jsonb | | — | `gsheet` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId` ; `upload` : `storagePath` et `sheets` (feuilles, dans l'ordre du classeur) |
+| `connection_info` | jsonb | | — | `gsheet` et `gsheet_link` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId` ; `upload` : `storagePath` et `sheets` (feuilles, dans l'ordre du classeur) |
 | `status` | enum `source_status` (`ok`, `unavailable`, `auth_expired`) | | `ok` | Dernier état connu |
 | `last_read_at` | timestamptz | N | — | Dernière lecture réussie (sources connectées) |
 | `last_imported_at` | timestamptz | N | — | Dernier import ou réimport (upload) |
@@ -502,6 +502,7 @@ Chaque étape du [plan de réalisation](../plan-realisation.md) crée les tables
 14. `source_cell_edits`.
 15. `google_credentials`.
 16. `google_app`.
+17. `gsheet_link` : valeur ajoutée à `source_type`.
 
 ## Dépendances
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.

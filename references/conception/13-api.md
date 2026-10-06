@@ -34,13 +34,13 @@ Toute erreur a le même format :
 | `403` | La ressource est **lisible**, mais l'action n'est pas permise : ouvrir un sujet ou poster sans le droit (`FORBIDDEN`), modifier ou supprimer le message d'un autre (`NOT_AUTHOR`) ; ou changement d'identifiants requis (`CREDENTIALS_CHANGE_REQUIRED`) ; ou jeton CSRF ou `Origin` invalide (`CSRF_INVALID`) |
 | `404` | `NOT_FOUND` : la ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
 | `409` | Conflit d'état : modification concurrente, soumission déjà traitée, confirmation d'avertissement requise, élément encore utilisé |
-| `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé, restauration d'un élément dont le parent est supprimé `RESTORE_PARENT_DELETED`…) |
+| `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé, écriture dans une source en lecture seule `SOURCE_READ_ONLY`, restauration d'un élément dont le parent est supprimé `RESTORE_PARENT_DELETED`…) |
 | `429` | Trop de tentatives (`AUTH_TOO_MANY_ATTEMPTS`, avec `details.retryAfter`) |
 | `500` | Erreur inattendue (`INTERNAL_ERROR`) : ni sa cause ni sa trace ne sont renvoyées, elles sont journalisées côté serveur |
 | `503` | Source de données injoignable (`SOURCE_UNAVAILABLE`) ou connexion expirée (`SOURCE_AUTH_EXPIRED`) |
 
 ### Avertissements à confirmer
-Certaines actions admin sont permises mais méritent une confirmation. Codes d'avertissement : `FORMULA_CELL_TARGETED` (cellule-formule ciblée), `ADD_ZONE_NOT_COVERED` (plage fixe d'un tableau ou catalogue, d'une page, du header ou du footer, qui ne couvre pas une zone d'ajout), `MEDIA_IN_USE` et `SOURCE_IN_USE` (élément encore utilisé), `SUBMISSIONS_INVALIDATED` (publication qui invaliderait des soumissions). Le réimport qui perdrait des validations passe par son propre aperçu en deux temps. Le schéma est toujours le même :
+Certaines actions admin sont permises mais méritent une confirmation. Codes d'avertissement : `FORMULA_CELL_TARGETED` (cellule-formule ciblée), `ADD_ZONE_NOT_COVERED` (plage fixe d'un tableau ou catalogue, d'une page, du header ou du footer, qui ne couvre pas une zone d'ajout), `MEDIA_IN_USE` et `SOURCE_IN_USE` (élément encore utilisé), `SOURCE_PUBLIC_LINK` (Google Sheet ajouté par lien public, lisible par quiconque a ce lien), `SUBMISSIONS_INVALIDATED` (publication qui invaliderait des soumissions). Le réimport qui perdrait des validations passe par son propre aperçu en deux temps. Le schéma est toujours le même :
 1. premier appel sans confirmation → `409 CONFIRMATION_REQUIRED`, avec `details.warnings: [{ code, message, … }]` ;
 2. l'admin confirme → même appel avec `"confirm": true`.
 
@@ -168,8 +168,8 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 ### Sources — [08](08-sources-donnees.md), [04](04-administration.md#sources)
 | Méthode | Chemin | Rôle | Erreurs |
 |---|---|---|---|
-| GET | `/sources` | Liste : type, état, dernière lecture ou import, usages | — |
-| POST | `/sources` | Ajouter un Google Sheet choisi dans le sélecteur `{ type: "gsheet", spreadsheetId }` ou un fichier OneDrive `{ type: "onedrive", itemId }` ; teste l'accès. Un Sheet déjà ajouté est retesté et renvoyé, pas dupliqué | `SOURCE_UNAVAILABLE` (Sheet non choisi dans le sélecteur), `SOURCE_AUTH_EXPIRED` |
+| GET | `/sources` | Liste : type, état, dernière lecture ou import, usages, `writable` (`false` : lecture seule) | — |
+| POST | `/sources` | Ajouter un Google Sheet choisi dans le sélecteur `{ type: "gsheet", spreadsheetId }`, un fichier OneDrive `{ type: "onedrive", itemId }` ou un Google Sheet par lien public `{ type: "gsheet_link", url, confirm? }` (lecture seule) ; teste l'accès. Un Sheet déjà ajouté est retesté et renvoyé, pas dupliqué | `SOURCE_UNAVAILABLE` (Sheet non choisi dans le sélecteur, ou non partagé par lien), `SOURCE_AUTH_EXPIRED`, `409 CONFIRMATION_REQUIRED` (`SOURCE_PUBLIC_LINK`), `400` si `url` n'est pas le lien d'un Sheet (`isSheetLink`) |
 | POST | `/sources/upload` | Uploader un Excel `.xlsx` (`multipart`, champ `file`, 20 Mo au plus) → nouvelle source de type upload. La liste renvoie aussi les feuilles (`sheets`) pour les sélecteurs du page builder | `413`, `415`, `422 EXCEL_PARSE_FAILED` |
 | POST | `/sources/:id/test` | Tester l'accès ; renvoie la source avec son état et ses feuilles relues | `SOURCE_UNAVAILABLE`, `SOURCE_AUTH_EXPIRED` |
 | GET | `/sources/:id/cells` | Grille d'un Excel uploadé : `?sheet=&top=&left=&rows=&cols=` (première feuille, `A1`, 50 × 26 par défaut ; 200 lignes et 50 colonnes au plus). Renvoie `{ sheets, sheet, maxRow, maxCol, top, left, rows, cols, cells: [{ row, col, type, display, formula, needsRecalc }] }`, cellules non vides seulement ; `formula` est sans « = », dans la syntaxe du fichier (`SUM(A1,1.5)`) ; les liaisons inter-fichiers ne sont pas suivies | `404` si la source n'est pas un upload ou si la feuille est inconnue, `400` hors bornes |

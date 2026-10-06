@@ -23,6 +23,7 @@ import { toFieldErrors } from '../common/validation.pipe.js';
 import type { Form, FormVersion, Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Db } from '../prisma/prisma.types.js';
+import { isWritable } from '../sources/connectors/source-connectors.service.js';
 import { sheetsOf } from '../sources/sources.service.js';
 import { FormDataService, pageBlocks } from './form-data.service.js';
 import { definitionErrors, isConfigured, structuralChange } from './form-definition.js';
@@ -364,6 +365,9 @@ export class FormsService {
         fields[`${path}.sheet`] = ['sheetNotFound'];
     };
     if (def.sourceId) checkSheet('definition', def.sourceId, def.sheet);
+    // Un formulaire écrit dans sa source : un Google Sheet par lien public est en lecture seule.
+    const target = sources.find((s) => s.id === def.sourceId);
+    if (target && !isWritable(target)) fields['definition.sourceId'] = ['sourceReadOnly'];
     def.fields.forEach((f, i) => {
       if (f.options?.kind === 'range' && f.options.sourceId) {
         checkSheet(`definition.fields[${i}].options`, f.options.sourceId, f.options.sheet);

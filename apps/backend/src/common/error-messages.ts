@@ -30,6 +30,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   EXCEL_PARSE_FAILED: 'Ce fichier Excel n’a pas pu être lu.',
   SOURCE_AUTH_FAILED: 'La connexion au compte a échoué.',
   SOURCE_NOT_UPLOAD: 'Cette action ne concerne que les fichiers Excel uploadés.',
+  SOURCE_READ_ONLY: 'Cette source est en lecture seule.',
   FORMULA_EXTERNAL_REF: 'Une formule saisie dans Strategos ne peut pas citer un autre classeur.',
   FORM_CLOSED: 'Ce formulaire est fermé.',
   FORM_FULL: 'Ce formulaire est complet.',

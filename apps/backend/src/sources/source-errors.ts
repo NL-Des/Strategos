@@ -21,3 +21,7 @@ export function sourceException(error: SourceUnavailableError): AppException {
       : ErrorCode.SOURCE_UNAVAILABLE,
   );
 }
+
+/** Écriture dans une source en lecture seule (Google Sheet par lien public). */
+export const sourceReadOnly = () =>
+  new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.SOURCE_READ_ONLY);

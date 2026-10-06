@@ -3,7 +3,12 @@ import { type CellType, parseRangeRef } from '@strategos/shared';
 import type { Prisma } from '../generated/prisma/client.js';
 import type { Db } from '../prisma/prisma.types.js';
 import { type FormulaRef, formulaRefs, rectContains } from './formula-deps.js';
-import { isConnected, SourceConnectors } from './connectors/source-connectors.service.js';
+import {
+  isConnected,
+  isWritable,
+  SourceConnectors,
+} from './connectors/source-connectors.service.js';
+import { sourceReadOnly } from './source-errors.js';
 import { SourceDataService } from './source-data.service.js';
 
 /** Valeur brute écrite dans une cellule. */
@@ -89,6 +94,7 @@ export class SourceWriteService {
   ): Promise<void> {
     if (writes.length === 0) return;
     const source = await this.data.usableSource(sourceId, tx);
+    if (!isWritable(source)) throw sourceReadOnly();
     if (isConnected(source)) {
       // Le document en ligne fait foi : Google ou Microsoft recalculent eux-mêmes.
       try {

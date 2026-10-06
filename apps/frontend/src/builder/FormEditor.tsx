@@ -269,12 +269,17 @@ function DefinitionEditor({ initial }: { initial: AdminForm }) {
             }}
           >
             <option value="">{t('builder.data.chooseSource')}</option>
-            {sources.data?.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
+            {sources.data
+              ?.filter((s) => s.writable)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
           </select>
+          {sources.data?.some((s) => !s.writable) && (
+            <small>{t('builder.form.readOnlySources')}</small>
+          )}
         </label>
         <label>
           {t('builder.data.sheet')}

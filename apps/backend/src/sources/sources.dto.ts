@@ -6,6 +6,8 @@ import {
   GRID_MAX_COLS,
   GOOGLE_CLIENT_ID_PATTERN,
   GOOGLE_SECRET_MAX_LENGTH,
+  SOURCE_URL_MAX_LENGTH,
+  SPREADSHEET_ID_PATTERN,
   type GoogleConfigInput,
   GRID_MAX_ROWS,
   MAX_COLUMN,
@@ -13,6 +15,7 @@ import {
 } from '@strategos/shared';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -51,15 +54,29 @@ export class GoogleConfigDto implements GoogleConfigInput {
   apiKey?: string;
 }
 
-/** `POST /admin/sources` : un Google Sheet choisi dans le sélecteur, ou un fichier du OneDrive connecté. */
+/**
+ * `POST /admin/sources` : un Google Sheet choisi dans le sélecteur, un fichier du
+ * OneDrive connecté, ou un Google Sheet partagé par lien public.
+ */
 export class AddSourceDto {
-  @IsIn(['gsheet', 'onedrive'])
-  type: 'gsheet' | 'onedrive';
+  @IsIn(['gsheet', 'onedrive', 'gsheet_link'])
+  type: 'gsheet' | 'onedrive' | 'gsheet_link';
 
   @ValidateIf((o: AddSourceDto) => o.type === 'gsheet')
   @IsString()
-  @Matches(/^[A-Za-z0-9_-]{20,200}$/)
+  @Matches(SPREADSHEET_ID_PATTERN)
   spreadsheetId?: string;
+
+  @ValidateIf((o: AddSourceDto) => o.type === 'gsheet_link')
+  @Trim()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(SOURCE_URL_MAX_LENGTH)
+  url?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  confirm?: boolean;
 
   @ValidateIf((o: AddSourceDto) => o.type === 'onedrive')
   @IsString()

@@ -12,7 +12,9 @@ import {
   oneDriveConnectUrl,
   setGoogleConfig,
 } from '../../api/sources';
+import { useConfirm } from '../../components/Dialog';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { useToast } from '../../components/Toast';
 import { pickGoogleSheets } from './googlePicker';
 import { Icon } from '../../components/Icon';
 
@@ -190,6 +192,61 @@ export function GoogleSheetsPanel() {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Google Sheet partagé par lien public (04 — Sources) : sans compte Google, en
+ * lecture seule. L'admin confirme que le document est lisible par quiconque a le lien.
+ */
+export function GoogleSheetLinkPanel() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const ask = useConfirm();
+  const toast = useToast();
+  const [url, setUrl] = useState('');
+  const add = useMutation({
+    mutationFn: () => addSource({ type: 'gsheet_link', url, confirm: true }),
+    onSuccess: (source) => {
+      setUrl('');
+      toast(t('sources.gsheetLink.added', { name: source.name }));
+      void refreshSources(queryClient);
+    },
+  });
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const ok = await ask({
+      title: t('sources.gsheetLink.confirmTitle'),
+      message: t('warnings.SOURCE_PUBLIC_LINK'),
+      confirmLabel: t('sources.gsheetLink.confirm'),
+    });
+    if (ok) add.mutate();
+  };
+
+  return (
+    <form className="card form" onSubmit={(e) => void submit(e)}>
+      <h2>{t('sources.gsheetLink.title')}</h2>
+      <p>{t('sources.gsheetLink.intro')}</p>
+      <ol>
+        {(t('sources.gsheetLink.steps', { returnObjects: true }) as string[]).map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+      <label>
+        {t('sources.gsheetLink.url')}
+        <input
+          required
+          type="url"
+          value={url}
+          placeholder="https://docs.google.com/spreadsheets/d/…"
+          onChange={(e) => setUrl(e.target.value)}
+        />
+      </label>
+      <ErrorMessage error={add.error} />
+      <button type="submit" disabled={add.isPending}>
+        {t('sources.gsheetLink.add')}
+      </button>
+    </form>
   );
 }
 

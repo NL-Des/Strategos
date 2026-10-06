@@ -78,6 +78,7 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       GOOGLE_TOKEN_URL: `${base}/google/token`,
       GOOGLE_USERINFO_URL: `${base}/google/userinfo`,
       GOOGLE_SHEETS_API: `${base}/sheets`,
+      GOOGLE_EXPORT_URL: `${base}/export`,
       MICROSOFT_LOGIN_URL: `${base}/ms`,
       GRAPH_API: `${base}/graph`,
       AZURE_CLIENT_ID: 'client-test',
@@ -474,6 +475,127 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       const back = await admin.send('post', `/admin/sources/${source.id}/test`);
       expectStatus(back, 200);
       expect(back.body.status).toBe('ok');
+    });
+  });
+
+  describe('Google Sheets par lien public', () => {
+    const LINK = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?usp=sharing`;
+    const addLink = (confirm?: boolean) =>
+      admin.send('post', '/admin/sources', { type: 'gsheet_link', url: LINK, confirm });
+    const share = (shared = true) =>
+      fake.linkedSheets.set(SHEET_ID, {
+        title: 'Stock guilde',
+        shared,
+        sheets: {
+          Stock: {
+            A1: 'Référence',
+            B1: 'Produit',
+            C1: 'Quantité',
+            A2: 101,
+            B2: 'Épée',
+            C2: 8,
+            A3: 137,
+            B3: 'Bouclier',
+            C3: { formula: 'C2-3', result: 5 },
+          },
+        },
+      });
+
+    it('lien refusé s’il n’est pas celui d’un Sheet ; avertissement à confirmer ; ajout sans compte Google, pas dupliqué', async () => {
+      share();
+      const bad = await admin.send('post', '/admin/sources', {
+        type: 'gsheet_link',
+        url: 'https://exemple.fr/spreadsheets/d/' + SHEET_ID,
+        confirm: true,
+      });
+      expect(bad.status).toBe(400);
+      expect(bad.body.details.fields).toEqual({ url: ['isSheetLink'] });
+
+      const warned = await addLink();
+      expect(warned.status).toBe(409);
+      expect(warned.body.code).toBe('CONFIRMATION_REQUIRED');
+      expect(warned.body.details.warnings[0].code).toBe('SOURCE_PUBLIC_LINK');
+      expect(fake.exports).toBe(0);
+
+      const res = await addLink(true);
+      expectStatus(res, 201);
+      expect(res.body).toMatchObject({
+        type: 'gsheet_link',
+        name: 'Stock guilde',
+        sheets: ['Stock'],
+        status: 'ok',
+        writable: false,
+      });
+      expect(JSON.stringify(res.body)).not.toContain(SHEET_ID);
+      const again = await addLink();
+      expectStatus(again, 201);
+      expect(again.body.id).toBe(res.body.id);
+      expect(await prisma.source.count()).toBe(1);
+      expect(await prisma.auditLog.count({ where: { action: 'source.add' } })).toBe(1);
+    });
+
+    it('Sheet non partagé : SOURCE_UNAVAILABLE à l’ajout, puis au test d’accès', async () => {
+      share(false);
+      const res = await addLink(true);
+      expect(res.status).toBe(503);
+      expect(res.body.code).toBe('SOURCE_UNAVAILABLE');
+      expect(await prisma.source.count()).toBe(0);
+
+      share();
+      const source = (await addLink(true)).body as SourceSummary;
+      share(false);
+      const test = await admin.send('post', `/admin/sources/${source.id}/test`);
+      expect(test.status).toBe(503);
+      expect(test.body.code).toBe('SOURCE_UNAVAILABLE');
+      share();
+      expectStatus(await admin.send('post', `/admin/sources/${source.id}/test`), 200);
+    });
+
+    it('tableau lu dans le Sheet, un téléchargement par durée de cache, aucune copie en base', async () => {
+      share();
+      const source = (await addLink(true)).body as SourceSummary;
+      const { tableId } = await buildPage(source.id, false);
+      const before = fake.exports;
+      expect(await rows(kira, tableId)).toEqual([
+        ['Épée', '8'],
+        ['Bouclier', '5'],
+      ]);
+      await rows(kira, tableId);
+      expect(fake.exports).toBe(before + 1);
+      expect(await prisma.stagingCell.count({ where: { sourceId: source.id } })).toBe(0);
+    });
+
+    it('lecture seule : formulaire refusé à l’enregistrement', async () => {
+      share();
+      const source = (await addLink(true)).body as SourceSummary;
+      const { pageId } = await buildPage(source.id, false);
+      const form = await admin.send('post', '/admin/forms', {
+        pageId,
+        pageBlockId: uid(),
+        mode: 'ajout',
+      });
+      expectStatus(form, 201);
+      const saved = await admin.send('put', `/admin/forms/${form.body.id as string}/draft`, {
+        version: 1,
+        definition: {
+          title: 'Ajout',
+          intro: '',
+          successMessage: '',
+          sourceId: source.id,
+          sheet: 'Stock',
+          rowStart: 2,
+          rowEnd: null,
+          keyCol: null,
+          linkedBlockId: null,
+          fields: [
+            { key: 'nom', label: 'Produit', help: '', type: 'text', required: true, col: 'B' },
+          ],
+        },
+      });
+      expect(saved.status).toBe(400);
+      expect(saved.body.details.fields).toMatchObject({
+        'definition.sourceId': ['sourceReadOnly'],
+      });
     });
   });
 

@@ -123,6 +123,7 @@ export default async function setup(): Promise<() => Promise<void>> {
       GOOGLE_USERINFO_URL: `${fakeUrl}/google/userinfo`,
       GOOGLE_REDIRECT_URI: `${frontendUrl}/api/v1/google/callback`,
       GOOGLE_SHEETS_API: `${fakeUrl}/sheets`,
+      GOOGLE_EXPORT_URL: `${fakeUrl}/export`,
       MICROSOFT_LOGIN_URL: `${fakeUrl}/ms`,
       GRAPH_API: `${fakeUrl}/graph`,
       AZURE_CLIENT_ID: 'client-test',

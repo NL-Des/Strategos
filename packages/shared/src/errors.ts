@@ -29,6 +29,7 @@ export const ErrorCode = {
   UNSUPPORTED_FILE_TYPE: 'UNSUPPORTED_FILE_TYPE',
   EXCEL_PARSE_FAILED: 'EXCEL_PARSE_FAILED',
   SOURCE_NOT_UPLOAD: 'SOURCE_NOT_UPLOAD',
+  SOURCE_READ_ONLY: 'SOURCE_READ_ONLY',
   FORMULA_EXTERNAL_REF: 'FORMULA_EXTERNAL_REF',
   FORM_CLOSED: 'FORM_CLOSED',
   FORM_FULL: 'FORM_FULL',
@@ -77,6 +78,8 @@ export function isApiError(value: unknown): value is ApiError {
 export const WarningCode = {
   MEDIA_IN_USE: 'MEDIA_IN_USE',
   SOURCE_IN_USE: 'SOURCE_IN_USE',
+  /** Un Google Sheet ajouté par lien public est lisible par quiconque a ce lien. */
+  SOURCE_PUBLIC_LINK: 'SOURCE_PUBLIC_LINK',
   /** Un champ vise une cellule qui contient une formule : elle sera écrasée par une valeur. */
   FORMULA_CELL_TARGETED: 'FORMULA_CELL_TARGETED',
   /** Un Tableau ou Catalogue à plage fixe ne couvre pas la zone d'un formulaire d'ajout. */

@@ -1392,7 +1392,7 @@
             }
           }
         },
-        "summary": "Ajouter un Google Sheet `{ type: \"gsheet\", spreadsheetId }` ou un fichier OneDrive `{ type: \"onedrive\", itemId }`.",
+        "summary": "Ajouter un Google Sheet `{ type: \"gsheet\", spreadsheetId }`, un fichier OneDrive\n`{ type: \"onedrive\", itemId }` ou un Google Sheet par lien public `{ type: \"gsheet_link\", url }`.",
         "tags": [
           "AdminSources"
         ]
@@ -4705,12 +4705,20 @@
             "type": "string",
             "enum": [
               "gsheet",
-              "onedrive"
+              "onedrive",
+              "gsheet_link"
             ]
           },
           "spreadsheetId": {
+            "type": "string"
+          },
+          "url": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9_-]{20,200}$"
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "confirm": {
+            "type": "boolean"
           },
           "itemId": {
             "type": "string",

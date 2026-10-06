@@ -45,7 +45,10 @@ export class AdminSourcesController {
     return this.sources.list();
   }
 
-  /** Ajouter un Google Sheet `{ type: "gsheet", spreadsheetId }` ou un fichier OneDrive `{ type: "onedrive", itemId }`. */
+  /**
+   * Ajouter un Google Sheet `{ type: "gsheet", spreadsheetId }`, un fichier OneDrive
+   * `{ type: "onedrive", itemId }` ou un Google Sheet par lien public `{ type: "gsheet_link", url }`.
+   */
   @Post()
   add(@Body() dto: AddSourceDto, @Actor() actor: AuditActor): Promise<SourceSummary> {
     return this.sources.add(dto as AddSourceInput, actor as AuditActor & { kind: 'user' });

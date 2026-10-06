@@ -49,6 +49,8 @@ enum SourceType {
   upload
   gsheet
   onedrive
+  /// Google Sheet partagé par lien public : lecture seule, sans compte Google.
+  gsheet_link
 
   @@map("source_type")
 }
@@ -479,7 +481,7 @@ model Source {
   type             SourceType
   /// Nom affiché : nom du fichier ou du Sheet.
   name             String
-  /// `upload` : `storagePath` ; `gsheet` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId`.
+  /// `upload` : `storagePath` ; `gsheet` et `gsheet_link` : `spreadsheetId` ; `onedrive` : `driveId`, `itemId`.
   connectionInfo   Json         @map("connection_info")
   status           SourceStatus @default(ok)
   lastReadAt       DateTime?    @map("last_read_at") @db.Timestamptz

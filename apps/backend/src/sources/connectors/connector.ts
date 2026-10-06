@@ -13,7 +13,8 @@ export interface SourceMetadata {
 }
 
 /**
- * Adaptateur d'une source connectée (08) : Google Sheets ou OneDrive. Le
+ * Adaptateur d'une source connectée (08) : Google Sheets (compte connecté ou
+ * lien public) ou OneDrive. Le
  * document en ligne fait foi ; Strategos lit des valeurs et écrit des valeurs
  * brutes, jamais de formule. Une source injoignable lève
  * `SourceUnavailableError`, une connexion expirée `SourceAuthExpiredError`.
@@ -22,6 +23,8 @@ export interface SourceConnector {
   metadata(source: Pick<Source, 'id' | 'connectionInfo'>): Promise<SourceMetadata>;
   fetchSheet(source: Source, sheet: string): Promise<RemoteSheet>;
   write(source: Source, writes: CellWrite[]): Promise<void>;
+  /** Vide le cache propre à l'adaptateur, s'il en tient un. */
+  invalidate?(sourceId: string): void;
 }
 
 /**

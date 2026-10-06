@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { CellType } from '@strategos/shared';
 import { graphCell, isDateFormat, rawValue, sheetsCell } from './cells.js';
+import { downloadName } from './gsheet-link.connector.js';
 import { SheetCache } from './sheet-cache.js';
 import { decryptToken, encryptToken } from './token-crypto.js';
 
@@ -71,6 +72,19 @@ describe('cellules des sources connectées', () => {
     expect(rawValue({ type: CellType.date, text: '2026-09-26', number: 46291 })).toBe(46291);
     expect(rawValue({ type: CellType.bool, text: 'VRAI', number: 1 })).toBe(true);
     expect(rawValue({ type: CellType.empty, text: null, number: null })).toBe('');
+  });
+});
+
+describe('Google Sheet par lien public', () => {
+  it('nom du Sheet lu dans Content-Disposition', () => {
+    expect(
+      downloadName(
+        `attachment; filename="Stock.xlsx"; filename*=UTF-8''Stock%20guilde%20%C3%A9t%C3%A9.xlsx`,
+      ),
+    ).toBe('Stock guilde été');
+    expect(downloadName('attachment; filename="Stock.xlsx"')).toBe('Stock');
+    expect(downloadName(`attachment; filename*=UTF-8''%E0%A4%A.xlsx`)).toBe('Google Sheet');
+    expect(downloadName(null)).toBe('Google Sheet');
   });
 });
 

@@ -10,6 +10,7 @@ import {
   ErrorCode,
   SourceType,
   type SourceSummary,
+  spreadsheetIdFromUrl,
   WarningCode,
 } from '@strategos/shared';
 import { fileTypeFromBuffer } from 'file-type';
@@ -22,7 +23,11 @@ import type { Prisma, Source } from '../generated/prisma/client.js';
 import { cleanFilename } from '../media/media.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { OneDriveConnector } from './connectors/onedrive.connector.js';
-import { isConnected, SourceConnectors } from './connectors/source-connectors.service.js';
+import {
+  isConnected,
+  isWritable,
+  SourceConnectors,
+} from './connectors/source-connectors.service.js';
 import { SourceUnavailableError, sourceException } from './source-errors.js';
 import {
   ExcelParseError,
@@ -69,19 +74,38 @@ export class SourcesService {
    * choisi est refusé (`SOURCE_UNAVAILABLE`). Le nom et les feuilles viennent
    * du document. Un Sheet déjà ajouté est retesté, pas dupliqué : le choisir
    * de nouveau lui rend l'accès après un changement de compte Google.
+   *
+   * Un Google Sheet partagé par lien public s'ajoute par son lien, sans compte
+   * Google, après confirmation (`SOURCE_PUBLIC_LINK`) ; il est en lecture seule.
    */
   async add(input: AddSourceInput, actor: AuditActor & { kind: 'user' }): Promise<SourceSummary> {
     let connectionInfo: Record<string, string>;
-    if (input.type === SourceType.gsheet) {
-      const { spreadsheetId } = input;
+    if (input.type === SourceType.gsheet || input.type === SourceType.gsheet_link) {
+      const spreadsheetId =
+        input.type === SourceType.gsheet ? input.spreadsheetId : spreadsheetIdFromUrl(input.url);
+      if (!spreadsheetId) {
+        throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
+          fields: { url: ['isSheetLink'] },
+        });
+      }
       const existing = await this.prisma.source.findFirst({
         where: {
-          type: SourceType.gsheet,
+          type: input.type,
           deletedAt: null,
           connectionInfo: { path: ['spreadsheetId'], equals: spreadsheetId },
         },
       });
       if (existing) return this.test(existing.id);
+      if (input.type === SourceType.gsheet_link && !input.confirm) {
+        throw new AppException(HttpStatus.CONFLICT, ErrorCode.CONFIRMATION_REQUIRED, {
+          warnings: [
+            {
+              code: WarningCode.SOURCE_PUBLIC_LINK,
+              message: 'Ce Sheet est lisible par toute personne qui a son lien.',
+            },
+          ],
+        });
+      }
       connectionInfo = { spreadsheetId };
     } else {
       const { driveId, itemId } = await this.remote(() => this.onedrive.locate(input.itemId));
@@ -384,6 +408,7 @@ export class SourcesService {
       createdAt: source.createdAt.toISOString(),
       sheets: sheetsOf(source),
       usages: await findJsonUsages(this.prisma, source.id),
+      writable: isWritable(source),
       version: source.version,
     };
   }

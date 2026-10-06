@@ -23,15 +23,35 @@ export interface SourceSummary {
   /** Feuilles, pour les sélecteurs du page builder. */
   sheets: string[];
   usages: SourceUsages;
+  /** `false` : lecture seule (Google Sheet par lien public), aucun formulaire ne peut y écrire. */
+  writable: boolean;
   version: number;
 }
 
 /**
  * `POST /admin/sources` : un Google Sheet choisi dans le sélecteur de fichiers
- * Google, ou un fichier du OneDrive connecté.
+ * Google, un fichier du OneDrive connecté, ou un Google Sheet partagé par lien
+ * public (`url` : son lien ; `confirm` après l'avertissement `SOURCE_PUBLIC_LINK`).
  */
 export type AddSourceInput =
-  { type: 'gsheet'; spreadsheetId: string } | { type: 'onedrive'; itemId: string };
+  | { type: 'gsheet'; spreadsheetId: string }
+  | { type: 'onedrive'; itemId: string }
+  | { type: 'gsheet_link'; url: string; confirm?: boolean };
+
+export const SPREADSHEET_ID_PATTERN = /^[A-Za-z0-9_-]{20,200}$/;
+export const SOURCE_URL_MAX_LENGTH = 500;
+
+/**
+ * Identifiant d'un Google Sheet, tiré de son lien de partage
+ * (`https://docs.google.com/spreadsheets/d/<id>/edit…`) ; `null` si ce n'en est pas un.
+ */
+export function spreadsheetIdFromUrl(url: string): string | null {
+  const id = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([A-Za-z0-9_-]+)(?:[/?#]|$)/.exec(
+    url.trim(),
+  )?.[1];
+  // Un lien « Publier sur le Web » (`/d/e/…`) ne désigne pas le document lui-même.
+  return id && SPREADSHEET_ID_PATTERN.test(id) ? id : null;
+}
 
 /** Connexion du compte Google de l'admin (accès délégué, limité aux fichiers qu'il choisit). */
 export interface GoogleStatus {

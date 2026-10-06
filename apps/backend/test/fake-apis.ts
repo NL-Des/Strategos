@@ -1,11 +1,12 @@
 import { type IncomingMessage, type Server, type ServerResponse, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { cellRef, columnNumber } from '@strategos/shared';
+import { cellRef, columnNumber, EXCEL_MIME } from '@strategos/shared';
+import { buildXlsx } from './xlsx.js';
 
 /**
- * Faux serveur des API Google (OAuth, Sheets v4) et Microsoft (OAuth, Graph
- * `workbook`), pour tester les sources connectées sans
- * compte réel. Les feuilles sont `{ A1: valeur }` ; une formule s'écrit
+ * Faux serveur des API Google (OAuth, Sheets v4, téléchargement d'un Sheet
+ * public) et Microsoft (OAuth, Graph `workbook`), pour tester les sources
+ * connectées sans compte réel. Les feuilles sont `{ A1: valeur }` ; une formule s'écrit
  * `{ f: '=C2*D2', v: 200 }`, une date `{ date: 46291 }`.
  */
 export type FakeValue =
@@ -17,6 +18,14 @@ interface FakeSpreadsheet {
   /** L'admin a choisi ce Sheet dans le sélecteur : l'application y a accès (`drive.file`). */
   picked: boolean;
   sheets: FakeSheets;
+}
+
+/** Google Sheet atteint par son lien, sans compte : classeur `{ Feuille: { A1: valeur } }`. */
+interface FakeLinkedSheet {
+  title: string;
+  /** Partagé en « toute personne disposant du lien ». */
+  shared: boolean;
+  sheets: Parameters<typeof buildXlsx>[0];
 }
 
 interface FakeWorkbook {
@@ -52,8 +61,11 @@ const isDate = (v: unknown): v is { date: number } =>
 export class FakeApis {
   readonly spreadsheets = new Map<string, FakeSpreadsheet>();
   readonly workbooks = new Map<string, FakeWorkbook>();
+  readonly linkedSheets = new Map<string, FakeLinkedSheet>();
   /** Lectures de feuilles reçues (pour vérifier le cache). */
   sheetReads = 0;
+  /** Téléchargements de Sheets publics reçus. */
+  exports = 0;
   /** Le refresh token Microsoft est accepté ; `false` simule une connexion révoquée. */
   refreshValid = true;
   /** De même pour le refresh token Google. */
@@ -81,7 +93,9 @@ export class FakeApis {
   reset(): void {
     this.spreadsheets.clear();
     this.workbooks.clear();
+    this.linkedSheets.clear();
     this.sheetReads = 0;
+    this.exports = 0;
     this.refreshValid = true;
     this.googleRefreshValid = true;
     this.googleClients.length = 0;
@@ -131,6 +145,24 @@ export class FakeApis {
       return auth.startsWith('Bearer google-access-')
         ? json(200, { email: GOOGLE_ACCOUNT })
         : json(401, {});
+    }
+
+    // Google : téléchargement d'un Sheet par son lien. Non partagé : page de connexion.
+    const exported = /^\/export\/spreadsheets\/d\/([^/]+)\/export$/.exec(path);
+    if (exported) {
+      const doc = this.linkedSheets.get(exported[1]!);
+      if (!doc) return json(404, {});
+      this.exports += 1;
+      if (!doc.shared) {
+        res.writeHead(200, { 'Content-Type': 'text/html' }).end('<html>Connexion</html>');
+        return;
+      }
+      res.writeHead(200, {
+        'Content-Type': EXCEL_MIME,
+        'Content-Disposition': `attachment; filename="export.xlsx"; filename*=UTF-8''${encodeURIComponent(doc.title)}.xlsx`,
+      });
+      res.end(await buildXlsx(doc.sheets));
+      return;
     }
 
     // Google Sheets.

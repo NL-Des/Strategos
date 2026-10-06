@@ -205,6 +205,8 @@
     "createRequiresRead": "ouvrir un sujet ou poster exige la lecture",
     "duplicate": "en double",
     "sourceNotFound": "source introuvable",
+    "sourceReadOnly": "source en lecture seule : un formulaire ne peut pas y écrire",
+    "isSheetLink": "ce n’est pas le lien d’un Google Sheet",
     "sheetNotFound": "feuille introuvable dans la source",
     "outOfRange": "colonne hors de la plage"
   },
@@ -233,6 +235,7 @@
     "UNSUPPORTED_FILE_TYPE": "Ce type de fichier n’est pas accepté.",
     "EXCEL_PARSE_FAILED": "Ce fichier Excel n’a pas pu être lu. Vérifiez qu’il s’agit bien d’un classeur .xlsx.",
     "SOURCE_NOT_UPLOAD": "Cette action ne concerne que les fichiers Excel uploadés.",
+    "SOURCE_READ_ONLY": "Cette source est en lecture seule.",
     "FORMULA_EXTERNAL_REF": "Une formule saisie ici ne peut pas citer un autre classeur. Créez la liaison dans Excel, puis réimportez le fichier.",
     "FORM_CLOSED": "Ce formulaire est fermé.",
     "FORM_FULL": "Ce formulaire est complet.",
@@ -577,6 +580,7 @@
       "height": "Hauteur (pixels)"
     },
     "form": {
+      "readOnlySources": "Les Google Sheets ajoutés par lien public sont en lecture seule : ils ne sont pas proposés ici.",
       "mode": "Type de formulaire",
       "modes": {
         "modification": "Modification",
@@ -673,6 +677,7 @@
   "warnings": {
     "MEDIA_IN_USE": "L’image « {{filename}} » est encore utilisée ici. Si vous la supprimez, les modules qui l’affichent seront masqués :",
     "SOURCE_IN_USE": "La source « {{name}} » est encore utilisée par :",
+    "SOURCE_PUBLIC_LINK": "Toute personne qui obtient le lien de ce Sheet peut lire le document entier, sans passer par ce site ni par ses droits. N’utilisez ce mode que pour des données qui peuvent être publiques.",
     "FORMULA_CELL_TARGETED": "Une cellule visée contient une formule ou une liaison : elle sera remplacée par une valeur.",
     "ADD_ZONE_NOT_COVERED": "Un tableau à plage fixe ne couvre pas la zone d’un formulaire d’ajout : les lignes ajoutées n’y apparaîtront pas.",
     "SUBMISSIONS_INVALIDATED": "La publication invalidera des soumissions en attente."
@@ -741,8 +746,10 @@
     "types": {
       "upload": "Excel uploadé",
       "gsheet": "Google Sheets",
-      "onedrive": "OneDrive"
+      "onedrive": "OneDrive",
+      "gsheet_link": "Google Sheets (lien public)"
     },
+    "readOnly": "Lecture seule",
     "statuses": {
       "ok": "Joignable",
       "unavailable": "Injoignable",
@@ -761,6 +768,20 @@
       "itemEdit": "{{cell}} : {{before}} dans le nouveau fichier, {{after}} saisi dans la grille le {{date}}"
     },
     "test": "Tester",
+    "gsheetLink": {
+      "title": "Google Sheets par lien public",
+      "intro": "Le plus simple, sans compte Google à connecter : le site lit le Sheet par son lien de partage. Lecture seule : aucun formulaire ne peut y écrire, vous modifiez le Sheet vous-même.",
+      "steps": [
+        "Dans Google Sheets, cliquez sur « Partager ».",
+        "Sous « Accès général », choisissez « Tous les utilisateurs disposant du lien », avec le rôle « Lecteur ».",
+        "Cliquez sur « Copier le lien », puis collez-le ci-dessous."
+      ],
+      "url": "Lien du Sheet",
+      "add": "Ajouter ce Sheet",
+      "confirmTitle": "Ajouter un Sheet public ?",
+      "confirm": "Ajouter",
+      "added": "Sheet « {{name}} » ajouté."
+    },
     "gsheet": {
       "title": "Google Sheets",
       "connected": "Connecté au compte {{account}}. Strategos n’accède qu’aux Sheets que vous choisissez.",
