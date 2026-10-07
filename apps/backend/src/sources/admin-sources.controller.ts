@@ -101,13 +101,13 @@ export class AdminSourcesController {
     res.attachment(name).type(EXCEL_MIME).send(content);
   }
 
-  /** Fenêtre de la grille d'un Excel uploadé (valeurs, formules, « à recalculer »). */
+  /** Fenêtre de la grille d'un Excel uploadé ou d'un Google Sheet (compte connecté ou script). */
   @Get(':id/cells')
   cells(@Param('id', ParseUUIDPipe) id: string, @Query() query: GridQueryDto): Promise<SourceGrid> {
     return this.grid.window(id, query);
   }
 
-  /** Modifier une cellule : valeur ou formule (`=…`), comme dans Excel. */
+  /** Modifier une cellule : valeur ou formule (`=…`), comme dans un tableur. */
   @Patch(':id/cells')
   editCell(
     @Param('id', ParseUUIDPipe) id: string,

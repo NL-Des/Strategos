@@ -23,8 +23,8 @@ import { config } from '../config.js';
 import type { Prisma, Source } from '../generated/prisma/client.js';
 import { cleanFilename } from '../media/media.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { GsheetScriptInfo } from './connectors/gsheet-script.connector.js';
-import { SCRIPT_VERSION, scriptSource } from './connectors/gsheet-script.template.js';
+import { scriptOutdated } from './connectors/gsheet-script.connector.js';
+import { scriptSource } from './connectors/gsheet-script.template.js';
 import { OneDriveConnector } from './connectors/onedrive.connector.js';
 import {
   isConnected,
@@ -454,10 +454,7 @@ export class SourcesService {
       sheets: sheetsOf(source),
       usages: await findJsonUsages(this.prisma, source.id),
       writable: isWritable(source),
-      scriptOutdated:
-        source.type === SourceType.gsheet_script &&
-        ((source.connectionInfo as unknown as GsheetScriptInfo).scriptVersion ?? 0) <
-          SCRIPT_VERSION,
+      scriptOutdated: source.type === SourceType.gsheet_script && scriptOutdated(source),
       version: source.version,
     };
   }

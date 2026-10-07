@@ -23,7 +23,8 @@ export type SourceRef = Pick<Source, 'id' | 'connectionInfo'> & {
  * Adaptateur d'une source connectée (08) : Google Sheets (compte connecté,
  * lien public ou script) ou OneDrive. Le
  * document en ligne fait foi ; Strategos lit des valeurs et écrit des valeurs
- * brutes, jamais de formule. Une source injoignable lève
+ * brutes. Seule la grille de l'admin écrit une formule, dans un Google Sheet
+ * (compte connecté ou script), que Google calcule. Une source injoignable lève
  * `SourceUnavailableError`, une connexion expirée `SourceAuthExpiredError`.
  */
 export interface SourceConnector {

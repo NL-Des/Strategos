@@ -32,6 +32,8 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   SOURCE_AUTH_FAILED: 'La connexion au compte a échoué.',
   SOURCE_NOT_UPLOAD: 'Cette action ne concerne que les fichiers Excel uploadés.',
   SOURCE_READ_ONLY: 'Cette source est en lecture seule.',
+  SOURCE_SCRIPT_OUTDATED:
+    "Le script de ce Google Sheet est à mettre à jour : recollez le script affiché par l'écran Sources, redéployez une nouvelle version, puis testez l'accès.",
   FORMULA_EXTERNAL_REF: 'Une formule saisie dans Strategos ne peut pas citer un autre classeur.',
   FORM_CLOSED: 'Ce formulaire est fermé.',
   FORM_FULL: 'Ce formulaire est complet.',

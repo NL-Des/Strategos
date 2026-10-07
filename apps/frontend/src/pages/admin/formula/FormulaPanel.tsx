@@ -1,4 +1,4 @@
-import { type FormulaFunction, type ParsedFormula, callAt } from '@strategos/shared';
+import { type FormulaFunction, type ParsedFormula, callAt, functionFor } from '@strategos/shared';
 import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArgumentGuide } from './ArgumentGuide';
@@ -33,6 +33,7 @@ export function FormulaPanel({
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('decompose');
   const call = parsed && callAt(parsed.tokens, cursor, 'fr');
+  const guided = call?.fn && functionFor(call.fn, ctx.target);
 
   return (
     <aside className="formula-panel" aria-label={t('sources.grid.formula.tabs')}>
@@ -51,11 +52,11 @@ export function FormulaPanel({
         ))}
       </div>
 
-      {parsed && call?.fn && <ArgumentGuide fn={call.fn} argIndex={call.argIndex} />}
+      {call && guided && <ArgumentGuide fn={guided} argIndex={call.argIndex} />}
       {refMode && <p className="formula-hint">{t('sources.grid.formula.refMode')}</p>}
 
       {tab === 'functions' ? (
-        <FunctionCatalog disabled={!hasCell} onInsert={onInsert} />
+        <FunctionCatalog target={ctx.target} disabled={!hasCell} onInsert={onInsert} />
       ) : !hasCell ? (
         <p className="muted">{t('sources.grid.formula.noCell')}</p>
       ) : !parsed ? (
@@ -83,7 +84,9 @@ export function FormulaPanel({
             <p className="formula-extra">{t('sources.grid.formula.incomplete')}</p>
           )}
           <FormulaTree root={parsed.root} ctx={ctx} />
-          <p className="muted">{t('sources.grid.formula.notComputed')}</p>
+          <p className="muted">
+            {t(`sources.grid.formula.notComputed${ctx.target === 'gsheet' ? 'Gsheet' : ''}`)}
+          </p>
         </>
       )}
     </aside>

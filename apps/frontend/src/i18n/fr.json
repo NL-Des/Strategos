@@ -241,6 +241,7 @@
     "EXCEL_PARSE_FAILED": "Ce fichier Excel n’a pas pu être lu. Vérifiez qu’il s’agit bien d’un classeur .xlsx.",
     "SOURCE_NOT_UPLOAD": "Cette action ne concerne que les fichiers Excel uploadés.",
     "SOURCE_READ_ONLY": "Cette source est en lecture seule.",
+    "SOURCE_SCRIPT_OUTDATED": "Le script de ce Google Sheet est à mettre à jour : recollez le script affiché par l'écran Sources, redéployez une nouvelle version, puis testez l'accès.",
     "FORMULA_EXTERNAL_REF": "Une formule saisie ici ne peut pas citer un autre classeur. Créez la liaison dans Excel, puis réimportez le fichier.",
     "FORM_CLOSED": "Ce formulaire est fermé.",
     "FORM_FULL": "Ce formulaire est complet.",
@@ -931,6 +932,7 @@
     "grid": {
       "open": "Voir les cellules",
       "title": "Cellules",
+      "introGsheet": "Le Google Sheet lui-même, relu dans Google à chaque ouverture (une modification faite dans Google Sheets peut mettre jusqu'à une minute à apparaître ici). Les valeurs des formules sont celles que Google a calculées.",
       "intro": "La version de référence du classeur, telle que Strategos la conserve. Une formule n'est jamais calculée ici : sa valeur est celle du dernier enregistrement dans Excel, marquée * si une cellule dont elle dépend a changé depuis.",
       "sheets": "Feuilles",
       "goTo": "Aller à",
@@ -941,6 +943,7 @@
       "colsRight": "→ Colonnes suivantes",
       "extent": "Dernière cellule remplie : {{ref}}",
       "content": "Contenu de la cellule",
+      "editHelpGsheet": "Cliquez une cellule, puis modifiez son contenu comme dans un tableur : « =SOMME(B2:B10) » ou « =B2*C2 » pour une formule, « 1 234,5 », « 26/09/2026 », « VRAI ». Une apostrophe en tête garde le texte tel quel. La modification est écrite aussitôt dans le Google Sheet, et Google calcule la formule. Les fonctions s'écrivent en français, comme dans Excel ; celles qui n'existent que dans Google Sheets gardent leur nom (QUERY, ARRAYFORMULA…).",
       "editHelp": "Cliquez une cellule, puis modifiez son contenu comme dans Excel : « =SOMME(B2:B10) » ou « =B2*C2 » pour une formule, « 1 234,5 », « 26/09/2026 », « VRAI ». Une apostrophe en tête garde le texte tel quel. Une formule saisie ici n'est pas calculée : elle le sera à l'ouverture du fichier téléchargé dans Excel.",
       "formula": {
         "title": "Formule",
@@ -949,6 +952,7 @@
         "functions": "Fonctions",
         "noCell": "Choisissez une cellule pour voir sa formule.",
         "noFormula": "Cette cellule contient une valeur. Pour écrire une formule, commencez la saisie par « = » ou choisissez une fonction dans l'onglet Fonctions.",
+        "notComputedGsheet": "Les valeurs indiquées sont celles calculées par Google Sheets.",
         "notComputed": "Rien n'est calculé ici : les valeurs indiquées sont celles enregistrées dans le classeur.",
         "incomplete": "Formule incomplète ou mal formée : vérifiez les parenthèses et les séparateurs « ; ».",
         "refMode": "Cliquez une cellule de la grille pour insérer sa référence ; Maj+clic ou glisser pour une plage.",
@@ -1342,7 +1346,8 @@
       "text": "Texte",
       "date": "Dates et heures",
       "lookup": "Recherche",
-      "info": "Informations"
+      "info": "Informations",
+      "google": "Propres à Google Sheets"
     },
     "functions": {
       "SUM": "Additionne des nombres, des cellules ou des plages.",
@@ -1437,7 +1442,46 @@
       "ISTEXT": "VRAI si la valeur est un texte.",
       "ISERROR": "VRAI si la valeur est une erreur.",
       "ISNA": "VRAI si la valeur est #N/A.",
-      "NA": "Renvoie l'erreur #N/A : « valeur non disponible »."
+      "NA": "Renvoie l'erreur #N/A : « valeur non disponible ».",
+      "HYPERLINK": "Crée un lien cliquable vers une adresse.",
+      "TRANSPOSE": "Échange les lignes et les colonnes d'une plage.",
+      "CHOOSECOLS": "Garde les colonnes indiquées d'une plage.",
+      "CHOOSEROWS": "Garde les lignes indiquées d'une plage.",
+      "VSTACK": "Empile des plages les unes sous les autres.",
+      "HSTACK": "Place des plages côte à côte.",
+      "ARRAYFORMULA": "Applique une formule à toute une plage et étale ses résultats sur plusieurs lignes ou colonnes.",
+      "QUERY": "Interroge une plage avec une requête (select, where, group by, order by…), comme une base de données.",
+      "SORTN": "Renvoie les n premières lignes d'une plage après l'avoir triée.",
+      "FLATTEN": "Rassemble toutes les valeurs d'une ou plusieurs plages en une seule colonne.",
+      "ARRAY_CONSTRAIN": "Limite un résultat à un nombre de lignes et de colonnes.",
+      "IMPORTRANGE": "Importe une plage d'un autre Google Sheet.",
+      "IMPORTDATA": "Importe un fichier CSV ou TSV publié à une adresse web.",
+      "IMPORTHTML": "Importe un tableau ou une liste d'une page web.",
+      "IMPORTXML": "Importe des données d'une page web ou d'un fichier XML, choisies par une requête XPath.",
+      "IMPORTFEED": "Importe un flux RSS ou Atom.",
+      "GOOGLEFINANCE": "Cours actuel ou historique d'un titre ou d'une devise, d'après Google Finance.",
+      "GOOGLETRANSLATE": "Traduit un texte d'une langue vers une autre.",
+      "DETECTLANGUAGE": "Code de la langue dans laquelle un texte est écrit.",
+      "SPARKLINE": "Dessine un petit graphique dans la cellule.",
+      "IMAGE": "Affiche dans la cellule l'image publiée à une adresse web.",
+      "SPLIT": "Découpe un texte autour d'un délimiteur et place chaque morceau dans une cellule.",
+      "JOIN": "Assemble des valeurs ou des plages en un seul texte, séparées par un délimiteur.",
+      "REGEXMATCH": "VRAI si une partie du texte correspond à l'expression régulière.",
+      "REGEXEXTRACT": "Extrait la première partie du texte qui correspond à l'expression régulière.",
+      "REGEXREPLACE": "Remplace les parties du texte qui correspondent à l'expression régulière.",
+      "COUNTUNIQUE": "Compte les valeurs différentes.",
+      "COUNTUNIQUEIFS": "Compte les valeurs différentes parmi celles qui remplissent plusieurs conditions.",
+      "AVERAGE.WEIGHTED": "Moyenne pondérée : chaque valeur compte selon son poids.",
+      "TO_DATE": "Présente un nombre comme une date.",
+      "TO_TEXT": "Convertit une valeur en texte.",
+      "TO_PERCENT": "Présente un nombre comme un pourcentage.",
+      "TO_DOLLARS": "Présente un nombre comme un montant, dans la devise du classeur.",
+      "TO_PURE_NUMBER": "Retire le format d'une date, d'un pourcentage ou d'un montant : garde le nombre seul.",
+      "ISURL": "VRAI si la valeur est une adresse web valide.",
+      "ISEMAIL": "VRAI si la valeur est une adresse e-mail valide.",
+      "ISDATE": "VRAI si la valeur est une date.",
+      "ISBETWEEN": "VRAI si la valeur se trouve entre deux bornes.",
+      "EPOCHTODATE": "Convertit un horodatage Unix en date et heure (UTC)."
     },
     "args": {
       "number": {
@@ -1735,6 +1779,178 @@
       "exactlyOnce": {
         "label": "exactement_une_fois",
         "help": "VRAI pour ne garder que les valeurs présentes une seule fois."
+      },
+      "arrayFormula": {
+        "label": "formule_matricielle",
+        "help": "Formule ou plage à étendre, par exemple A2:A*B2:B."
+      },
+      "data": {
+        "label": "données",
+        "help": "Plage de cellules à traiter."
+      },
+      "query": {
+        "label": "requête",
+        "help": "Requête entre guillemets, par exemple \"select A, sum(B) group by A\"."
+      },
+      "headers": {
+        "label": "en_têtes",
+        "help": "Nombre de lignes d'en-tête ; déduit des données s'il est omis."
+      },
+      "n": {
+        "label": "n",
+        "help": "Nombre de lignes à renvoyer (1 par défaut)."
+      },
+      "tiesMode": {
+        "label": "mode_égalité",
+        "help": "0 à 3 : façon de traiter les lignes à égalité et les doublons."
+      },
+      "sortColumn": {
+        "label": "colonne_tri",
+        "help": "Numéro de la colonne de la plage, ou plage, qui sert au tri."
+      },
+      "isAscending": {
+        "label": "ordre_croissant",
+        "help": "VRAI pour un tri croissant, FAUX pour un tri décroissant."
+      },
+      "numRows": {
+        "label": "nb_lignes",
+        "help": "Nombre de lignes à garder."
+      },
+      "numCols": {
+        "label": "nb_colonnes",
+        "help": "Nombre de colonnes à garder."
+      },
+      "spreadsheetUrl": {
+        "label": "url_feuille_calcul",
+        "help": "Adresse du Google Sheet d'où viennent les données, entre guillemets."
+      },
+      "rangeString": {
+        "label": "chaîne_plage",
+        "help": "Plage à importer, entre guillemets, par exemple \"Stock!A1:C10\"."
+      },
+      "url": {
+        "label": "url",
+        "help": "Adresse web, protocole compris (https://…), entre guillemets."
+      },
+      "locale": {
+        "label": "paramètres_régionaux",
+        "help": "Code de langue et de région servant à lire les données, par exemple \"fr_FR\"."
+      },
+      "queryType": {
+        "label": "type_requête",
+        "help": "\"table\" pour un tableau, \"list\" pour une liste."
+      },
+      "index": {
+        "label": "index",
+        "help": "Rang du tableau ou de la liste dans la page, à partir de 1."
+      },
+      "xpathQuery": {
+        "label": "requête_xpath",
+        "help": "Requête XPath qui désigne les données à importer."
+      },
+      "feedQuery": {
+        "label": "requête",
+        "help": "Ce qu'il faut importer du flux : \"items\" par défaut, \"feed\", \"items title\"…"
+      },
+      "numItems": {
+        "label": "nb_éléments",
+        "help": "Nombre d'éléments à renvoyer, à partir du plus récent."
+      },
+      "ticker": {
+        "label": "code",
+        "help": "Code du titre précédé de sa place boursière, par exemple \"EPA:AIR\", ou paire de devises comme \"CURRENCY:EURUSD\"."
+      },
+      "attribute": {
+        "label": "attribut",
+        "help": "Donnée demandée : \"price\" par défaut, \"high\", \"low\", \"volume\"…"
+      },
+      "interval": {
+        "label": "intervalle",
+        "help": "\"DAILY\" ou \"WEEKLY\" pour un historique."
+      },
+      "sourceLanguage": {
+        "label": "langue_source",
+        "help": "Code de la langue du texte, par exemple \"en\" ; \"auto\" pour la détecter."
+      },
+      "targetLanguage": {
+        "label": "langue_cible",
+        "help": "Code de la langue de la traduction, par exemple \"fr\"."
+      },
+      "options": {
+        "label": "options",
+        "help": "Réglages du graphique en paires nom-valeur, par exemple {\"charttype\"\\\"bar\"} dans un classeur en français."
+      },
+      "mode": {
+        "label": "mode",
+        "help": "1 : ajustée à la cellule ; 2 : étirée ; 3 : taille d'origine ; 4 : taille choisie."
+      },
+      "imageHeight": {
+        "label": "hauteur",
+        "help": "Hauteur de l'image en pixels (mode 4)."
+      },
+      "imageWidth": {
+        "label": "largeur",
+        "help": "Largeur de l'image en pixels (mode 4)."
+      },
+      "splitByEach": {
+        "label": "scinder_par_caractère",
+        "help": "VRAI (par défaut) pour couper à chaque caractère du délimiteur, FAUX pour couper au délimiteur entier."
+      },
+      "removeEmptyText": {
+        "label": "supprimer_vides",
+        "help": "VRAI (par défaut) pour retirer les morceaux vides."
+      },
+      "regex": {
+        "label": "expression_régulière",
+        "help": "Expression régulière (syntaxe RE2), entre guillemets."
+      },
+      "replacement": {
+        "label": "remplacement",
+        "help": "Texte mis à la place de chaque correspondance."
+      },
+      "countUniqueRange": {
+        "label": "plage_décompte",
+        "help": "Plage dont les valeurs différentes sont comptées."
+      },
+      "values": {
+        "label": "valeurs",
+        "help": "Valeurs dont on fait la moyenne."
+      },
+      "weights": {
+        "label": "pondérations",
+        "help": "Poids de chaque valeur, dans une plage de même taille."
+      },
+      "lowerValue": {
+        "label": "valeur_inférieure",
+        "help": "Borne basse."
+      },
+      "upperValue": {
+        "label": "valeur_supérieure",
+        "help": "Borne haute."
+      },
+      "lowerInclusive": {
+        "label": "inférieure_incluse",
+        "help": "VRAI (par défaut) si la borne basse est comprise."
+      },
+      "upperInclusive": {
+        "label": "supérieure_incluse",
+        "help": "VRAI (par défaut) si la borne haute est comprise."
+      },
+      "timestamp": {
+        "label": "horodatage",
+        "help": "Horodatage Unix : temps écoulé depuis le 1er janvier 1970."
+      },
+      "timeUnit": {
+        "label": "unité",
+        "help": "1 : secondes (par défaut) ; 2 : millisecondes ; 3 : microsecondes."
+      },
+      "condition": {
+        "label": "condition",
+        "help": "Colonne ou ligne de VRAI / FAUX, de la taille de la plage, par exemple A2:A10>0."
+      },
+      "linkLabel": {
+        "label": "libellé_lien",
+        "help": "Texte affiché à la place de l'adresse."
       }
     }
   },

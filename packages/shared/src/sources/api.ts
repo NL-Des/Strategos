@@ -136,7 +136,14 @@ export interface OneDriveItem {
   path: string;
 }
 
-/** Fenêtre maximale de la grille d'un Excel uploadé (`GET /admin/sources/:id/cells`). */
+/**
+ * Sources que l'admin voit et modifie dans la grille (04 — Sources) : un Excel
+ * uploadé, ou un Google Sheet du compte connecté ou relié par un script.
+ */
+export const sourceHasGrid = (type: SourceType): boolean =>
+  type === 'upload' || type === 'gsheet' || type === 'gsheet_script';
+
+/** Fenêtre maximale de la grille (`GET /admin/sources/:id/cells`). */
 export const GRID_MAX_ROWS = 200;
 export const GRID_MAX_COLS = 50;
 
@@ -151,7 +158,8 @@ export interface GridCell {
 }
 
 /**
- * Fenêtre de la grille d'un Excel uploadé, réservée à l'admin (04 — Sources).
+ * Fenêtre de la grille d'un Excel uploadé ou d'un Google Sheet (compte
+ * connecté ou script), réservée à l'admin (04 — Sources).
  * `maxRow` / `maxCol` : dernière ligne et dernière colonne non vides de la feuille.
  */
 export interface SourceGrid {
@@ -169,7 +177,8 @@ export interface SourceGrid {
 /**
  * `PATCH /admin/sources/:id/cells` : modification d'une cellule par l'admin.
  * `expected` est ce que l'admin voyait (`display`, `formula` de la grille) :
- * si la cellule a changé depuis (une validation), `409 EDIT_CONFLICT`.
+ * si la cellule a changé depuis (une validation, une modification dans
+ * Google Sheets), `409 EDIT_CONFLICT`.
  */
 export interface CellEditInput {
   sheet: string;

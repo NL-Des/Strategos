@@ -5,7 +5,8 @@ import { adminNav, clickAndWait, loginAsAdmin, openCreate, t } from './helpers.t
 
 /**
  * Grille d'un Excel uploadé (04 — Sources) : l'admin voit la version de
- * référence comme un tableur, avec les formules, sans calcul.
+ * référence comme un tableur, avec les formules, sans calcul. Puis la même
+ * grille sur le Google Sheet ajouté par le parcours A.
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -138,4 +139,54 @@ test('2. l’assistant de formules décompose et aide à écrire, en français',
   const cell = await (await saved).json();
   expect(cell.formula).toBe('SUM(B2:B3)+AVERAGE(C2,1.5)');
   await expect(content).toHaveValue('=SOMME(B2:B3)+MOYENNE(C2;1,5)');
+});
+
+test('3. la même grille sur un Google Sheet : Google calcule, fonctions de Google au catalogue', async ({
+  page,
+}) => {
+  await loginAsAdmin(page);
+  await adminNav(page, 'sources');
+  await page
+    .getByRole('row', { name: /Guilde/ })
+    .getByRole('link', { name: t('sources.grid.open') })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Guilde' })).toBeVisible();
+  const grid = page.locator('table.source-grid');
+  const panel = page.getByRole('complementary', { name: t('sources.grid.formula.tabs') });
+  const bar = page.locator('.grid-formula-bar');
+  const content = page.getByLabel(t('sources.grid.content'));
+  const first = grid.locator('tr', {
+    has: page.getByRole('rowheader', { name: '1', exact: true }),
+  });
+
+  // Lecture : la formule du Sheet, en français, décomposée.
+  await first.locator('td').nth(5).click();
+  await expect(content).toHaveValue('=64-NBVAL(A2:A65)');
+  await expect(panel).toContainText(t('formulas.functions.COUNTA'));
+  await expect(panel).toContainText(t('sources.grid.formula.notComputedGsheet'));
+
+  // Écriture en J1 : signature de Google pour FILTRE, fonction propre à Google au catalogue.
+  await first.locator('td').nth(9).dblclick();
+  await expect(bar).toContainText('J1');
+  await content.fill('=FILTRE(');
+  await expect(panel).toContainText(t('formulas.args.condition.label'));
+  await content.fill('');
+  await panel.getByRole('button', { name: t('sources.grid.formula.functions') }).click();
+  await panel.getByLabel(t('sources.grid.formula.search')).fill('countunique');
+  await panel
+    .getByRole('button', {
+      name: t('sources.grid.formula.insert', { name: 'COUNTUNIQUE' }),
+      exact: true,
+    })
+    .click();
+  await content.pressSequentially('B2:B');
+  await expect(content).toHaveValue('=COUNTUNIQUE(B2:B)');
+  await page.screenshot({ path: `${SHOTS}/grille-google-sheet.png`, fullPage: true });
+
+  const saved = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok());
+  await content.press('Enter');
+  const cell = await (await saved).json();
+  expect(cell).toMatchObject({ formula: 'COUNTUNIQUE(B2:B)', needsRecalc: false });
+  await expect(content).toHaveValue('=COUNTUNIQUE(B2:B)');
+  await expect(bar).not.toContainText(t('render.needsRecalc'));
 });

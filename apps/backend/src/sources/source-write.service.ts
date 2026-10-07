@@ -27,9 +27,10 @@ export interface CellAddress {
 export interface CellWrite extends CellAddress {
   value: StoredValue;
   /**
-   * Formule saisie par l'admin dans la grille d'un Excel uploadé (04 — Sources),
-   * sans « = ». Elle n'est pas calculée : `value` est gardée et la cellule est
-   * marquée « à recalculer ». Les validations n'écrivent jamais de formule.
+   * Formule saisie par l'admin dans la grille (04 — Sources), sans « = », dans
+   * la syntaxe du fichier. Excel uploadé : elle n'est pas calculée, `value` est
+   * gardée et la cellule est marquée « à recalculer ». Google Sheet : Google la
+   * calcule, `value` est ignorée. Les validations n'écrivent jamais de formule.
    */
   formula?: string | null;
 }
@@ -47,7 +48,7 @@ interface FormulaCell extends CellAddress {
 /**
  * Écriture dans les sources (08 — Points techniques) : l'unique chemin des
  * validations de soumissions et des modifications de l'admin dans la grille
- * d'un Excel uploadé (`SourceGridService`). Les appelants ne savent pas de quel type est la
+ * (`SourceGridService`). Les appelants ne savent pas de quel type est la
  * source : staging et `needs_recalc` pour un Excel uploadé, API pour une
  * source connectée (cache vidé après l'écriture).
  */
@@ -83,7 +84,7 @@ export class SourceWriteService {
 
   /**
    * Écrit des valeurs brutes (une formule visée est remplacée par sa valeur ;
-   * seule la grille de l'admin écrit une formule, dans un Excel uploadé),
+   * seule la grille de l'admin écrit une formule),
    * puis marque « à recalculer » les cellules qui en dépendent, directement ou
    * transitivement, y compris dans d'autres sources via `cell_references`.
    */

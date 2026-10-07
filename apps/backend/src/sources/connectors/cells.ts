@@ -1,4 +1,4 @@
-import { CellType } from '@strategos/shared';
+import { CellType, FORMULA_SYNTAX, type FormulaSyntax, formulaFromSheet } from '@strategos/shared';
 import type { StoredCell } from '../cell-format.js';
 import { fromSerial } from '../cell-format.js';
 import { dateText, excelSerial } from '../excel-parser.js';
@@ -42,8 +42,16 @@ export interface SheetsCellData {
   effectiveFormat?: { numberFormat?: { type?: string } };
 }
 
-export function sheetsCell(data: SheetsCellData): RemoteCell | null {
-  const formula = data.userEnteredValue?.formulaValue ?? null;
+/**
+ * La formule est rendue dans la syntaxe du fichier (`SUM(A1,1.5)`, sans « = ») :
+ * `syntax` est celle de la langue du classeur.
+ */
+export function sheetsCell(
+  data: SheetsCellData,
+  syntax: FormulaSyntax = FORMULA_SYNTAX.en,
+): RemoteCell | null {
+  const entered = data.userEnteredValue?.formulaValue;
+  const formula = entered ? formulaFromSheet(entered.replace(/^=/, ''), syntax) : null;
   const v = data.effectiveValue;
   if (!v) return formula ? empty(formula) : null;
   if (v.numberValue !== undefined) {
@@ -132,9 +140,19 @@ export type ScriptValue = string | number | boolean | { d: string } | null;
 
 const SHEETS_ERROR = /^#(DIV\/0!|N\/A|NAME\?|NULL!|NUM!|REF!|VALUE!|ERROR!)$/;
 
-/** Cellule de `getDataRange` (script Apps Script) : valeur et formule (`=…`, ou vide). */
-export function scriptCell(value: ScriptValue | undefined, formula: unknown): RemoteCell | null {
-  const f = typeof formula === 'string' && formula !== '' ? formula : null;
+/**
+ * Cellule de `getDataRange` (script Apps Script) : valeur et formule (`=…`, ou
+ * vide), rendue dans la syntaxe du fichier, sans « = ».
+ */
+export function scriptCell(
+  value: ScriptValue | undefined,
+  formula: unknown,
+  syntax: FormulaSyntax = FORMULA_SYNTAX.en,
+): RemoteCell | null {
+  const f =
+    typeof formula === 'string' && formula !== ''
+      ? formulaFromSheet(formula.replace(/^=/, ''), syntax)
+      : null;
   if (typeof value === 'number') return numberCell(value, false, f);
   if (typeof value === 'boolean') {
     return {

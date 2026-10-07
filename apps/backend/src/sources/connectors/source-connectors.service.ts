@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SourceStatus, SourceType } from '@strategos/shared';
+import { SourceStatus, SourceType, sourceHasGrid } from '@strategos/shared';
 import { config } from '../../config.js';
 import type { Source } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -16,6 +16,9 @@ export const isConnected = (source: Pick<Source, 'type'>) => source.type !== Sou
 
 /** Source où les validations peuvent écrire : toutes, sauf un Google Sheet par lien public. */
 export const isWritable = (source: Pick<Source, 'type'>) => source.type !== SourceType.gsheet_link;
+
+/** Source ouverte dans la grille de l'admin : Excel uploadé, Google Sheet du compte connecté ou relié par un script. */
+export const hasGrid = (source: Pick<Source, 'type'>) => sourceHasGrid(source.type);
 
 /**
  * Adaptateurs des sources connectées (Google Sheets, OneDrive) et leur cache

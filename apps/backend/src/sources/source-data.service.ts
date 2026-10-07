@@ -279,11 +279,27 @@ export class SourceDataService {
   }
 
   /**
-   * Grille de l'admin (04 — Sources) : cellules brutes du staging d'un Excel
-   * uploadé, formules comprises, sans suivre les liaisons ; plus les dimensions
-   * de la feuille (dernière ligne et dernière colonne non vides).
+   * Grille de l'admin (04 — Sources) : cellules brutes d'un rectangle, formules
+   * comprises, sans suivre les liaisons ; plus les dimensions de la feuille
+   * (dernière ligne et dernière colonne non vides). Staging pour un Excel
+   * uploadé, document en ligne (cache) pour un Google Sheet.
    */
-  async stagingWindow(sourceId: string, sheet: string, rect: Rect) {
+  async gridWindow(source: Source, sheet: string, rect: Rect) {
+    if (!isConnected(source)) return this.stagingWindow(source.id, sheet, rect);
+    const all = await this.connectors.sheet(source, sheet);
+    const cells: { row: number; col: number; formula: string | null; stored: StoredCell }[] = [];
+    let [maxRow, maxCol] = [0, 0];
+    for (const [key, { formula, ...stored }] of all) {
+      const [row, col] = key.split(':').map(Number) as [number, number];
+      maxRow = Math.max(maxRow, row);
+      maxCol = Math.max(maxCol, col);
+      if (inRect(rect, row, col)) cells.push({ row, col, formula, stored });
+    }
+    cells.sort((a, b) => a.row - b.row || a.col - b.col);
+    return { cells, maxRow, maxCol };
+  }
+
+  private async stagingWindow(sourceId: string, sheet: string, rect: Rect) {
     const [cells, extent] = await Promise.all([
       this.prisma.stagingCell.findMany({
         where: {

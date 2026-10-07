@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { CellType } from '@strategos/shared';
+import { CellType, sheetSyntax } from '@strategos/shared';
 import { graphCell, isDateFormat, rawValue, scriptCell, sheetsCell } from './cells.js';
 import { downloadName } from './gsheet-link.connector.js';
 import { SheetCache } from './sheet-cache.js';
@@ -45,7 +45,17 @@ describe('cellules des sources connectées', () => {
         effectiveValue: { numberValue: 200 },
         userEnteredValue: { formulaValue: '=C2*D2' },
       }),
-    ).toMatchObject({ number: 200, formula: '=C2*D2' });
+    ).toMatchObject({ number: 200, formula: 'C2*D2' });
+    // Classeur en français : la formule est rendue dans la syntaxe du fichier.
+    expect(
+      sheetsCell(
+        {
+          effectiveValue: { numberValue: 9.5 },
+          userEnteredValue: { formulaValue: '=SUM(C2;1,5)' },
+        },
+        sheetSyntax('fr_FR'),
+      ),
+    ).toMatchObject({ number: 9.5, formula: 'SUM(C2,1.5)' });
     expect(sheetsCell({})).toBeNull();
   });
 
@@ -79,11 +89,14 @@ describe('cellules des sources connectées', () => {
       text: '2026-09-26T14:30',
     });
     expect(scriptCell(true, '')).toMatchObject({ type: CellType.bool, number: 1 });
-    expect(scriptCell('#DIV/0!', '=1/0')).toMatchObject({ type: CellType.error, formula: '=1/0' });
+    expect(scriptCell('#DIV/0!', '=1/0')).toMatchObject({ type: CellType.error, formula: '1/0' });
     expect(scriptCell('Épée', '')).toMatchObject({ type: CellType.text, text: 'Épée' });
-    expect(scriptCell(200, '=C2*D2')).toMatchObject({ number: 200, formula: '=C2*D2' });
+    expect(scriptCell(200, '=C2*D2')).toMatchObject({ number: 200, formula: 'C2*D2' });
+    expect(scriptCell(9.5, '=SUM(C2;1,5)', sheetSyntax('fr_FR'))).toMatchObject({
+      formula: 'SUM(C2,1.5)',
+    });
     expect(scriptCell('', '')).toBeNull();
-    expect(scriptCell('', '=A1')).toMatchObject({ type: CellType.empty, formula: '=A1' });
+    expect(scriptCell('', '=A1')).toMatchObject({ type: CellType.empty, formula: 'A1' });
     expect(scriptCell({ d: 'pas une date' }, '')).toBeNull();
   });
 

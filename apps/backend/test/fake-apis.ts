@@ -18,6 +18,10 @@ interface FakeSpreadsheet {
   /** L'admin a choisi ce Sheet dans le sélecteur : l'application y a accès (`drive.file`). */
   picked: boolean;
   sheets: FakeSheets;
+  /** Langue du classeur (`fr_FR`) : elle fixe les séparateurs des formules. `en_US` par défaut. */
+  locale?: string;
+  /** Résultat des formules saisies (`USER_ENTERED`), par formule ; 0 sinon : rien n'est calculé ici. */
+  results?: Record<string, number | string>;
 }
 
 /** Google Sheet atteint par son lien, sans compte : classeur `{ Feuille: { A1: valeur } }`. */
@@ -34,6 +38,10 @@ interface FakeScript {
   version: number;
   title: string;
   sheets: FakeSheets;
+  /** Langue du classeur ; `en_US` par défaut. */
+  locale?: string;
+  /** Résultat des formules écrites, par formule ; 0 sinon. */
+  results?: Record<string, number | string>;
 }
 
 interface FakeWorkbook {
@@ -188,18 +196,20 @@ export class FakeApis {
         secret: string;
         action: string;
         sheet: string;
-        writes: { sheet: string; row: number; col: number; value: FakeValue }[];
+        writes: { sheet: string; row: number; col: number; value: FakeValue; formula?: string }[];
       };
+      const locale = doc.locale ?? 'en_US';
       const reply = (payload: object) => json(200, { ...payload, version: doc.version });
       if (request.secret !== doc.secret) return reply({ ok: false, error: 'forbidden' });
       if (request.action === 'meta') {
-        return reply({ ok: true, name: doc.title, sheets: Object.keys(doc.sheets) });
+        return reply({ ok: true, name: doc.title, locale, sheets: Object.keys(doc.sheets) });
       }
       if (request.action === 'read') {
         this.sheetReads += 1;
         const lines = grid(doc.sheets[request.sheet] ?? {});
         return reply({
           ok: true,
+          locale,
           values: lines.map((l) =>
             l.map((v) => {
               if (v === undefined) return '';
@@ -215,7 +225,9 @@ export class FakeApis {
       }
       if (request.action === 'write') {
         for (const w of request.writes) {
-          doc.sheets[w.sheet]![cellRef({ row: w.row, col: w.col })] = w.value;
+          doc.sheets[w.sheet]![cellRef({ row: w.row, col: w.col })] = w.formula
+            ? { f: w.formula, v: doc.results?.[w.formula] ?? 0 }
+            : w.value;
         }
         return reply({ ok: true });
       }
@@ -229,17 +241,24 @@ export class FakeApis {
       const doc = this.spreadsheets.get(sheet[1]!);
       if (!doc?.picked) return json(doc ? 403 : 404, { error: { status: 'PERMISSION_DENIED' } });
       if (sheet[2]) {
-        const { data } = JSON.parse(body) as { data: { range: string; values: FakeValue[][] }[] };
+        const { data, valueInputOption } = JSON.parse(body) as {
+          valueInputOption: 'RAW' | 'USER_ENTERED';
+          data: { range: string; values: FakeValue[][] }[];
+        };
         for (const d of data) {
           const m = /^'((?:[^']|'')+)'!([A-Z]+\d+)$/.exec(d.range)!;
-          doc.sheets[m[1]!.replaceAll("''", "'")]![m[2]!] = d.values[0]![0]!;
+          const value = d.values[0]![0]!;
+          // Saisie comme dans l'interface : « =… » devient une formule ; en `RAW`, un texte.
+          const entered = valueInputOption === 'USER_ENTERED' && typeof value === 'string';
+          doc.sheets[m[1]!.replaceAll("''", "'")]![m[2]!] =
+            entered && value.startsWith('=') ? { f: value, v: doc.results?.[value] ?? 0 } : value;
         }
         return json(200, {});
       }
       const ranges = url.searchParams.get('ranges');
       if (!ranges) {
         return json(200, {
-          properties: { title: doc.title },
+          properties: { title: doc.title, locale: doc.locale ?? 'en_US' },
           sheets: Object.keys(doc.sheets).map((title) => ({ properties: { title } })),
         });
       }
@@ -265,7 +284,10 @@ export class FakeApis {
           return { effectiveValue: { stringValue: v } };
         }),
       }));
-      return json(200, { sheets: [{ data: [{ startRow: 0, startColumn: 0, rowData }] }] });
+      return json(200, {
+        properties: { locale: doc.locale ?? 'en_US' },
+        sheets: [{ data: [{ startRow: 0, startColumn: 0, rowData }] }],
+      });
     }
 
     // Microsoft : page de connexion, qui accepte aussitôt et renvoie au site avec un code.

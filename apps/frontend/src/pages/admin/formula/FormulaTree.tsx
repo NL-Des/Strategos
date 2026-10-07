@@ -4,7 +4,9 @@ import {
   MAX_COLUMN,
   MAX_ROW,
   type RefInfo,
+  type FormulaTarget,
   argumentAt,
+  functionFor,
 } from '@strategos/shared';
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -36,6 +38,8 @@ export type CellLookup = (sheet: string, row: number, col: number) => GridCell |
 
 export interface TreeContext {
   sourceId: string;
+  /** Tableur de la source : signatures et fonctions proposées en dépendent. */
+  target: FormulaTarget;
   /** Formule sans « = », telle que saisie : chaque nœud en montre son extrait. */
   formula: string;
   /** Feuille de la cellule éditée : celle des références sans feuille. */
@@ -71,7 +75,7 @@ function TreeNode({ node, ctx, role }: { node: FormulaNode; ctx: TreeContext; ro
 
   switch (node.kind) {
     case 'call': {
-      const { fn } = node;
+      const fn = node.fn && functionFor(node.fn, ctx.target);
       title = <strong>{fn?.fr ?? node.name.toUpperCase()}</strong>;
       detail = fn ? t(`formulas.functions.${fn.en}`) : t('sources.grid.formula.unknownFunction');
       children = node.args.map((arg, i) => {

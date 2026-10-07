@@ -5,6 +5,7 @@ import {
   type ReimportMode,
   type ReimportPreview,
   type SourceSummary,
+  sourceHasGrid,
 } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useRef, useState } from 'react';
@@ -307,7 +308,7 @@ export function SourcesPage() {
                 </td>
                 <td>
                   <div className="actions">
-                    {source.type === 'upload' && (
+                    {sourceHasGrid(source.type) && (
                       <Link className="button secondary" to={`/admin/sources/${source.id}/cells`}>
                         {t('sources.grid.open')}
                       </Link>

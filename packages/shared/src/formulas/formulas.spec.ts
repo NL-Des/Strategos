@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { FORMULA_FUNCTIONS, argumentAt, functionByStoredName } from './functions.js';
-import { formulaFromFr, formulaToFr } from './locale.js';
+import { FORMULA_FUNCTIONS, argumentAt, functionByStoredName, functionFor } from './functions.js';
+import { formulaFromFr, formulaFromSheet, formulaToFr, formulaToSheet } from './locale.js';
 import { type FormulaNode, callAt, expectsOperand, parseFormula } from './parse.js';
-import { tokenize } from './tokenize.js';
+import { FORMULA_SYNTAX, areaRect, sheetSyntax, tokenize } from './tokenize.js';
 
 const types = (formula: string, locale: 'en' | 'fr' = 'en') =>
   tokenize(formula, locale)
@@ -90,6 +90,21 @@ describe('tokenize', () => {
     ]);
   });
 
+  it('plage ouverte de Google Sheets', () => {
+    expect(types('SUM(A2:A)+SUM(A2:B10)')).toEqual([
+      'func:SUM',
+      'open:(',
+      'ref:A2:A',
+      'close:)',
+      'op:+',
+      'func:SUM',
+      'open:(',
+      'ref:A2:B10',
+      'close:)',
+    ]);
+    expect(areaRect('B2:C')).toMatchObject({ top: 2, left: 2, right: 3 });
+  });
+
   it('formule incomplète : des jetons, pas d’erreur', () => {
     expect(types('SUM(A1,"ab')).toEqual(['func:SUM', 'open:(', 'ref:A1', 'sep:,', 'string:"ab']);
   });
@@ -162,7 +177,66 @@ describe('formulaToFr et formulaFromFr', () => {
   });
 });
 
+describe('formulaToSheet et formulaFromSheet', () => {
+  const fr = sheetSyntax('fr_FR');
+
+  it('syntaxe d’après la langue du classeur', () => {
+    expect(fr).toEqual({ sep: ';', decimal: ',', arrayCol: '\\', arrayRow: ';' });
+    expect(sheetSyntax('en_US')).toEqual(FORMULA_SYNTAX.en);
+    expect(sheetSyntax('en_GB')).toEqual(FORMULA_SYNTAX.en);
+    expect(sheetSyntax('de_DE').sep).toBe(';');
+    expect(sheetSyntax(undefined)).toEqual(FORMULA_SYNTAX.en);
+    expect(sheetSyntax('???')).toEqual(FORMULA_SYNTAX.en);
+  });
+
+  const pairs: [string, string][] = [
+    ['SUM(B2:B10,1.5)', 'SUM(B2:B10;1,5)'],
+    ['IF(A1>=1.5,"a,b;c",FALSE)', 'IF(A1>=1,5;"a,b;c";FALSE)'],
+    ['SUM({1,2.5;3,4})', 'SUM({1\\2,5;3\\4})'],
+    ['ARRAYFORMULA(A2:A*B2:B)', 'ARRAYFORMULA(A2:A*B2:B)'],
+    [
+      'QUERY(Stock!A:C,"select A, sum(B) group by A",1)',
+      'QUERY(Stock!A:C;"select A, sum(B) group by A";1)',
+    ],
+  ];
+
+  it.each(pairs)('%s ↔ %s (classeur en français)', (stored, sheet) => {
+    expect(formulaToSheet(stored, fr)).toBe(sheet);
+    expect(formulaFromSheet(sheet, fr)).toBe(stored);
+  });
+
+  it('classeur en anglais : rien ne change', () => {
+    const en = sheetSyntax('en_US');
+    expect(formulaToSheet('SUM(B2:B10,1.5)', en)).toBe('SUM(B2:B10,1.5)');
+    expect(formulaFromSheet('SUM(B2:B10,1.5)', en)).toBe('SUM(B2:B10,1.5)');
+  });
+
+  it('retire les préfixes du fichier Excel', () => {
+    expect(formulaToSheet('_xlfn.XLOOKUP(A1,B:B,C:C)', fr)).toBe('XLOOKUP(A1;B:B;C:C)');
+    expect(formulaToSheet('_xlfn.MYNEW(1)', fr)).toBe('MYNEW(1)');
+    // Saisie française de la grille, convertie puis envoyée à Google.
+    expect(formulaToSheet(formulaFromFr('RECHERCHEX(A1;B:B;C:C)'), fr)).toBe('XLOOKUP(A1;B:B;C:C)');
+    expect(formulaToFr(formulaFromSheet('XLOOKUP(A1;B:B;C:C)', fr))).toBe('RECHERCHEX(A1;B:B;C:C)');
+  });
+});
+
 describe('catalogue', () => {
+  it('signature propre à Google Sheets', () => {
+    const filter = functionByStoredName('FILTER')!;
+    expect(functionFor(filter, 'excel').args.map((a) => a.key)).toEqual([
+      'array',
+      'include',
+      'ifEmpty',
+    ]);
+    const google = functionFor(filter, 'gsheet');
+    expect([0, 1, 2].map((i) => argumentAt(google, i)?.key)).toEqual([
+      'range',
+      'condition',
+      'condition',
+    ]);
+    expect(functionByStoredName('QUERY')).toMatchObject({ only: 'gsheet', fr: 'QUERY' });
+  });
+
   it('noms uniques', () => {
     expect(new Set(FORMULA_FUNCTIONS.map((f) => f.en)).size).toBe(FORMULA_FUNCTIONS.length);
     expect(new Set(FORMULA_FUNCTIONS.map((f) => f.fr)).size).toBe(FORMULA_FUNCTIONS.length);

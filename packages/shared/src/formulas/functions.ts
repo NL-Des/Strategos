@@ -1,9 +1,9 @@
 /**
- * Fonctions courantes d'Excel, pour l'assistant de formules de la grille
- * (04 — Sources) : nom dans le fichier (`en`), nom dans Excel en français
- * (`fr`), arguments. Les descriptions sont des textes d'interface
- * (`formulas.*` dans les traductions). Une fonction absente du catalogue
- * reste utilisable : elle est écrite telle quelle.
+ * Fonctions courantes d'Excel et de Google Sheets, pour l'assistant de
+ * formules de la grille (04 — Sources) : nom dans le fichier (`en`), nom dans
+ * Excel en français (`fr`), arguments. Les descriptions sont des textes
+ * d'interface (`formulas.*` dans les traductions). Une fonction absente du
+ * catalogue reste utilisable : elle est écrite telle quelle.
  */
 export const FORMULA_CATEGORIES = [
   'math',
@@ -13,6 +13,7 @@ export const FORMULA_CATEGORIES = [
   'date',
   'lookup',
   'info',
+  'google',
 ] as const;
 export type FormulaCategory = (typeof FORMULA_CATEGORIES)[number];
 
@@ -91,6 +92,49 @@ export const FORMULA_ARGS = [
   'sortOrder',
   'byCol',
   'exactlyOnce',
+  'arrayFormula',
+  'data',
+  'query',
+  'headers',
+  'n',
+  'tiesMode',
+  'sortColumn',
+  'isAscending',
+  'numRows',
+  'numCols',
+  'spreadsheetUrl',
+  'rangeString',
+  'url',
+  'locale',
+  'queryType',
+  'index',
+  'xpathQuery',
+  'feedQuery',
+  'numItems',
+  'ticker',
+  'attribute',
+  'interval',
+  'sourceLanguage',
+  'targetLanguage',
+  'options',
+  'mode',
+  'imageHeight',
+  'imageWidth',
+  'splitByEach',
+  'removeEmptyText',
+  'regex',
+  'replacement',
+  'countUniqueRange',
+  'values',
+  'weights',
+  'lowerValue',
+  'upperValue',
+  'lowerInclusive',
+  'upperInclusive',
+  'timestamp',
+  'timeUnit',
+  'condition',
+  'linkLabel',
 ] as const;
 export type FormulaArg = (typeof FORMULA_ARGS)[number];
 
@@ -99,15 +143,25 @@ export interface FormulaArgSpec {
   optional?: boolean;
 }
 
-export interface FormulaFunction {
-  en: string;
-  fr: string;
-  category: FormulaCategory;
+/** Tableur de la source ouverte dans la grille : un Excel uploadé ou un Google Sheet. */
+export type FormulaTarget = 'excel' | 'gsheet';
+
+interface Signature {
   args: FormulaArgSpec[];
   /** Nombre de derniers arguments qui peuvent se répéter (SOMME.SI.ENS : 2). */
   repeat?: number;
+}
+
+export interface FormulaFunction extends Signature {
+  en: string;
+  fr: string;
+  category: FormulaCategory;
   /** Préfixe dans le fichier des fonctions récentes (`_xlfn.`). */
   prefix?: string;
+  /** Fonction propre à Google Sheets : proposée seulement pour un Google Sheet. */
+  only?: 'gsheet';
+  /** Signature dans Google Sheets, quand elle diffère de celle d'Excel (FILTER, SORT). */
+  gsheet?: Signature;
 }
 
 type ArgList = (FormulaArg | `${FormulaArg}?`)[];
@@ -115,24 +169,21 @@ type ArgList = (FormulaArg | `${FormulaArg}?`)[];
 const XLFN = '_xlfn.';
 const XLWS = '_xlfn._xlws.';
 
+const specs = (args: ArgList): FormulaArgSpec[] =>
+  args.map((a) =>
+    a.endsWith('?')
+      ? { key: a.slice(0, -1) as FormulaArg, optional: true }
+      : { key: a as FormulaArg },
+  );
+
 function fn(
   en: string,
   fr: string,
   category: FormulaCategory,
   args: ArgList,
-  extra: { repeat?: number; prefix?: string } = {},
+  extra: Pick<FormulaFunction, 'repeat' | 'prefix' | 'only' | 'gsheet'> = {},
 ): FormulaFunction {
-  return {
-    en,
-    fr,
-    category,
-    args: args.map((a) =>
-      a.endsWith('?')
-        ? { key: a.slice(0, -1) as FormulaArg, optional: true }
-        : { key: a as FormulaArg },
-    ),
-    ...extra,
-  };
+  return { en, fr, category, args: specs(args), ...extra };
 }
 
 export const FORMULA_FUNCTIONS: FormulaFunction[] = [
@@ -248,9 +299,13 @@ export const FORMULA_FUNCTIONS: FormulaFunction[] = [
   fn('COLUMN', 'COLONNE', 'lookup', ['reference?']),
   fn('ROWS', 'LIGNES', 'lookup', ['array']),
   fn('COLUMNS', 'COLONNES', 'lookup', ['array']),
-  fn('FILTER', 'FILTRE', 'lookup', ['array', 'include', 'ifEmpty?'], { prefix: XLWS }),
+  fn('FILTER', 'FILTRE', 'lookup', ['array', 'include', 'ifEmpty?'], {
+    prefix: XLWS,
+    gsheet: { args: specs(['range', 'condition']), repeat: 1 },
+  }),
   fn('SORT', 'TRIER', 'lookup', ['array', 'sortIndex?', 'sortOrder?', 'byCol?'], {
     prefix: XLWS,
+    gsheet: { args: specs(['range', 'sortColumn?', 'isAscending?']), repeat: 2 },
   }),
   fn('UNIQUE', 'UNIQUE', 'lookup', ['array', 'byCol?', 'exactlyOnce?'], { prefix: XLFN }),
   // Informations
@@ -260,20 +315,106 @@ export const FORMULA_FUNCTIONS: FormulaFunction[] = [
   fn('ISERROR', 'ESTERREUR', 'info', ['value']),
   fn('ISNA', 'ESTNA', 'info', ['value']),
   fn('NA', 'NA', 'info', []),
+  // Communes à Excel et à Google Sheets, récentes
+  fn('HYPERLINK', 'LIEN_HYPERTEXTE', 'lookup', ['url', 'linkLabel?']),
+  fn('TRANSPOSE', 'TRANSPOSE', 'lookup', ['array']),
+  fn('CHOOSECOLS', 'CHOISIRCOLS', 'lookup', ['array', 'colNum'], { repeat: 1, prefix: XLFN }),
+  fn('CHOOSEROWS', 'CHOISIRLIGNES', 'lookup', ['array', 'rowNum'], { repeat: 1, prefix: XLFN }),
+  fn('VSTACK', 'ASSEMB.V', 'lookup', ['array'], { repeat: 1, prefix: XLFN }),
+  fn('HSTACK', 'ASSEMB.H', 'lookup', ['array'], { repeat: 1, prefix: XLFN }),
+  // Propres à Google Sheets : le nom ne se traduit pas
+  fn('ARRAYFORMULA', 'ARRAYFORMULA', 'google', ['arrayFormula'], { only: 'gsheet' }),
+  fn('QUERY', 'QUERY', 'google', ['data', 'query', 'headers?'], { only: 'gsheet' }),
+  fn('SORTN', 'SORTN', 'google', ['range', 'n?', 'tiesMode?', 'sortColumn?', 'isAscending?'], {
+    only: 'gsheet',
+    repeat: 2,
+  }),
+  fn('FLATTEN', 'FLATTEN', 'google', ['range'], { only: 'gsheet', repeat: 1 }),
+  fn('ARRAY_CONSTRAIN', 'ARRAY_CONSTRAIN', 'google', ['range', 'numRows', 'numCols'], {
+    only: 'gsheet',
+  }),
+  fn('IMPORTRANGE', 'IMPORTRANGE', 'google', ['spreadsheetUrl', 'rangeString'], { only: 'gsheet' }),
+  fn('IMPORTDATA', 'IMPORTDATA', 'google', ['url', 'delimiter?', 'locale?'], { only: 'gsheet' }),
+  fn('IMPORTHTML', 'IMPORTHTML', 'google', ['url', 'queryType', 'index', 'locale?'], {
+    only: 'gsheet',
+  }),
+  fn('IMPORTXML', 'IMPORTXML', 'google', ['url', 'xpathQuery', 'locale?'], { only: 'gsheet' }),
+  fn('IMPORTFEED', 'IMPORTFEED', 'google', ['url', 'feedQuery?', 'headers?', 'numItems?'], {
+    only: 'gsheet',
+  }),
+  fn(
+    'GOOGLEFINANCE',
+    'GOOGLEFINANCE',
+    'google',
+    ['ticker', 'attribute?', 'startDate?', 'endDate?', 'interval?'],
+    { only: 'gsheet' },
+  ),
+  fn(
+    'GOOGLETRANSLATE',
+    'GOOGLETRANSLATE',
+    'google',
+    ['text', 'sourceLanguage?', 'targetLanguage?'],
+    { only: 'gsheet' },
+  ),
+  fn('DETECTLANGUAGE', 'DETECTLANGUAGE', 'google', ['text'], { only: 'gsheet' }),
+  fn('SPARKLINE', 'SPARKLINE', 'google', ['data', 'options?'], { only: 'gsheet' }),
+  fn('IMAGE', 'IMAGE', 'google', ['url', 'mode?', 'imageHeight?', 'imageWidth?'], {
+    only: 'gsheet',
+  }),
+  fn('SPLIT', 'SPLIT', 'google', ['text', 'delimiter', 'splitByEach?', 'removeEmptyText?'], {
+    only: 'gsheet',
+  }),
+  fn('JOIN', 'JOIN', 'google', ['delimiter', 'value'], { only: 'gsheet', repeat: 1 }),
+  fn('REGEXMATCH', 'REGEXMATCH', 'google', ['text', 'regex'], { only: 'gsheet' }),
+  fn('REGEXEXTRACT', 'REGEXEXTRACT', 'google', ['text', 'regex'], { only: 'gsheet' }),
+  fn('REGEXREPLACE', 'REGEXREPLACE', 'google', ['text', 'regex', 'replacement'], {
+    only: 'gsheet',
+  }),
+  fn('COUNTUNIQUE', 'COUNTUNIQUE', 'google', ['value'], { only: 'gsheet', repeat: 1 }),
+  fn(
+    'COUNTUNIQUEIFS',
+    'COUNTUNIQUEIFS',
+    'google',
+    ['countUniqueRange', 'criteriaRange', 'criteria'],
+    { only: 'gsheet', repeat: 2 },
+  ),
+  fn('AVERAGE.WEIGHTED', 'AVERAGE.WEIGHTED', 'google', ['values', 'weights'], { only: 'gsheet' }),
+  fn('TO_DATE', 'TO_DATE', 'google', ['value'], { only: 'gsheet' }),
+  fn('TO_TEXT', 'TO_TEXT', 'google', ['value'], { only: 'gsheet' }),
+  fn('TO_PERCENT', 'TO_PERCENT', 'google', ['value'], { only: 'gsheet' }),
+  fn('TO_DOLLARS', 'TO_DOLLARS', 'google', ['value'], { only: 'gsheet' }),
+  fn('TO_PURE_NUMBER', 'TO_PURE_NUMBER', 'google', ['value'], { only: 'gsheet' }),
+  fn('ISURL', 'ISURL', 'google', ['value'], { only: 'gsheet' }),
+  fn('ISEMAIL', 'ISEMAIL', 'google', ['value'], { only: 'gsheet' }),
+  fn('ISDATE', 'ISDATE', 'google', ['value'], { only: 'gsheet' }),
+  fn(
+    'ISBETWEEN',
+    'ISBETWEEN',
+    'google',
+    ['value', 'lowerValue', 'upperValue', 'lowerInclusive?', 'upperInclusive?'],
+    { only: 'gsheet' },
+  ),
+  fn('EPOCHTODATE', 'EPOCHTODATE', 'google', ['timestamp', 'timeUnit?'], { only: 'gsheet' }),
 ];
 
 const BY_EN = new Map(FORMULA_FUNCTIONS.map((f) => [f.en, f]));
 const BY_FR = new Map(FORMULA_FUNCTIONS.map((f) => [f.fr, f]));
-const PREFIXES = /^(?:_xlfn\.|_xlws\.)+/i;
+/** Préfixes des fonctions récentes dans un fichier Excel. */
+export const STORED_PREFIXES = /^(?:_xlfn\.|_xlws\.)+/i;
 
 /** Fonction d'après son nom dans le fichier (préfixe `_xlfn.` compris) ; casse indifférente. */
 export function functionByStoredName(name: string): FormulaFunction | undefined {
-  return BY_EN.get(name.replace(PREFIXES, '').toUpperCase());
+  return BY_EN.get(name.replace(STORED_PREFIXES, '').toUpperCase());
 }
 
 /** Fonction d'après son nom dans Excel en français ; casse indifférente. */
 export function functionByFrName(name: string): FormulaFunction | undefined {
   return BY_FR.get(name.toUpperCase());
+}
+
+/** La fonction telle qu'elle s'écrit dans le tableur visé (signature propre à Google Sheets). */
+export function functionFor(f: FormulaFunction, target: FormulaTarget): FormulaFunction {
+  return target === 'gsheet' && f.gsheet ? { ...f, ...f.gsheet } : f;
 }
 
 /** Spécification du `index`-ième argument (à partir de 0), répétitions comprises. */

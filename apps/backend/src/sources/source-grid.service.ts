@@ -3,6 +3,7 @@ import {
   AuditAction,
   AuditTargetType,
   type CellEditInput,
+  type CellInput,
   CellType,
   ErrorCode,
   type GridCell,
@@ -17,7 +18,10 @@ import { AppException } from '../common/app-exception.js';
 import type { Prisma, Source, StagingCell } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { formatText, type StoredCell } from './cell-format.js';
+import { scriptOutdated } from './connectors/gsheet-script.connector.js';
+import { hasGrid, isConnected } from './connectors/source-connectors.service.js';
 import { externalRefs } from './excel-parser.js';
+import { SourceUnavailableError, sourceException } from './source-errors.js';
 import { type CellAddress, SourceWriteService } from './source-write.service.js';
 import { SourceDataService } from './source-data.service.js';
 import { SourcesService, sheetsOf } from './sources.service.js';
@@ -40,6 +44,18 @@ export interface CellSnapshot {
 
 const notFound = () => new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
 
+const EMPTY_VALUE = { type: CellType.empty, text: null, number: null };
+
+/** Appel à une source connectée ; injoignable → `503` avec son code. */
+async function remote<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    if (error instanceof SourceUnavailableError) throw sourceException(error);
+    throw error;
+  }
+}
+
 export function snapshotOf(cell: StagingCell | null): CellSnapshot {
   if (!cell) return { type: CellType.empty, text: null, number: null, formula: null };
   return {
@@ -57,12 +73,18 @@ const storedOf = (s: CellSnapshot, needsRecalc: boolean): StoredCell => ({
   needsRecalc,
 });
 
+/** Durée laissée à Google pour relire, écrire et recalculer une cellule. */
+const REMOTE_EDIT_TIMEOUT_MS = 60_000;
+
 /**
- * Grille d'un Excel uploadé, réservée à l'admin (04 — Sources) : la copie de
- * référence (staging) vue et modifiée comme un tableur. Une modification passe
- * par `SourceWriteService` (file par source, `needs_recalc`), comme une
- * validation, et est gardée dans `source_cell_edits` pour le réimport. Les
- * sources connectées se consultent et se modifient dans leur outil natif.
+ * Grille réservée à l'admin (04 — Sources) : un Excel uploadé (sa copie de
+ * référence, le staging) ou un Google Sheet du compte connecté ou relié par un
+ * script (le document en ligne), vu et modifié comme un tableur. Une modification passe par
+ * `SourceWriteService` (file par source), comme une validation. Excel uploadé :
+ * rien n'est calculé (`needs_recalc`) et la modification est gardée dans
+ * `source_cell_edits` pour le réimport. Google Sheet : Google calcule, la
+ * cellule est relue après l'écriture. Les autres sources connectées se
+ * consultent et se modifient dans leur outil natif.
  */
 @Injectable()
 export class SourceGridService {
@@ -74,10 +96,14 @@ export class SourceGridService {
     private readonly writer: SourceWriteService,
   ) {}
 
-  /** Excel uploadé et feuille existante ; sinon `404`. */
+  /** Source ouverte dans la grille et feuille existante ; sinon `404`. */
   private async sheetOf(sourceId: string, sheet?: string): Promise<[Source, string, string[]]> {
     const source = await this.sources.get(sourceId);
-    if (source.type !== SourceType.upload) throw notFound();
+    if (!hasGrid(source)) throw notFound();
+    // Un script d'avant la grille ne dit pas la langue du classeur et n'écrit pas de formule.
+    if (source.type === SourceType.gsheet_script && scriptOutdated(source)) {
+      throw new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.SOURCE_SCRIPT_OUTDATED);
+    }
     const sheets = sheetsOf(source);
     const name = sheet ?? sheets[0];
     if (name === undefined || !sheets.includes(name)) throw notFound();
@@ -85,13 +111,15 @@ export class SourceGridService {
   }
 
   async window(sourceId: string, w: GridWindow): Promise<SourceGrid> {
-    const [, sheet, sheets] = await this.sheetOf(sourceId, w.sheet);
-    const { cells, maxRow, maxCol } = await this.data.stagingWindow(sourceId, sheet, {
-      top: w.top,
-      left: w.left,
-      bottom: w.top + w.rows - 1,
-      right: w.left + w.cols - 1,
-    });
+    const [source, sheet, sheets] = await this.sheetOf(sourceId, w.sheet);
+    const { cells, maxRow, maxCol } = await remote(() =>
+      this.data.gridWindow(source, sheet, {
+        top: w.top,
+        left: w.left,
+        bottom: w.top + w.rows - 1,
+        right: w.left + w.cols - 1,
+      }),
+    );
     return {
       sheets,
       sheet,
@@ -113,13 +141,17 @@ export class SourceGridService {
   }
 
   /**
-   * Modification d'une cellule par l'admin. Une formule n'est pas calculée :
-   * la cellule garde la valeur de l'ancienne formule (vide s'il n'y en avait
-   * pas) et passe « à recalculer », comme ses dépendantes.
+   * Modification d'une cellule par l'admin. Excel uploadé : une formule n'est
+   * pas calculée, la cellule garde la valeur de l'ancienne formule (vide s'il
+   * n'y en avait pas) et passe « à recalculer », comme ses dépendantes.
+   * Google Sheet : Google calcule, la cellule est relue.
    */
   async edit(sourceId: string, input: CellEditInput, actor: AuditActor): Promise<GridCell> {
     const [source, sheet] = await this.sheetOf(sourceId, input.sheet);
     const parsed = parseCellInput(input.input);
+    if (isConnected(source)) {
+      return remote(() => this.editConnected(source, sheet, input, parsed, actor));
+    }
     if (parsed.formula !== null && externalRefs(parsed.formula).length > 0) {
       throw new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.FORMULA_EXTERNAL_REF);
     }
@@ -167,6 +199,70 @@ export class SourceGridService {
         needsRecalc,
       };
     });
+  }
+
+  /**
+   * Google Sheet : la cellule est relue dans le document (le verrou vide le
+   * cache), comparée à ce que l'admin a vu, écrite, puis relue une fois
+   * recalculée. L'écriture chez Google n'est pas transactionnelle : elle reste
+   * faite si la transaction échoue ensuite (08 — Points techniques).
+   */
+  private editConnected(
+    source: Source,
+    sheet: string,
+    input: CellEditInput,
+    parsed: CellInput,
+    actor: AuditActor,
+  ): Promise<GridCell> {
+    const cell: CellAddress = { sheet, row: input.row, col: input.col };
+    const read = async (): Promise<CellSnapshot> => {
+      const rect = { top: cell.row, bottom: cell.row, left: cell.col, right: cell.col };
+      const found = (await this.data.gridWindow(source, sheet, rect)).cells[0];
+      return found
+        ? {
+            type: found.stored.type,
+            text: found.stored.text,
+            number: found.stored.number,
+            formula: found.formula,
+          }
+        : snapshotOf(null);
+    };
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.writer.lock(tx, source.id);
+        const before = await read();
+        const seen = formatText(storedOf(before, false), 'text');
+        if (
+          seen !== input.expected.display ||
+          before.formula !== (input.expected.formula ?? null)
+        ) {
+          throw new AppException(HttpStatus.CONFLICT, ErrorCode.EDIT_CONFLICT);
+        }
+        await this.writer.writeCells(tx, source.id, [
+          parsed.formula === null
+            ? { ...cell, value: { type: parsed.type, text: parsed.text, number: parsed.number } }
+            : { ...cell, value: EMPTY_VALUE, formula: parsed.formula },
+        ]);
+        const after = await read();
+        const address = `${sheet}!${cellRef(cell)}`;
+        await this.audit.record(tx, actor, {
+          action: AuditAction.SOURCE_EDIT_CELL,
+          targetType: AuditTargetType.SOURCE,
+          targetId: source.id,
+          before: { name: source.name, cell: address, ...before },
+          after: { name: source.name, cell: address, ...after },
+        });
+        return {
+          row: cell.row,
+          col: cell.col,
+          type: after.type,
+          display: formatText(storedOf(after, false), 'text'),
+          formula: after.formula,
+          needsRecalc: false,
+        };
+      },
+      { timeout: REMOTE_EDIT_TIMEOUT_MS, maxWait: REMOTE_EDIT_TIMEOUT_MS },
+    );
   }
 
   /**

@@ -3,6 +3,7 @@ import {
   FORMULA_FUNCTIONS,
   type FormulaCategory,
   type FormulaFunction,
+  type FormulaTarget,
 } from '@strategos/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,11 +18,14 @@ const fold = (s: string) =>
 /**
  * Catalogue des fonctions : recherche par nom (français ou anglais) ou par
  * description, filtre par catégorie ; un clic insère la fonction au curseur.
+ * Les fonctions propres à Google Sheets ne sont proposées que pour un Google Sheet.
  */
 export function FunctionCatalog({
+  target,
   disabled,
   onInsert,
 }: {
+  target: FormulaTarget;
   disabled: boolean;
   onInsert: (fn: FormulaFunction) => void;
 }) {
@@ -29,7 +33,9 @@ export function FunctionCatalog({
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<FormulaCategory | ''>('');
   const q = fold(query.trim());
-  const found = FORMULA_FUNCTIONS.filter(
+  const offered = FORMULA_FUNCTIONS.filter((f) => !f.only || f.only === target);
+  const categories = FORMULA_CATEGORIES.filter((c) => offered.some((f) => f.category === c));
+  const found = offered.filter(
     (f) =>
       (!category || f.category === category) &&
       (!q ||
@@ -52,7 +58,7 @@ export function FunctionCatalog({
             onChange={(e) => setCategory(e.target.value as FormulaCategory | '')}
           >
             <option value="">{t('sources.grid.formula.allCategories')}</option>
-            {FORMULA_CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c} value={c}>
                 {t(`formulas.categories.${c}`)}
               </option>

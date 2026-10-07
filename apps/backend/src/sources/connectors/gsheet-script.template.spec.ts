@@ -22,6 +22,7 @@ it('script Apps Script : meta, read, write, secret refusé', () => {
     }),
     getRange: (row: number, col: number) => ({
       setValue: (v: unknown) => (cells[`${row}:${col}`] = v),
+      setFormula: (f: string) => (cells[`${row}:${col}`] = { formula: f }),
     }),
   };
   let locked = 0;
@@ -32,6 +33,7 @@ it('script Apps Script : meta, read, write, secret refusé', () => {
         getSheets: () => [sheet],
         getSheetByName: (n: string) => (n === 'Stock' ? sheet : null),
         getSpreadsheetTimeZone: () => 'Europe/Paris',
+        getSpreadsheetLocale: () => 'fr_FR',
       }),
       flush: () => undefined,
     },
@@ -56,17 +58,19 @@ it('script Apps Script : meta, read, write, secret refusé', () => {
   expect(post({ secret: 'faux', action: 'meta' })).toEqual({
     ok: false,
     error: 'forbidden',
-    version: 1,
+    version: 2,
   });
   expect(post({ secret: 's3cret', action: 'meta' })).toEqual({
     ok: true,
     name: 'Stock guilde',
+    locale: 'fr_FR',
     sheets: ['Stock'],
-    version: 1,
+    version: 2,
   });
   // Une date créée hors du script n'est pas une `Date` pour lui : seules les formules sont vérifiées.
   expect(post({ secret: 's3cret', action: 'read', sheet: 'Stock' })).toMatchObject({
     ok: true,
+    locale: 'fr_FR',
     formulas: [
       ['', ''],
       ['', '=TODAY()'],
@@ -85,10 +89,17 @@ it('script Apps Script : meta, read, write, secret refusé', () => {
         { sheet: 'Stock', row: 3, col: 2, value: '=A1' },
         { sheet: 'Stock', row: 4, col: 2, value: '' },
         { sheet: 'Stock', row: 5, col: 2, value: true },
+        { sheet: 'Stock', row: 6, col: 2, formula: '=SUM(A1;1,5)' },
       ],
     }),
-  ).toEqual({ ok: true, version: 1 });
-  expect(cells).toEqual({ '2:3': 5, '3:2': "'=A1", '4:2': '', '5:2': true });
+  ).toEqual({ ok: true, version: 2 });
+  expect(cells).toEqual({
+    '2:3': 5,
+    '3:2': "'=A1",
+    '4:2': '',
+    '5:2': true,
+    '6:2': { formula: '=SUM(A1;1,5)' },
+  });
   expect(locked).toBe(0);
   expect(
     post({

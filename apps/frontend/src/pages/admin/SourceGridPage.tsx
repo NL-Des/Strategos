@@ -2,6 +2,7 @@ import {
   type CellEditInput,
   type CellPosition,
   type FormulaFunction,
+  type FormulaTarget,
   type GridCell,
   cellRef,
   columnLetters,
@@ -60,10 +61,12 @@ interface Inserted {
 
 /**
  * Admin › Sources › cellules (04) : la copie de référence d'un Excel uploadé,
- * vue et modifiée comme un tableur, par fenêtres de 50 lignes × 26 colonnes.
- * Les formules se lisent et s'écrivent en français ; une formule saisie n'est
- * pas calculée : elle le sera à l'ouverture dans Excel. À droite, l'assistant
- * de formules décompose la formule et aide à l'écrire.
+ * ou un Google Sheet (compte connecté ou script), vu et modifié comme un tableur, par
+ * fenêtres de 50 lignes × 26 colonnes. Les formules se lisent et s'écrivent en
+ * français. Dans un Excel uploadé, une formule saisie n'est pas calculée : elle
+ * le sera à l'ouverture dans Excel ; dans un Google Sheet, Google la calcule
+ * aussitôt. À droite, l'assistant de formules décompose la formule et aide à
+ * l'écrire.
  */
 export function SourceGridPage() {
   const { t } = useTranslation();
@@ -95,7 +98,12 @@ export function SourceGridPage() {
     queryFn: () => getSourceGrid(id, { sheet, top, left, rows: ROWS, cols: COLS }),
     placeholderData: keepPreviousData,
   });
-  const name = sources.data?.find((s) => s.id === id)?.name;
+  const source = sources.data?.find((s) => s.id === id);
+  const name = source?.name;
+  const target: FormulaTarget =
+    source?.type === 'gsheet' || source?.type === 'gsheet_script' ? 'gsheet' : 'excel';
+  // Textes propres au Google Sheet : Google calcule, rien n'est à télécharger.
+  const suffix = target === 'gsheet' ? 'Gsheet' : '';
   const data = grid.data;
 
   const cells = new Map<string, GridCell>();
@@ -278,6 +286,7 @@ export function SourceGridPage() {
 
   const ctx: TreeContext = {
     sourceId: id,
+    target,
     formula: draft.slice(1),
     ownSheet: editing?.sheet ?? data?.sheet ?? '',
     sheets: data?.sheets ?? [],
@@ -300,8 +309,8 @@ export function SourceGridPage() {
       <h1>{name ?? t('sources.grid.title')}</h1>
       <details className="help">
         <summary>{t('sources.grid.help')}</summary>
-        <p>{t('sources.grid.intro')}</p>
-        <p>{t('sources.grid.editHelp')}</p>
+        <p>{t(`sources.grid.intro${suffix}`)}</p>
+        <p>{t(`sources.grid.editHelp${suffix}`)}</p>
         <p>{t('sources.grid.keyboardHelp')}</p>
       </details>
       <ErrorMessage error={grid.error} />

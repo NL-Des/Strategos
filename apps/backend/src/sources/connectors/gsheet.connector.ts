@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { cellRef } from '@strategos/shared';
+import { cellRef, formulaToSheet, sheetSyntax } from '@strategos/shared';
 import { config } from '../../config.js';
 import type { Source } from '../../generated/prisma/client.js';
 import { positionKey } from '../cell-format.js';
@@ -26,7 +26,7 @@ interface GridData {
 }
 
 const CELL_FIELDS =
-  'sheets.data(startRow,startColumn,rowData.values(effectiveValue,userEnteredValue.formulaValue,effectiveFormat.numberFormat.type))';
+  'properties.locale,sheets.data(startRow,startColumn,rowData.values(effectiveValue,userEnteredValue.formulaValue,effectiveFormat.numberFormat.type))';
 
 /**
  * Google Sheets (08) : API v4, avec l'accès délégué de l'admin, limité aux
@@ -46,15 +46,20 @@ export class GsheetConnector implements SourceConnector {
   }
 
   async fetchSheet(source: Source, sheet: string): Promise<RemoteSheet> {
-    const body = await this.get<{ sheets?: { data?: GridData[] }[] }>(
+    const body = await this.get<{
+      properties?: { locale?: string };
+      sheets?: { data?: GridData[] }[];
+    }>(
       source,
       `?ranges=${encodeURIComponent(quoteSheet(sheet))}&includeGridData=true&fields=${encodeURIComponent(CELL_FIELDS)}`,
     );
+    // Les formules arrivent avec les séparateurs de la langue du classeur.
+    const syntax = sheetSyntax(body.properties?.locale);
     const cells: RemoteSheet = new Map();
     for (const grid of body.sheets?.[0]?.data ?? []) {
       (grid.rowData ?? []).forEach((rowData, i) => {
         (rowData.values ?? []).forEach((value, j) => {
-          const cell = sheetsCell(value);
+          const cell = sheetsCell(value, syntax);
           const row = (grid.startRow ?? 0) + i + 1;
           const col = (grid.startColumn ?? 0) + j + 1;
           if (cell) cells.set(positionKey(row, col), cell);
@@ -64,16 +69,48 @@ export class GsheetConnector implements SourceConnector {
     return cells;
   }
 
-  /** Valeurs brutes (`RAW`) : un texte commençant par « = » n'est jamais une formule. */
+  /**
+   * Valeurs brutes (`RAW`) : un texte commençant par « = » n'est jamais une
+   * formule. Une formule de la grille de l'admin part à part, comme une saisie
+   * (`USER_ENTERED`), dans la syntaxe de la langue du classeur.
+   */
   async write(source: Source, writes: CellWrite[]): Promise<void> {
+    const formulas = writes.filter((w) => w.formula);
+    const values = writes.filter((w) => !w.formula);
+    if (values.length > 0) {
+      await this.update(
+        source,
+        'RAW',
+        values.map((w) => [w, rawValue(w.value)]),
+      );
+    }
+    if (formulas.length > 0) {
+      const { properties } = await this.get<{ properties?: { locale?: string } }>(
+        source,
+        '?fields=properties.locale',
+      );
+      const syntax = sheetSyntax(properties?.locale);
+      await this.update(
+        source,
+        'USER_ENTERED',
+        formulas.map((w) => [w, `=${formulaToSheet(w.formula!, syntax)}`]),
+      );
+    }
+  }
+
+  private async update(
+    source: Source,
+    valueInputOption: 'RAW' | 'USER_ENTERED',
+    data: [CellWrite, string | number | boolean][],
+  ): Promise<void> {
     await callApi(source.id, `${this.base(source)}/values:batchUpdate`, {
       method: 'POST',
       headers: await this.headers(source.id),
       body: JSON.stringify({
-        valueInputOption: 'RAW',
-        data: writes.map((w) => ({
+        valueInputOption,
+        data: data.map(([w, value]) => ({
           range: `${quoteSheet(w.sheet)}!${cellRef(w)}`,
-          values: [[rawValue(w.value)]],
+          values: [[value]],
         })),
       }),
     });

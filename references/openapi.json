@@ -1606,7 +1606,7 @@
             }
           }
         },
-        "summary": "Fenêtre de la grille d'un Excel uploadé (valeurs, formules, « à recalculer »).",
+        "summary": "Fenêtre de la grille d'un Excel uploadé ou d'un Google Sheet (compte connecté ou script).",
         "tags": [
           "AdminSources"
         ]
@@ -1645,7 +1645,7 @@
             }
           }
         },
-        "summary": "Modifier une cellule : valeur ou formule (`=…`), comme dans Excel.",
+        "summary": "Modifier une cellule : valeur ou formule (`=…`), comme dans un tableur.",
         "tags": [
           "AdminSources"
         ]

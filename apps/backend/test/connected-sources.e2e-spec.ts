@@ -14,6 +14,8 @@ import type {
   OneDriveStatus,
   Paginated,
   Row,
+  GridCell,
+  SourceGrid,
   SourceScript,
   SourceSummary,
   Submission,
@@ -458,6 +460,125 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       });
     });
 
+    it('grille : fenêtre lue dans le Sheet, valeur et formule écrites, recalculées par Google', async () => {
+      const source = await addSheet();
+      const doc = fake.spreadsheets.get(SHEET_ID)!;
+      const cells = `/admin/sources/${source.id}/cells`;
+      const res = await admin.get(`${cells}?top=2&left=3&rows=2&cols=3`);
+      expectStatus(res, 200);
+      const grid = res.body as SourceGrid;
+      expect(grid).toMatchObject({ sheets: ['Stock'], sheet: 'Stock', maxRow: 3, maxCol: 5 });
+      expect(grid.cells.map((c) => [c.row, c.col, c.display, c.formula, c.needsRecalc])).toEqual([
+        [2, 3, '8', null, false],
+        [2, 4, '25', null, false],
+        [2, 5, '200', 'C2*D2', false],
+        [3, 3, '5', null, false],
+        [3, 4, '40', null, false],
+        [3, 5, '200', 'C3*D3', false],
+      ]);
+      expect((await admin.get(`${cells}?sheet=Absente`)).status).toBe(404);
+      expect((await kira.get(cells)).status).toBe(404);
+
+      // Valeur : écrite brute.
+      const value = await admin.send('patch', cells, {
+        sheet: 'Stock',
+        row: 2,
+        col: 3,
+        expected: { display: '8', formula: null },
+        input: '12',
+      });
+      expectStatus(value, 200);
+      expect(value.body as GridCell).toMatchObject({ display: '12', formula: null });
+      expect(doc.sheets.Stock!.C2).toBe(12);
+
+      // Formule : saisie chez Google, qui la calcule ; la cellule est relue.
+      doc.results = { '=SUM(C2:C3,1.5)': 18.5 };
+      const formula = await admin.send('patch', cells, {
+        sheet: 'Stock',
+        row: 4,
+        col: 3,
+        expected: { display: '', formula: null },
+        input: '=_xlfn.XLOOKUP(1,A:A,B:B)',
+      });
+      expectStatus(formula, 200);
+      expect(doc.sheets.Stock!.C4).toMatchObject({ f: '=XLOOKUP(1,A:A,B:B)' });
+      const sum = await admin.send('patch', cells, {
+        sheet: 'Stock',
+        row: 4,
+        col: 3,
+        expected: { display: '0', formula: 'XLOOKUP(1,A:A,B:B)' },
+        input: '=SUM(C2:C3,1.5)',
+      });
+      expectStatus(sum, 200);
+      expect(sum.body as GridCell).toEqual({
+        row: 4,
+        col: 3,
+        type: 'number',
+        display: '18.5',
+        formula: 'SUM(C2:C3,1.5)',
+        needsRecalc: false,
+      });
+      // Un texte qui ressemble à une formule reste un texte.
+      const text = await admin.send('patch', cells, {
+        sheet: 'Stock',
+        row: 4,
+        col: 2,
+        expected: { display: '', formula: null },
+        input: "'=pas une formule",
+      });
+      expectStatus(text, 200);
+      expect(doc.sheets.Stock!.B4).toBe('=pas une formule');
+
+      // Ni copie en base, ni modification à réappliquer : le Sheet fait foi.
+      expect(await prisma.stagingCell.count({ where: { sourceId: source.id } })).toBe(0);
+      expect(await prisma.sourceCellEdit.count()).toBe(0);
+      const entries = await prisma.auditLog.findMany({
+        where: { action: 'source.edit_cell' },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(entries).toHaveLength(4);
+      expect(entries[2]!.before).toMatchObject({ cell: 'Stock!C4', formula: 'XLOOKUP(1,A:A,B:B)' });
+      expect(entries[2]!.after).toMatchObject({
+        name: 'Stock guilde',
+        cell: 'Stock!C4',
+        number: 18.5,
+        formula: 'SUM(C2:C3,1.5)',
+      });
+    });
+
+    it('grille : formules converties selon la langue du classeur, conflit, Sheet injoignable', async () => {
+      const source = await addSheet();
+      const doc = fake.spreadsheets.get(SHEET_ID)!;
+      doc.locale = 'fr_FR';
+      doc.sheets.Stock!.E2 = { f: '=ROUND(C2*D2;1,5)', v: 200 };
+      const cells = `/admin/sources/${source.id}/cells`;
+      const grid = (await admin.get(`${cells}?top=2&left=5&rows=1&cols=1`)).body as SourceGrid;
+      expect(grid.cells[0]).toMatchObject({ formula: 'ROUND(C2*D2,1.5)' });
+
+      const edit = (expected: { display: string; formula: string | null }, input: string) =>
+        admin.send('patch', cells, { sheet: 'Stock', row: 2, col: 5, expected, input });
+      const written = await edit(
+        { display: '200', formula: 'ROUND(C2*D2,1.5)' },
+        '=SUM({1,2.5},C2)',
+      );
+      expectStatus(written, 200);
+      expect(doc.sheets.Stock!.E2).toMatchObject({ f: '=SUM({1\\2,5};C2)' });
+      expect((written.body as GridCell).formula).toBe('SUM({1,2.5},C2)');
+
+      // Modifiée dans Google Sheets entre-temps : la grille est périmée, l'écriture est refusée.
+      doc.sheets.Stock!.E2 = 7;
+      const conflict = await edit({ display: '0', formula: 'SUM({1,2.5},C2)' }, '1');
+      expect(conflict.status).toBe(409);
+      expect(conflict.body.code).toBe('EDIT_CONFLICT');
+      expect(doc.sheets.Stock!.E2).toBe(7);
+
+      doc.picked = false;
+      const lost = await edit({ display: '7', formula: null }, '1');
+      expect(lost.status).toBe(503);
+      expect(lost.body.code).toBe('SOURCE_UNAVAILABLE');
+      expect((await admin.get(cells)).status).toBe(503);
+    });
+
     it('accès au Sheet retiré : test d’accès en SOURCE_UNAVAILABLE, module indisponible, page affichée', async () => {
       const source = await addSheet();
       const { pageId } = await buildPage(source.id, false);
@@ -571,6 +692,8 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
     it('lecture seule : formulaire refusé à l’enregistrement', async () => {
       share();
       const source = (await addLink(true)).body as SourceSummary;
+      // Pas de grille non plus : elle est réservée aux Excel uploadés et aux Sheets du compte connecté.
+      expect((await admin.get(`/admin/sources/${source.id}/cells`)).status).toBe(404);
       const { pageId } = await buildPage(source.id, false);
       const form = await admin.send('post', '/admin/forms', {
         pageId,
@@ -684,10 +807,55 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
       expect(await prisma.stagingCell.count({ where: { sourceId: source.id } })).toBe(0);
     });
 
+    it('grille : formules lues et écrites par le script, dans la langue du classeur', async () => {
+      const source = (await addScript(await deploy())).body as SourceSummary;
+      const doc = fake.scripts.get(DEPLOYMENT)!;
+      doc.locale = 'fr_FR';
+      doc.sheets.Stock!.E2 = { f: '=ROUND(C2*D2;1,5)', v: 200 };
+      doc.results = { '=SUM(C2:C3;1,5)': 14.5 };
+      const cells = `/admin/sources/${source.id}/cells`;
+      const grid = (await admin.get(`${cells}?top=2&left=3&rows=1&cols=3`)).body as SourceGrid;
+      expect(grid).toMatchObject({ sheets: ['Stock'], maxRow: 3, maxCol: 5 });
+      expect(grid.cells.map((c) => [c.display, c.formula])).toEqual([
+        ['8', null],
+        ['25', null],
+        ['200', 'ROUND(C2*D2,1.5)'],
+      ]);
+
+      const edit = (col: number, expected: GridCell['formula'], display: string, input: string) =>
+        admin.send('patch', cells, {
+          sheet: 'Stock',
+          row: 2,
+          col,
+          expected: { display, formula: expected },
+          input,
+        });
+      const formula = await edit(5, 'ROUND(C2*D2,1.5)', '200', '=SUM(C2:C3,1.5)');
+      expectStatus(formula, 200);
+      expect(doc.sheets.Stock!.E2).toEqual({ f: '=SUM(C2:C3;1,5)', v: 14.5 });
+      expect(formula.body as GridCell).toMatchObject({
+        display: '14.5',
+        formula: 'SUM(C2:C3,1.5)',
+        needsRecalc: false,
+      });
+      expectStatus(await edit(3, null, '8', '12'), 200);
+      expect(doc.sheets.Stock!.C2).toBe(12);
+
+      doc.sheets.Stock!.C2 = 9;
+      const conflict = await edit(3, null, '12', '1');
+      expect(conflict.status).toBe(409);
+      expect(await prisma.auditLog.count({ where: { action: 'source.edit_cell' } })).toBe(2);
+      expect(await prisma.sourceCellEdit.count()).toBe(0);
+    });
+
     it('script périmé signalé au test d’accès ; script à jour rendu avec le même secret', async () => {
       const secret = await deploy(0);
       const source = (await addScript(secret)).body as SourceSummary;
       expect(source.scriptOutdated).toBe(true);
+      // La grille attend le script à jour : il dit la langue du classeur et écrit les formules.
+      const grid = await admin.get(`/admin/sources/${source.id}/cells`);
+      expect(grid.status).toBe(422);
+      expect(grid.body.code).toBe('SOURCE_SCRIPT_OUTDATED');
 
       const script = await admin.get(`/admin/sources/${source.id}/script`);
       expectStatus(script, 200);
