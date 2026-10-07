@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   AuditAction,
   AuditTargetType,
+  type BulkValidateResult,
   CellType,
   cellRef,
   ErrorCode,
@@ -9,6 +10,7 @@ import {
   type FormMode,
   type SubmissionValues,
   SubmissionStatus,
+  type Warning,
   type WrittenCell,
 } from '@strategos/shared';
 import { type AuditActor, SYSTEM_ACTOR } from '../audit/audit-actor.js';
@@ -190,6 +192,47 @@ export class SubmissionProcessor {
       }
       throw error;
     }
+  }
+
+  /**
+   * Validation groupée (04 — Tableau de bord) : chaque soumission passe par
+   * `validate`, dans sa propre transaction, de la plus ancienne à la plus récente
+   * (les lignes d'ajout sont attribuées dans l'ordre des soumissions). Un échec
+   * laisse la soumission en attente et n'empêche pas les suivantes.
+   */
+  async validateMany(
+    ids: string[],
+    decision: Omit<Decision, 'values'>,
+  ): Promise<BulkValidateResult> {
+    const found = await this.prisma.submission.findMany({
+      where: { id: { in: ids } },
+      select: { id: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    const known = new Set(found.map((s) => s.id));
+    const result: BulkValidateResult = {
+      validated: [],
+      confirmationRequired: [],
+      failed: ids.filter((id) => !known.has(id)).map((id) => ({ id, code: ErrorCode.NOT_FOUND })),
+    };
+    for (const { id } of found) {
+      try {
+        await this.validate(id, decision);
+        result.validated.push(id);
+      } catch (error) {
+        if (!(error instanceof AppException)) throw error;
+        const { code, details } = error.getBody();
+        if (code === ErrorCode.CONFIRMATION_REQUIRED) {
+          result.confirmationRequired.push({
+            id,
+            warnings: (details.warnings ?? []) as Warning[],
+          });
+        } else {
+          result.failed.push({ id, code });
+        }
+      }
+    }
+    return result;
   }
 
   /**

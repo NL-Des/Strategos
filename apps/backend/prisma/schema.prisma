@@ -25,6 +25,7 @@ enum BackupStatus {
 enum LayoutKind {
   header
   footer
+  sidebar
 
   @@map("layout_kind")
 }
@@ -246,12 +247,14 @@ model Setting {
   id                  Int      @id @default(1) @db.SmallInt
   landingPageId       String?  @map("landing_page_id") @db.Uuid
   defaultThemeId      String?  @map("default_theme_id") @db.Uuid
+  darkThemeId         String?  @map("dark_theme_id") @db.Uuid
   backupRetentionDays Int      @default(7) @map("backup_retention_days")
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
   version             Int      @default(1)
 
   landingPage  Page?  @relation(fields: [landingPageId], references: [id], onDelete: SetNull)
-  defaultTheme Theme? @relation(fields: [defaultThemeId], references: [id], onDelete: Restrict)
+  defaultTheme Theme? @relation("DefaultTheme", fields: [defaultThemeId], references: [id], onDelete: Restrict)
+  darkTheme    Theme? @relation("DarkTheme", fields: [darkThemeId], references: [id], onDelete: SetNull)
 
   @@map("settings")
 }
@@ -264,8 +267,9 @@ model Theme {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
   version   Int      @default(1)
 
-  pages    Page[]
-  settings Setting[]
+  pages     Page[]
+  defaultOf Setting[] @relation("DefaultTheme")
+  darkOf    Setting[] @relation("DarkTheme")
 
   @@map("themes")
 }

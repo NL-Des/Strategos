@@ -143,6 +143,21 @@ function SettingsForm({ initial }: { initial: InstanceSettings }) {
         </select>
       </label>
       <label>
+        {t('settings.darkTheme')}
+        <select
+          value={form.darkThemeId ?? ''}
+          onChange={(e) => setForm({ ...form, darkThemeId: e.target.value || null })}
+        >
+          <option value="">{t('settings.noDarkTheme')}</option>
+          {themes.data?.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.name}
+            </option>
+          ))}
+        </select>
+        <small>{t('settings.darkThemeHint')}</small>
+      </label>
+      <label>
         {t('settings.backupRetention')}
         <input
           type="number"

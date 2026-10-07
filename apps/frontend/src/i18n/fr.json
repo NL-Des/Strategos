@@ -26,7 +26,9 @@
     "logout": "Se déconnecter",
     "profile": "Profil",
     "submissions": "Mes soumissions",
-    "notes": "Notes"
+    "notes": "Notes",
+    "darkMode": "Mode sombre",
+    "lightMode": "Mode clair"
   },
   "login": {
     "title": "Connexion",
@@ -113,6 +115,7 @@
       "pages": "Pages",
       "header": "Header",
       "footer": "Footer",
+      "sidebar": "Sidebar commune",
       "media": "Médiathèque",
       "sources": "Sources",
       "users": "Comptes",
@@ -156,6 +159,7 @@
     "file": "Fichier",
     "landingPageId": "Page d’arrivée",
     "defaultThemeId": "Thème par défaut",
+    "darkThemeId": "Thème du mode sombre",
     "backupRetentionDays": "Conservation des sauvegardes",
     "themeId": "Thème",
     "columns": "Colonnes",
@@ -190,6 +194,7 @@
     "duplicateId": "identifiant en double",
     "arrayMinSize": "au moins un élément",
     "whitelistValidation": "champ non prévu",
+    "sidebarConflict": "une page a sa propre sidebar ou la sidebar commune, pas les deux",
     "notFound": "introuvable",
     "isDefined": "obligatoire",
     "minLength": "trop court",
@@ -229,7 +234,7 @@
     "SOURCE_AUTH_EXPIRED": "La connexion à la source de données a expiré.",
     "INTERNAL_ERROR": "Une erreur interne est survenue.",
     "NETWORK": "Impossible de joindre le serveur.",
-    "BLOCK_NOT_ALLOWED_IN_LAYOUT": "Les formulaires, espaces de discussion et chats ne peuvent pas être placés dans le header ou le footer.",
+    "BLOCK_NOT_ALLOWED_IN_LAYOUT": "Les formulaires, espaces de discussion et chats ne peuvent pas être placés dans le header, le footer ou la sidebar commune.",
     "MEDIA_NAME_TAKEN": "Une image porte déjà ce nom.",
     "FILE_TOO_LARGE": "Le fichier est trop volumineux.",
     "UNSUPPORTED_FILE_TYPE": "Ce type de fichier n’est pas accepté.",
@@ -368,6 +373,7 @@
       "usedBy": "Utilisée par",
       "landingPageId": "Page d’arrivée",
       "defaultThemeId": "Thème par défaut",
+      "darkThemeId": "Thème du mode sombre",
       "backupRetentionDays": "Conservation (jours)",
       "description": "Description",
       "members": "Membres",
@@ -386,6 +392,9 @@
     "noLandingPage": "Aucune",
     "landingPageHint": "La page affichée après la connexion de tout utilisateur. Elle doit être publiée pour être visible !",
     "defaultTheme": "Thème par défaut",
+    "darkTheme": "Thème du mode sombre",
+    "noDarkTheme": "Aucun",
+    "darkThemeHint": "Un utilisateur qui active le mode sombre voit toutes les pages avec ce thème. Sans thème désigné, les pages gardent le leur.",
     "backupRetention": "Conservation des sauvegardes (jours)",
     "saved": "Réglages enregistrés."
   },
@@ -404,11 +413,18 @@
     "closePreview": "Fermer l’aperçu",
     "layoutIntro": {
       "header": "Haut de page partagé par toutes les pages.",
-      "footer": "Bas de page partagé par toutes les pages."
+      "footer": "Bas de page partagé par toutes les pages.",
+      "sidebar": "Colonne latérale commune : chaque page choisit de l’afficher ou non. Les colonnes d’une rangée s’y affichent l’une sous l’autre."
     },
     "theme": "Thème",
     "defaultTheme": "Thème par défaut",
     "zones": "Zones affichées",
+    "sidebarModes": {
+      "none": "Aucune",
+      "shared": "Sidebar commune",
+      "own": "Propre à cette page"
+    },
+    "sidebarHint": "Dans la sidebar, les colonnes d’une rangée s’affichent l’une sous l’autre.",
     "zoneNames": {
       "header": "Header",
       "main": "Main",
@@ -1111,7 +1127,28 @@
       "pendingCount_one": "1 soumission en attente",
       "pendingCount_other": "{{count}} soumissions en attente",
       "rejectTitle": "Refuser la soumission « {{form}} »",
-      "confirmTitle": "Valider malgré les avertissements ?"
+      "confirmTitle": "Valider malgré les avertissements ?",
+      "bulk": {
+        "select": "Cocher la soumission « {{form}} » de {{user}}",
+        "selectAll": "Tout cocher",
+        "clear": "Tout décocher",
+        "selected_zero": "Aucune soumission cochée",
+        "selected_one": "1 soumission cochée",
+        "selected_other": "{{count}} soumissions cochées",
+        "validate": "Valider la sélection",
+        "confirmTitle_one": "Valider la soumission cochée ?",
+        "confirmTitle_other": "Valider les {{count}} soumissions cochées ?",
+        "confirmMessage": "Elles sont écrites dans le document de la plus ancienne à la plus récente. Celles qui ne peuvent pas l’être restent en attente.",
+        "formulasTitle_one": "1 soumission écrase une formule",
+        "formulasTitle_other": "{{count}} soumissions écrasent une formule",
+        "leavePending": "Les laisser en attente",
+        "validated_zero": "Aucune soumission validée.",
+        "validated_one": "1 soumission validée.",
+        "validated_other": "{{count}} soumissions validées.",
+        "stillPending_one": "1 soumission reste en attente :",
+        "stillPending_other": "{{count}} soumissions restent en attente :",
+        "notConfirmed": "écrasement d’une formule non confirmé"
+      }
     }
   },
   "notes": {
@@ -1136,14 +1173,17 @@
   },
   "themes": {
     "title": "Thèmes",
-    "intro": "Un thème regroupe le fond, les textes, les boutons, les tableaux, les cartes et les discussions. Une page sans thème utilise le thème par défaut, choisi dans les réglages.",
+    "intro": "Un thème regroupe le fond, les textes, les boutons, les tableaux, les cartes et les discussions. Une page sans thème utilise le thème par défaut, choisi dans les réglages. Plusieurs thèmes sont fournis : modifiez-les, ou partez de l’un d’eux pour créer le vôtre.",
     "default": "Par défaut",
+    "darkMode": "Mode sombre",
     "create": "Créer un thème",
     "createSubmit": "Créer le thème",
+    "startFrom": "Partir de",
+    "darkPreset": "sombre",
     "empty": "Aucun thème.",
     "saved": "Thème enregistré.",
     "delete": "Supprimer le thème",
-    "deleteConfirm": "Supprimer le thème « {{name}} » ? Les pages qui l’utilisent passeront au thème par défaut.",
+    "deleteConfirm": "Supprimer le thème « {{name}} » ? Les pages qui l’utilisent passeront au thème par défaut. S’il sert au mode sombre, les pages garderont leur thème en mode sombre.",
     "defaultProtected": "C’est le thème par défaut : il ne peut pas être supprimé.",
     "preview": "Aperçu",
     "sections": {

@@ -169,7 +169,7 @@ button {
   align-self: flex-start;
   background: var(--btn-bg, var(--accent));
   border-color: var(--btn-border, var(--accent));
-  color: var(--btn-fg, #fff);
+  color: var(--btn-fg, var(--on-accent));
   border-radius: var(--btn-radius, var(--radius-md));
 }
 
@@ -220,7 +220,7 @@ button.danger:hover:not(:disabled) {
 button.danger.solid {
   background: var(--danger);
   border-color: var(--danger);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 button.danger.solid:hover:not(:disabled) {

@@ -1,4 +1,4 @@
-import { DEFAULT_THEME_CONFIG, THEME_NAME_MAX_LENGTH } from '@strategos/shared';
+import { THEME_NAME_MAX_LENGTH, THEME_PRESETS, type ThemeConfig } from '@strategos/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,18 +35,10 @@ export function ThemesPage() {
                 <td>
                   <Link to={`/admin/themes/${theme.id}`}>{theme.name}</Link>
                   {theme.isDefault && <span className="badge">{t('themes.default')}</span>}
+                  {theme.isDark && <span className="badge">{t('themes.darkMode')}</span>}
                 </td>
                 <td>
-                  <span className="theme-swatches" aria-hidden="true">
-                    {[
-                      theme.config.background.color,
-                      theme.config.text.color,
-                      theme.config.buttons.background,
-                      theme.config.surface.color,
-                    ].map((color, i) => (
-                      <span key={i} style={{ background: color }} />
-                    ))}
-                  </span>
+                  <Swatches config={theme.config} />
                 </td>
               </tr>
             ))}
@@ -58,13 +50,31 @@ export function ThemesPage() {
   );
 }
 
-/** Un nouveau thème part des réglages du thème « Sobre ». */
+/** Pastilles d'un thème : fond, texte, boutons et encadrés. */
+function Swatches({ config }: { config: ThemeConfig }) {
+  return (
+    <span className="theme-swatches" aria-hidden="true">
+      {[
+        config.background.color,
+        config.text.color,
+        config.buttons.background,
+        config.surface.color,
+      ].map((color, i) => (
+        <span key={i} style={{ background: color }} />
+      ))}
+    </span>
+  );
+}
+
+/** Un nouveau thème part des réglages d'un thème fourni, « Sobre » par défaut. */
 function CreateThemeForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [name, setName] = useState('');
+  const [presetKey, setPresetKey] = useState(THEME_PRESETS[0]!.key);
+  const preset = THEME_PRESETS.find((p) => p.key === presetKey) ?? THEME_PRESETS[0]!;
   const mutation = useMutation({
-    mutationFn: () => createTheme({ name, config: DEFAULT_THEME_CONFIG }),
+    mutationFn: () => createTheme({ name, config: preset.config }),
     onSuccess: (theme) => void navigate(`/admin/themes/${theme.id}`),
   });
 
@@ -85,6 +95,18 @@ function CreateThemeForm() {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+      </label>
+      <label>
+        {t('themes.startFrom')}
+        <select value={presetKey} onChange={(e) => setPresetKey(e.target.value)}>
+          {THEME_PRESETS.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.name}
+              {p.dark ? ` (${t('themes.darkPreset')})` : ''}
+            </option>
+          ))}
+        </select>
+        <Swatches config={preset.config} />
       </label>
       <ErrorMessage error={mutation.error} />
       <button type="submit" disabled={mutation.isPending}>

@@ -17,6 +17,7 @@ const GROUPS: { key: string; links: [to: string, key: string, icon: IconName][] 
       ['/admin/pages', 'pages', 'file'],
       ['/admin/layout/header', 'header', 'layout'],
       ['/admin/layout/footer', 'footer', 'layout'],
+      ['/admin/layout/sidebar', 'sidebar', 'layout'],
       ['/admin/media', 'media', 'image'],
       ['/admin/themes', 'themes', 'palette'],
       ['/admin/templates', 'templates', 'copy'],

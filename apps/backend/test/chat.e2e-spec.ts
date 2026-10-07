@@ -29,6 +29,7 @@ const config = (main: Row[]): PageConfig => ({
   themeId: null,
   showHeader: true,
   showFooter: true,
+  showSidebar: false,
 });
 
 /** Cookie de session (`strategos_session=…`) extrait d'une réponse de connexion. */

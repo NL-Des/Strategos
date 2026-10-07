@@ -8,6 +8,10 @@ import { DialogProvider } from './components/Dialog';
 import { ToastProvider } from './components/Toast';
 import './i18n';
 import './styles/index.css';
+import { applyColorMode } from './useColorMode';
+
+// Avant le premier rendu : pas d'éclair clair pour qui a choisi le mode sombre.
+applyColorMode();
 
 const queryClient = new QueryClient({
   // Session expirée ou révoquée : on revient à l'état « non connecté ».

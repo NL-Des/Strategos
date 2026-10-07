@@ -11,6 +11,7 @@ function toSettings(row: Setting): InstanceSettings {
   return {
     landingPageId: row.landingPageId,
     defaultThemeId: row.defaultThemeId!,
+    darkThemeId: row.darkThemeId,
     backupRetentionDays: row.backupRetentionDays,
     version: row.version,
   };
@@ -50,6 +51,10 @@ export class SettingsService {
     if (!(await this.prisma.theme.count({ where: { id: dto.defaultThemeId } }))) {
       fields.defaultThemeId = ['notFound'];
     }
+    const darkThemeId = dto.darkThemeId ?? null;
+    if (darkThemeId && !(await this.prisma.theme.count({ where: { id: darkThemeId } }))) {
+      fields.darkThemeId = ['notFound'];
+    }
     if (Object.keys(fields).length > 0) {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, { fields });
     }
@@ -61,6 +66,7 @@ export class SettingsService {
         data: {
           landingPageId,
           defaultThemeId: dto.defaultThemeId,
+          darkThemeId,
           backupRetentionDays: dto.backupRetentionDays,
           version: { increment: 1 },
         },

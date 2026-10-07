@@ -21,6 +21,7 @@ const ADMIN_SCREENS = [
   '/admin/submissions',
   '/admin/pages',
   '/admin/layout/header',
+  '/admin/layout/sidebar',
   '/admin/media',
   '/admin/themes',
   '/admin/templates',

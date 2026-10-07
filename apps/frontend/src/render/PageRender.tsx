@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { AccountMenu } from '../components/AccountMenu';
 import { Rows } from './Rows';
 import { ThemeScope } from './ThemeScope';
+import { useColorMode } from '../useColorMode';
 
 /**
- * Une page assemblée, avec le header et le footer partagés s'ils sont affichés.
+ * Une page assemblée, avec le header, le footer et la sidebar partagés s'ils sont affichés.
  * Sert à l'affichage réel comme à l'aperçu de l'admin.
  */
 export function PageRender({
@@ -16,9 +17,13 @@ export function PageRender({
   layout: AssembledLayout | null;
 }) {
   const { t } = useTranslation();
-  const { main, sidebar } = page.zones;
+  const { main } = page.zones;
+  // Sidebar propre à la page, sinon la commune si la page l'affiche.
+  const sidebar = page.zones.sidebar ?? (page.showSidebar ? (layout?.sidebar ?? null) : null);
+  // Mode sombre : le thème désigné dans les réglages remplace celui de la page.
+  const dark = useColorMode() === 'dark' ? page.darkTheme : null;
   return (
-    <ThemeScope theme={page.theme.config}>
+    <ThemeScope theme={(dark ?? page.theme).config}>
       <AccountMenu />
       {/* Renseigné pour l'admin seul (13 — Page assemblée). */}
       {page.unavailableSources.length > 0 && (

@@ -29,9 +29,26 @@ describe('validatePageConfig', () => {
       themeId: null,
       showHeader: true,
       showFooter: false,
+      showSidebar: false,
     });
     expect(config.zones.main![0]!.columns[0]!.block!.id).toBe(id(2));
     expect(config.showFooter).toBe(false);
+  });
+
+  it('refuse la sidebar commune avec une sidebar propre à la page', () => {
+    const { status, body } = errorOf(() =>
+      validatePageConfig({ zones: { main: [], sidebar: [] }, themeId: null, showSidebar: true }),
+    );
+    expect(status).toBe(400);
+    expect(body.details.fields).toEqual({ 'config.showSidebar': ['sidebarConflict'] });
+    expect(
+      validatePageConfig({ zones: { main: [], sidebar: null }, themeId: null, showSidebar: true })
+        .showSidebar,
+    ).toBe(true);
+    // Brouillon d'avant la sidebar commune : elle n'est pas affichée.
+    expect(
+      validatePageConfig({ zones: { main: [], sidebar: [] }, themeId: null }).showSidebar,
+    ).toBe(false);
   });
 
   it('refuse une répartition de colonnes inconnue et des id en double', () => {

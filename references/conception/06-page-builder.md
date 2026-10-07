@@ -8,23 +8,25 @@ L'outil avec lequel l'administrateur compose les pages du site : des zones, des 
 ### Structure d'une page
 L'administrateur coche les zones présentes sur la page, puis y place ses modules.
 
-- **Zones** : Header, Main, Sidebar, Footer. Il n'y a pas d'obligation à toutes les avoir : l'admin coche celles qu'il veut.
-- **Header et footer partagés** : l'admin construit **un header et un footer communs** à tout le site (typiquement, les boutons de navigation). Page par page, il choisit de les afficher ou non. Main et Sidebar sont propres à chaque page.
+- **Zones** : Header, Main, Sidebar, Footer. Il n'y a pas d'obligation à toutes les avoir : l'admin choisit celles qu'il veut.
+- **Header et footer partagés** : l'admin construit **un header et un footer communs** à tout le site (typiquement, les boutons de navigation). Page par page, il choisit de les afficher ou non. Le Main est propre à chaque page.
   - Ils n'accueillent que des modules sans données propres : Image, Boutons, Contenu libre, Tableau, Catalogue. Les formulaires, espaces de discussion et chats n'y sont **pas autorisés** en v1, car leur accès dépend de la lecture d'une page précise.
+- **Sidebar commune ou propre à la page** : l'admin construit aussi **une sidebar commune**, dans son propre écran, comme le header et le footer (brouillon, aperçu, publication), avec la même limite sur les modules. Pour chaque page, il choisit : **aucune sidebar**, la **sidebar commune**, ou une **sidebar propre à cette page** (qui, elle, accepte tous les modules). Une page n'a jamais les deux. Ce choix fait partie du brouillon de la page.
 - **Rangées et colonnes** : une zone est une pile de **rangées**, et chaque rangée contient **1, 2 ou 3 colonnes**. Chaque colonne accueille un module. L'admin ordonne les rangées et choisit la répartition des colonnes (ex. 1/2 + 1/2, 2/3 + 1/3).
 - **Responsive** : sur mobile, les colonnes d'une rangée s'empilent et la Sidebar passe sous le Main.
+- **Sidebar verticale** : dans la Sidebar, les colonnes d'une rangée s'empilent toujours, quelle que soit la largeur de l'écran ; la répartition choisie par l'admin n'y a pas d'effet.
 
 ### Brouillon et publication
 - L'admin modifie toujours un **brouillon** et peut le voir en **aperçu**. Les utilisateurs continuent de voir la version publiée. Le thème de la page et l'affichage du header et du footer font partie du brouillon : ils ne changent pour les utilisateurs qu'à la publication.
 - Un bouton **Publier** remplace la version en ligne par le brouillon. La publication est tracée dans le [journal](04-administration.md#journal-des-modifications).
-- Même règle pour le header et le footer partagés.
+- Même règle pour le header, le footer et la sidebar commune.
 - **Les modules suivent la page** : la configuration des formulaires (champs, mappings, zone, clé), des espaces de discussion et des chats fait partie du brouillon. Elle ne prend effet qu'à la publication de la page. Un espace ou un chat ajouté au brouillon n'existe pour les utilisateurs qu'une fois la page publiée.
 - **Réglages opérationnels immédiats** : ouvrir ou fermer un formulaire, changer sa date limite, activer ou désactiver la validation automatique, épingler un sujet ou masquer un message prennent effet **tout de suite**, sans publication. Ce sont des actions de gestion courante, pas de construction.
 - Une page jamais publiée n'est visible par personne d'autre que l'admin.
-- **Brouillon non enregistré** : l'éditeur le signale en permanence. Quitter l'écran (autre écran de l'administration, fermeture ou rechargement de l'onglet) demande confirmation tant que des modifications ne sont pas enregistrées. Même règle pour le header, le footer et l'éditeur de thème.
+- **Brouillon non enregistré** : l'éditeur le signale en permanence. Quitter l'écran (autre écran de l'administration, fermeture ou rechargement de l'onglet) demande confirmation tant que des modifications ne sont pas enregistrées. Même règle pour le header, le footer, la sidebar commune et l'éditeur de thème.
 - **Vue d'ensemble de l'éditeur** : à l'ouverture d'une page existante, chaque rangée est repliée et résumée par ses modules ; l'admin déplie celle qu'il modifie. Une rangée ajoutée est dépliée. Une rangée peut être insérée entre deux autres.
 - **Suppressions dans l'éditeur** : retirer une rangée, un module, un champ de formulaire ou une zone qui contient des rangées demande confirmation, de même qu'une répartition de colonnes qui ferait disparaître un module.
-- **Aperçu avec les droits d'un groupe** : l'aperçu propose un **menu déroulant des groupes**. En choisissant un groupe, l'admin voit le brouillon exactement comme le verrait un membre de **ce seul groupe** : modules et liens non autorisés masqués, espaces illisibles invisibles, lien « Ma page personnelle » absent. L'option par défaut, « Administrateur », montre tout ce qui existe déjà : un espace de discussion ou un chat ajouté au brouillon n'apparaît dans l'aperçu qu'après la publication, puisqu'il n'est créé qu'à ce moment. L'aperçu fonctionne aussi pour le header et le footer.
+- **Aperçu avec les droits d'un groupe** : l'aperçu propose un **menu déroulant des groupes**. En choisissant un groupe, l'admin voit le brouillon exactement comme le verrait un membre de **ce seul groupe** : modules et liens non autorisés masqués, espaces illisibles invisibles, lien « Ma page personnelle » absent. L'option par défaut, « Administrateur », montre tout ce qui existe déjà : un espace de discussion ou un chat ajouté au brouillon n'apparaît dans l'aperçu qu'après la publication, puisqu'il n'est créé qu'à ce moment. L'aperçu fonctionne aussi pour le header, le footer et la sidebar commune.
 
 ### Thèmes
 La personnalisation passe par des **thèmes**. L'administrateur crée plusieurs thèmes nommés, chacun regroupant :
@@ -33,17 +35,23 @@ La personnalisation passe par des **thèmes**. L'administrateur crée plusieurs 
 - Couleur, style des encadrés des discussion et de leurs messages
 - style des boutons, des tableaux et des cartes de catalogue
 
-L'admin désigne un **thème par défaut** et peut attribuer un **thème à chaque page** : une page sans thème attribué utilise le thème par défaut. Il n'y a ni thème par groupe ni choix de l'utilisateur.
+L'admin désigne un **thème par défaut** et peut attribuer un **thème à chaque page** : une page sans thème attribué utilise le thème par défaut. Il n'y a pas de thème par groupe.
+
+**Thèmes fournis** : dès l'installation, plusieurs thèmes existent à côté de « Sobre » : des thèmes clairs colorés (Océan, Forêt, Sable, Prune) et des thèmes sombres (Sombre, Bleu nuit). Ce sont des thèmes ordinaires, que l'admin modifie ou supprime librement. À la création d'un thème, l'admin choisit duquel de ces modèles **partir**. Chaque thème fourni garde des textes lisibles (contraste d'au moins 4,5:1).
+
+**Mode sombre** : c'est le seul choix laissé à l'utilisateur. Chacun peut passer le site en mode sombre depuis le [menu de compte](#menu-de-compte) ; son choix est retenu **dans son navigateur** (il vaut donc dès l'écran de connexion, et se règle appareil par appareil). En mode sombre :
+- l'interface qui n'est pas construite par l'admin (connexion, profil, notes, mes soumissions, administration) passe en couleurs sombres ;
+- **toutes** les pages construites utilisent le **thème du mode sombre** que l'admin désigne dans les [réglages](04-administration.md#réglages-de-linstance), y compris celles qui ont un thème attribué. À l'installation, c'est le thème fourni « Sombre ». Si l'admin n'en désigne aucun, ou supprime celui qui était désigné, les pages gardent leur thème.
 
 Les polices sont choisies dans une **liste fermée** de polices déjà présentes sur les appareils (système, humaniste, géométrique, avec empattements, classique, égyptienne, chasse fixe, arrondie) : rien n'est chargé depuis l'extérieur. L'éditeur de thèmes affiche un **aperçu en direct** (titre, texte, boutons, tableau, carte, message de discussion). Supprimer un thème encore utilisé est permis : ses pages reviennent au thème par défaut. Le thème par défaut lui-même ne peut pas être supprimé.
 
 La mise en forme des fichiers sources (gras, couleurs de cellules…) **n'est pas reproduite** : Strategos ne lit que des valeurs, et l'apparence vient du thème et des formats choisis par l'admin.
 
 ### Médiathèque
-L'admin dispose d'une **médiathèque** où il uploade ses images : JPEG, PNG, WebP ou GIF, 10 Mo au plus. Le type est vérifié sur le contenu du fichier ; le SVG est refusé, car il peut contenir du script. Elle alimente les modules Image, Catalogue et Contenu libre, ainsi que le fond des thèmes. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages, le header ou le footer et les thèmes concernés. Les images de la médiathèque sont accessibles à **tout utilisateur connecté** ; elles ne doivent donc pas servir à stocker des documents confidentiels.
+L'admin dispose d'une **médiathèque** où il uploade ses images : JPEG, PNG, WebP ou GIF, 10 Mo au plus. Le type est vérifié sur le contenu du fichier ; le SVG est refusé, car il peut contenir du script. Elle alimente les modules Image, Catalogue et Contenu libre, ainsi que le fond des thèmes. Supprimer une image encore utilisée déclenche un avertissement qui liste les pages, le header, le footer ou la sidebar commune et les thèmes concernés. Les images de la médiathèque sont accessibles à **tout utilisateur connecté** ; elles ne doivent donc pas servir à stocker des documents confidentiels.
 
 ### Menu de compte
-Seul élément qui n'est pas construit par l'admin : une **icône de compte**, fixe dans un coin de l'écran sur toutes les pages. Elle ouvre **Profil**, **Notes**, **Mes soumissions** et **Déconnexion** (voir [Profil utilisateur](05-profil-utilisateur.md)). Son style suit le thème de la page.
+Seul élément qui n'est pas construit par l'admin : une **icône de compte**, fixe dans un coin de l'écran sur toutes les pages. Elle ouvre **Profil**, **Notes**, **Mes soumissions**, **Mode sombre** (ou **Mode clair**, pour en sortir) et **Déconnexion** (voir [Profil utilisateur](05-profil-utilisateur.md)). Son style suit le thème de la page.
 
 ### Destinations des liens
 Un bouton ou une image peut viser :
@@ -113,19 +121,19 @@ Formulaire de modification, de ligne ou d'ajout de l'excel ou du google sheet (d
 - **Réglages** : titre, texte d'introduction, message affiché après l'envoi, puis les champs et leurs mappings (détaillés dans [Formulaires et soumissions](09-formulaires-soumissions.md)).
 - **Rendu** : le formulaire ; « complet » pour un formulaire d'ajout dont la zone est pleine, « fermé » s'il a été fermé par l'admin ou si sa date limite est passée ; masqué tant qu'il n'est pas configuré.
 - **Accès** : quiconque peut lire la page peut soumettre.
-- **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
+- **Emplacement** : zones Main et Sidebar propres à une page uniquement (interdit dans le header, le footer et la sidebar partagés).
 
 ### Espace de discussion
 Un mini-forum : une liste de sujets, et leurs messages (pouvant contenir des images). C'est une **ressource du modèle de droits** (lecture, ouverture de sujets, publication de messages). Règles détaillées dans [Discussions](07-discussions.md#espaces-de-discussion).
 - **Réglages** : nom de l'espace, tri des sujets (activité récente ou date de création). L'épinglage des sujets se fait depuis l'espace lui-même, par l'admin (réglage opérationnel immédiat).
 - **Accès** : si l'utilisateur ne peut pas lire l'espace, le module est **invisible**, même s'il peut lire la page.
-- **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
+- **Emplacement** : zones Main et Sidebar propres à une page uniquement (interdit dans le header, le footer et la sidebar partagés).
 
 ### Chat
 Messagerie interne en temps réel, sans intégration IA. L'admin le place sur les pages de son choix. Règles détaillées dans [Discussions](07-discussions.md#chat).
 - **Réglages** : nom du salon, hauteur du module (en pixels, de 200 à 800).
 - **Accès** : quiconque peut lire la page peut lire le chat et y écrire.
-- **Emplacement** : zones Main et Sidebar d'une page uniquement (interdit dans le header et le footer partagés).
+- **Emplacement** : zones Main et Sidebar propres à une page uniquement (interdit dans le header, le footer et la sidebar partagés).
 
 ### Plage des tableaux et formulaires d'ajout
 Un tableau ou un catalogue relié à une source affiche une plage qui peut être :
@@ -138,7 +146,7 @@ Un tableau ou un catalogue relié à une source affiche une plage qui peut être
 
 ## Points techniques
 - **PagesModule** : CRUD des pages, brouillon et publication, header/footer partagés, thèmes, médiathèque, soft-delete.
-- **Brouillon/publication** : `pages.draft_config` et `pages.published_config` (JSONB, `{ zones: { main, sidebar }, themeId, showHeader, showFooter }`, une zone non cochée valant `null`), `published_at`. La publication est **transactionnelle** : dans la même transaction, elle publie la page, publie les définitions de ses formulaires (nouvelle version, invalidation des soumissions en attente si la modification est structurelle) et crée les espaces et chats nouvellement ajoutés.
+- **Brouillon/publication** : `pages.draft_config` et `pages.published_config` (JSONB, `{ zones: { main, sidebar }, themeId, showHeader, showFooter, showSidebar }`, une zone absente valant `null` ; `showSidebar` désigne la sidebar commune et exclut `zones.sidebar`), `published_at`. La publication est **transactionnelle** : dans la même transaction, elle publie la page, publie les définitions de ses formulaires (nouvelle version, invalidation des soumissions en attente si la modification est structurelle) et crée les espaces et chats nouvellement ajoutés.
 - **Header et footer** : la validation du brouillon de `layout_parts` refuse les blocs de type `form`, `discussion_space` et `chat` (`422 BLOCK_NOT_ALLOWED_IN_LAYOUT`).
 - **Aperçu par groupe** : l'assemblage de la page accepte un « contexte de droits » (utilisateur réel, ou membre fictif d'un groupe donné) ; c'est la même fonction que pour l'affichage réel, pour que l'aperçu soit fidèle. Le header et le footer partagés sont stockés dans `layout_parts(kind[header|footer], draft_config, published_config, published_at)`. La page porte `show_header` et `show_footer`.
 - **Structure du JSON** d'une zone : `rows[] → { columns: [{ width, block }] }`, où `block = { id, type, config }`. Les `block.id` sont stables, parce que les formulaires, espaces de discussion et chats y sont rattachés (`page_block_id`).

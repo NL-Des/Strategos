@@ -117,6 +117,7 @@ Table à **une seule ligne**.
 | `id` | smallint | | `1` | PK, `check (id = 1)` |
 | `landing_page_id` | uuid | N | — | FK `pages`, `on delete set null` |
 | `default_theme_id` | uuid | N | — | FK `themes` ; seul endroit qui désigne le thème par défaut |
+| `dark_theme_id` | uuid | N | — | FK `themes`, `on delete set null` ; thème de toutes les pages en mode sombre, `null` = les pages gardent leur thème |
 | `backup_retention_days` | int | | `7` | `check (> 0)` |
 | `updated_at` | timestamptz | | `now()` | |
 | `version` | int | | `1` | |
@@ -176,12 +177,12 @@ Voir [06](06-page-builder.md).
 
 Les blocs vivent dans le JSON et portent un `id` (uuid) stable. Les modules qui ont leurs propres données (formulaires, espaces, chats) ont une ligne dans leur table, avec `page_id` et `block_id`.
 
-### `layout_parts` — header et footer partagés
+### `layout_parts` — header, footer et sidebar partagés
 La config n'accepte que des blocs sans données propres (image, boutons, contenu libre, tableau, catalogue).
 
 | Colonne | Type | N | Défaut | Contrainte / rôle |
 |---|---|---|---|---|
-| `kind` | enum `layout_kind` (`header`, `footer`) | | — | PK |
+| `kind` | enum `layout_kind` (`header`, `footer`, `sidebar`) | | — | PK |
 | `draft_config` | jsonb | | `'{}'` | |
 | `published_config` | jsonb | N | — | |
 | `published_at` | timestamptz | N | — | |
@@ -505,6 +506,9 @@ Chaque étape du [plan de réalisation](../plan-realisation.md) crée les tables
 16. `google_app`.
 17. `gsheet_link` : valeur ajoutée à `source_type`.
 18. `gsheet_script` : valeur ajoutée à `source_type`, et `sources.connection_secret`.
+19. `layout_sidebar_kind` puis `layout_sidebar` : valeur `sidebar` ajoutée à `layout_kind`, puis sidebar commune vide dans `layout_parts` (deux migrations : une valeur d'enum ne peut pas servir dans la transaction qui l'ajoute).
+20. `theme_presets` : thèmes fournis (Océan, Forêt, Sable, Prune, Sombre, Bleu nuit), copie de `THEME_PRESETS` ; un thème du même nom déjà présent est laissé tel quel.
+21. `dark_theme` : `settings.dark_theme_id`, qui désigne le thème « Sombre ».
 
 ## Dépendances
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.
@@ -517,4 +521,4 @@ _Aucune pour l'instant._
 - UUID v7, suppression douce avec unicités partielles, verrouillage optimiste par `version`.
 - Cibles des permissions et des révisions en deux FK avec `CHECK`, plutôt qu'en polymorphisme.
 - Journal en ajout seul, garanti par un trigger.
-- Formulaires, espaces de discussion et chats interdits dans le header et le footer partagés : `forms`, `discussion_spaces` et `chats` sont toujours rattachés à une page.
+- Formulaires, espaces de discussion et chats interdits dans le header, le footer et la sidebar partagés : `forms`, `discussion_spaces` et `chats` sont toujours rattachés à une page.

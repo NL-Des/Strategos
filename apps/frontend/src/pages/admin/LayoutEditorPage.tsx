@@ -24,7 +24,7 @@ import { useUnsavedGuard } from '../../useUnsavedGuard';
 
 const LAYOUT_TYPES = BLOCK_TYPES.filter((type) => !LAYOUT_FORBIDDEN_BLOCK_TYPES.includes(type));
 
-/** Header ou footer partagé : même cycle brouillon → publication que les pages. */
+/** Header, footer ou sidebar partagés : même cycle brouillon → publication que les pages. */
 export function LayoutEditorPage() {
   const { kind = 'header' } = useParams() as { kind: LayoutKind };
   const part = useQuery({
@@ -140,7 +140,13 @@ function Editor({ initial }: { initial: AdminLayoutPart }) {
             </button>
           </div>
           <div className="preview-frame themed">
-            <Rows rows={preview} />
+            {kind === 'sidebar' ? (
+              <aside className="zone zone-sidebar preview-sidebar">
+                <Rows rows={preview} />
+              </aside>
+            ) : (
+              <Rows rows={preview} />
+            )}
           </div>
         </div>
       )}

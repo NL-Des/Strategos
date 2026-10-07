@@ -182,6 +182,7 @@ describe('Modèles et duplication (e2e)', () => {
         themeId: null,
         showHeader: true,
         showFooter: false,
+        showSidebar: false,
       });
       await publish(arkan.id);
       const arkanSpace = await prisma.discussionSpace.findFirstOrThrow({
@@ -374,6 +375,7 @@ describe('Modèles et duplication (e2e)', () => {
         themeId: null,
         showHeader: true,
         showFooter: true,
+        showSidebar: false,
       });
       await publish(page.id);
       const [a, b] = await prisma.discussionSpace.findMany({

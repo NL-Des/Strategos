@@ -11,6 +11,12 @@ export class UpdateSettingsDto {
   @IsUUID()
   defaultThemeId: string;
 
+  /** `null` : pas de thème du mode sombre, les pages gardent le leur. */
+  @IsOptional()
+  @ValidateIf((_o, value) => value !== null)
+  @IsUUID()
+  darkThemeId?: string | null;
+
   @Type(() => Number)
   @IsInt()
   @Min(1)

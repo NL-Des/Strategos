@@ -6,6 +6,7 @@
  * Paliers responsive (les media queries ne lisent pas les variables) :
  *   mobile  : jusqu'à 700px — colonnes empilées
  *   tablette : 701 à 899px  — deux colonnes au plus, sidebar sous le contenu
+ *   (dans la sidebar, les colonnes s'empilent à toutes les largeurs)
  *   bureau  : 900px et plus
  */
 :root {
@@ -20,6 +21,18 @@
   --danger: #b3261e;
   --ok: #1d7a46;
   --warn: #8a5a00;
+  /* Texte posé sur un fond `--accent` ou `--danger`. */
+  --on-accent: #ffffff;
+  /* Voile derrière une fenêtre, et ombre d'un tableau qui défile. */
+  --scrim: rgb(16 24 40 / 45%);
+  --scroll-shadow: rgb(16 24 40 / 22%);
+  --toast-bg: #1c2330;
+  --toast-fg: #ffffff;
+  --toast-ok: #7ddba3;
+  /* Teintes de base des messages, rapprochées du texte dans les pages construites. */
+  --tint-danger: #d93025;
+  --tint-ok: #1f9d55;
+  --tint-warn: #c98a00;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -58,6 +71,42 @@
   --ref-5: #0e7490;
 
   color-scheme: light;
+}
+
+/*
+ * Mode sombre (06 — Thèmes), choisi par l'utilisateur dans le menu de compte :
+ * `useColorMode` pose `data-color-mode` sur `<html>`. Mêmes couleurs que le
+ * thème fourni « Sombre ». Les pages construites gardent les couleurs de leur
+ * thème (`.themed`).
+ */
+:root[data-color-mode='dark'] {
+  --bg: #14171c;
+  --surface: #1d2128;
+  --text: #e6e9ee;
+  --muted: #a3acbb;
+  --border: #343b47;
+  --border-strong: #6f7a8c;
+  --accent: #8ab4ff;
+  --danger: #ff8a80;
+  --ok: #6fd39a;
+  --warn: #f0b955;
+  --on-accent: #10141a;
+  --scrim: rgb(0 0 0 / 60%);
+  --scroll-shadow: rgb(0 0 0 / 55%);
+  --toast-bg: #2b313c;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 40%);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+
+  --ref-0: #7aa7ff;
+  --ref-1: #ff9d6b;
+  --ref-2: #6fd39a;
+  --ref-3: #c79bff;
+  --ref-4: #ff8fa8;
+  --ref-5: #5fd0e6;
+
+  color-scheme: dark;
 }
 
 /*

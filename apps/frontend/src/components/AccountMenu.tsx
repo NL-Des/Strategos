@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { logout } from '../api/auth';
 import { ME_KEY, useMe } from '../auth/useMe';
+import { setColorMode, useColorMode } from '../useColorMode';
 import { useMenu } from './useMenu';
 
 /**
  * Menu de compte (06) : seul élément que l'admin ne construit pas, fixe dans un
- * coin sur toutes les pages : Profil, Notes, Mes soumissions et Déconnexion.
+ * coin sur toutes les pages : Profil, Notes, Mes soumissions, mode sombre et
+ * Déconnexion.
  */
 export function AccountMenu() {
   const { t } = useTranslation();
@@ -16,6 +18,7 @@ export function AccountMenu() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const colorMode = useColorMode();
   const current = (path: string) => (pathname.startsWith(path) ? 'page' : undefined);
   const logoutMutation = useMutation({
     mutationFn: logout,
@@ -83,6 +86,13 @@ export function AccountMenu() {
               {t('admin.title')}
             </Link>
           )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => setColorMode(colorMode === 'dark' ? 'light' : 'dark')}
+          >
+            {t(colorMode === 'dark' ? 'account.lightMode' : 'account.darkMode')}
+          </button>
           <button type="button" role="menuitem" onClick={() => logoutMutation.mutate()}>
             {t('account.logout')}
           </button>

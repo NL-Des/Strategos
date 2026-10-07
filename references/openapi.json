@@ -2326,6 +2326,38 @@
         ]
       }
     },
+    "/api/v1/admin/submissions/validate": {
+      "post": {
+        "operationId": "AdminSubmissions_validateMany",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkValidateSubmissionsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Valide les soumissions cochées ; le bilan dit lesquelles restent en attente, et pourquoi.",
+        "tags": [
+          "AdminSubmissions"
+        ]
+      }
+    },
     "/api/v1/admin/submissions/{id}/validate": {
       "post": {
         "operationId": "AdminSubmissions_validate",
@@ -3605,7 +3637,8 @@
             "schema": {
               "enum": [
                 "header",
-                "footer"
+                "footer",
+                "sidebar"
               ],
               "type": "string"
             }
@@ -3637,7 +3670,8 @@
             "schema": {
               "enum": [
                 "header",
-                "footer"
+                "footer",
+                "sidebar"
               ],
               "type": "string"
             }
@@ -3681,7 +3715,8 @@
             "schema": {
               "enum": [
                 "header",
-                "footer"
+                "footer",
+                "sidebar"
               ],
               "type": "string"
             }
@@ -3727,7 +3762,8 @@
             "schema": {
               "enum": [
                 "header",
-                "footer"
+                "footer",
+                "sidebar"
               ],
               "type": "string"
             }
@@ -4416,6 +4452,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "darkThemeId": {
+            "type": "string",
+            "nullable": true,
+            "description": "`null` : pas de thème du mode sombre, les pages gardent le leur.",
+            "format": "uuid"
+          },
           "backupRetentionDays": {
             "type": "number",
             "minimum": 1,
@@ -4929,6 +4971,26 @@
             "type": "boolean"
           }
         }
+      },
+      "BulkValidateSubmissionsDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "uniqueItems": true,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ids"
+        ]
       },
       "ValidateSubmissionDto": {
         "type": "object",

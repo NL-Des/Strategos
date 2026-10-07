@@ -46,6 +46,8 @@ Certaines actions admin sont permises mais méritent une confirmation. Codes d'a
 
 Les enregistrements qui ne bloquent pas (ex. sauvegarder un formulaire qui vise une cellule-formule) réussissent directement et renvoient `warnings` dans la réponse.
 
+Exception : la **validation groupée** des soumissions répond toujours `200` avec un bilan. Les soumissions qui visent une cellule-formule y figurent dans `confirmationRequired` et restent en attente ; l'admin confirme une fois, et seules celles-ci sont rejouées avec `"confirm": true`.
+
 ### Listes, pagination, tri, recherche
 - Paramètres `?page=1&pageSize=50&sort=colonne:asc&q=texte`, avec `pageSize` plafonné à 200.
 - Réponse : `{ "items": [...], "total": 1234, "page": 1, "pageSize": 50 }`.
@@ -87,7 +89,7 @@ Colonne **Accès** : `public` (sans session), `connecté`, `lecture page`, `lect
 ### Navigation et pages — [06](06-page-builder.md)
 | Méthode | Chemin | Accès | Rôle | Erreurs |
 |---|---|---|---|---|
-| GET | `/layout` | connecté | Header et footer partagés **publiés**, assemblés et filtrés pour l'utilisateur : `{ header, footer }`, chacun `null` s'il n'a jamais été publié | — |
+| GET | `/layout` | connecté | Header, footer et sidebar commune **publiés**, assemblés et filtrés pour l'utilisateur : `{ header, footer, sidebar }`, chacun `null` s'il n'a jamais été publié | — |
 | GET | `/pages/:id` | lecture page | **Page assemblée** : version publiée, modules et liens non autorisés retirés, valeurs résolues (voir [schéma](#page-assemblée)) | `404`, `SOURCE_UNAVAILABLE` (partiel, voir schéma) |
 | GET | `/blocks/:blockId/rows` | lecture page | Lignes d'un Tableau ou d'un Catalogue : `?page&pageSize&sort&q` ; pagination, tri et recherche côté serveur. `sort=<indice de colonne affichée>:asc\|desc` (jamais une lettre de colonne) ; sans `pageSize`, celui du module. Réponse `{ items, total, page, pageSize }` : `{ cells: [{ value, needsRecalc, href?, image? }] }` par ligne de Tableau, `{ image, title, subtitle, details }` par carte de Catalogue (`image: null` = image par défaut). Les lignes entièrement vides sont ignorées | `404`, `503 SOURCE_UNAVAILABLE` |
 
@@ -161,7 +163,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/audit` | Journal paginé, du plus récent au plus ancien. Filtres : `actorKind` (`user`, `system`, `cli`), `actorId`, `action`, `targetType`, `targetId`, période `from` (inclus) – `to` (exclu) en ISO 8601 |
 | GET | `/trash` | Corbeille paginée, du plus récent au plus ancien, filtre `type` (`page`, `form`, `topic`, `topic_message`, `chat_message`, `group`, `user`) → [éléments](#élément-de-la-corbeille) |
 | POST | `/trash/:type/:id/restore` | Restaurer → `204`, tracé `trash.restore`. `404` si le type est inconnu ou l'élément absent ou non supprimé ; `409 USERNAME_TAKEN` / `409 GROUP_NAME_TAKEN` si le nom a été repris ; `422 RESTORE_PARENT_DELETED` pour un formulaire dont la page, ou un message dont le sujet, est supprimé |
-| GET / PUT | `/settings` | Réglages de l'instance : page d'arrivée, thème par défaut, durée de conservation des sauvegardes |
+| GET / PUT | `/settings` | Réglages de l'instance : page d'arrivée, thème par défaut, thème du mode sombre (`darkThemeId`, `null` possible), durée de conservation des sauvegardes |
 | GET | `/backups` | Liste des sauvegardes, de la plus récente à la plus ancienne : `[{ id, status, sizeBytes, error, createdAt, finishedAt }]` |
 | GET | `/backups/:id/download` | Télécharger l'archive `.tar.gz` d'une sauvegarde réussie (flux) ; `404` sinon |
 
@@ -195,20 +197,20 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 |---|---|---|---|
 | GET / POST | `/pages` | Lister (pour les sélecteurs de liens) ; créer une page (brouillon vide) | — |
 | GET | `/pages/:id` | Page avec son brouillon, sa version publiée et ses réglages (thème, header/footer affichés) | `404` |
-| PUT | `/pages/:id/draft` | Enregistrer le brouillon `{ version, name, config }`, où `config = { zones, themeId, showHeader, showFooter }` (le nom interne change tout de suite, le reste à la publication). Les avertissements (plage non couverte…) sont renvoyés dans `warnings` | `VALIDATION_FAILED` (chemin du champ dans `details.fields`), `EDIT_CONFLICT` |
+| PUT | `/pages/:id/draft` | Enregistrer le brouillon `{ version, name, config }`, où `config = { zones, themeId, showHeader, showFooter, showSidebar }` (`showSidebar` : sidebar commune affichée ; refusé avec une sidebar propre à la page, `VALIDATION_FAILED`) (le nom interne change tout de suite, le reste à la publication). Les avertissements (plage non couverte…) sont renvoyés dans `warnings` | `VALIDATION_FAILED` (chemin du champ dans `details.fields`), `EDIT_CONFLICT` |
 | GET | `/pages/:id/preview?asGroup=` | Brouillon **assemblé** (valeurs résolues). Sans `asGroup` : vue administrateur complète. Avec `asGroup=<groupId>` : vue d'un membre de ce seul groupe (modules et liens filtrés) | `404` (groupe inconnu) |
-| GET | `/pages/preview/layout?asGroup=` | Header et footer **publiés** qui encadrent l'aperçu d'une page, assemblés pour l'admin ou pour un membre de ce seul groupe (même forme que `GET /layout`) | `404` (groupe inconnu) |
+| GET | `/pages/preview/layout?asGroup=` | Header, footer et sidebar commune **publiés** qui encadrent l'aperçu d'une page, assemblés pour l'admin ou pour un membre de ce seul groupe (même forme que `GET /layout`) | `404` (groupe inconnu) |
 | GET | `/pages/:id/publish/preview` | Ce que la publication va changer : formulaires modifiés, **soumissions qui seraient invalidées**, espaces et chats créés ou retirés | — |
 | POST | `/pages/:id/publish` | Publier le brouillon, avec ses formulaires, espaces et chats, en une transaction ; `{ confirm: true }` requis si des soumissions seraient invalidées (avertissement `SUBMISSIONS_INVALIDATED`, avec `count`) | `VALIDATION_FAILED` (bloc invalide), `409 CONFIRMATION_REQUIRED` |
 | DELETE | `/pages/:id` | Suppression douce | — |
-| GET / PUT | `/layout/:kind/draft` | Brouillon du header ou du footer partagé (`kind = header \| footer`), `{ version, config: { rows } }` ; formulaires, espaces et chats refusés. L'enregistrement renvoie `warnings`, comme pour une page | `EDIT_CONFLICT`, `422 BLOCK_NOT_ALLOWED_IN_LAYOUT` (`details.blockIds`) |
-| GET | `/layout/:kind/preview?asGroup=` | Aperçu du header ou du footer, éventuellement avec les droits d'un groupe | — |
-| POST | `/layout/:kind/publish` | Publier le header ou le footer | — |
+| GET / PUT | `/layout/:kind/draft` | Brouillon du header, du footer ou de la sidebar commune (`kind = header \| footer \| sidebar`), `{ version, config: { rows } }` ; formulaires, espaces et chats refusés. L'enregistrement renvoie `warnings`, comme pour une page | `EDIT_CONFLICT`, `422 BLOCK_NOT_ALLOWED_IN_LAYOUT` (`details.blockIds`) |
+| GET | `/layout/:kind/preview?asGroup=` | Aperçu du header, du footer ou de la sidebar commune, éventuellement avec les droits d'un groupe | — |
+| POST | `/layout/:kind/publish` | Publier le header, le footer ou la sidebar commune | — |
 | GET | `/blocks/:blockId/rows` | Lignes d'un bloc de brouillon (ou, à défaut, de la version publiée), pour l'aperçu ; même réponse que la route utilisateur. L'aperçu assemblé pointe vers cette route dans `rowsUrl` | `404`, `503 SOURCE_UNAVAILABLE` |
-| GET / POST | `/themes` | Lister (avec `isDefault`) ; créer `{ name, config }` | `409 THEME_NAME_TAKEN`, `VALIDATION_FAILED` |
-| GET / PUT / DELETE | `/themes/:id` | Lire ; modifier `{ version, name, config }` ; supprimer (physique) : les pages publiées et les brouillons qui l'utilisaient reviennent au thème par défaut ; supprimer le thème par défaut est refusé | `404`, `EDIT_CONFLICT`, `409 THEME_NAME_TAKEN`, `VALIDATION_FAILED` (image de fond inconnue), `422 DEFAULT_THEME` |
+| GET / POST | `/themes` | Lister (avec `isDefault` et `isDark`, le thème du mode sombre) ; créer `{ name, config }` | `409 THEME_NAME_TAKEN`, `VALIDATION_FAILED` |
+| GET / PUT / DELETE | `/themes/:id` | Lire ; modifier `{ version, name, config }` ; supprimer (physique) : les pages publiées et les brouillons qui l'utilisaient reviennent au thème par défaut ; supprimer le thème par défaut est refusé ; supprimer le thème du mode sombre est permis (les réglages n'en désignent alors plus) | `404`, `EDIT_CONFLICT`, `409 THEME_NAME_TAKEN`, `VALIDATION_FAILED` (image de fond inconnue), `422 DEFAULT_THEME` |
 | GET / POST | `/media` | Liste paginée (`?q=` sur le nom), upload (`multipart` : `file`, `alt` facultatif) | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE`, `409 MEDIA_NAME_TAKEN` |
-| GET | `/media/:id/usages` | Pages, header/footer (brouillon ou version publiée) et thèmes (image de fond) qui utilisent l'image : `{ pages, layouts, themes }` | `404` |
+| GET | `/media/:id/usages` | Pages, header, footer et sidebar commune (brouillon ou version publiée) et thèmes (image de fond) qui utilisent l'image : `{ pages, layouts, themes }` | `404` |
 | DELETE | `/media/:id` | Suppression douce, corps `{ confirm? }` ; avertissement `MEDIA_IN_USE` avec `pages`, `layouts` et `themes` | `409 CONFIRMATION_REQUIRED` |
 
 ### Formulaires et soumissions — [09](09-formulaires-soumissions.md)
@@ -226,6 +228,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | POST | `/submissions/:id/validate` | Valider ; avertissement cellule-formule à confirmer | `409 CONFIRMATION_REQUIRED`, `409 SUBMISSION_NOT_PENDING`, `422 ADD_ZONE_FULL`, `422 ROW_KEY_NOT_FOUND`, `422 ROW_KEY_DUPLICATE`, `422 MOVEMENT_NOT_NUMERIC`, `503 SOURCE_UNAVAILABLE` |
 | POST | `/submissions/:id/modify` | Valider avec des valeurs corrigées par l'admin `{ values }` → statut `modified` | mêmes erreurs |
 | POST | `/submissions/:id/reject` | Refuser `{ reason? }` | `409 SUBMISSION_NOT_PENDING` |
+| POST | `/submissions/validate` | Validation groupée `{ ids, confirm? }` (1 à 100 soumissions). Chacune est validée séparément, de la plus ancienne à la plus récente ; un échec n'empêche pas les autres. Réponse `200` : `{ validated: [id], confirmationRequired: [{ id, warnings }], failed: [{ id, code }] }` ; les soumissions des deux dernières listes restent `pending` | `400 VALIDATION_FAILED` |
 
 ### Discussions (modération) — [07](07-discussions.md#modération)
 | Méthode | Chemin | Rôle |
@@ -260,7 +263,8 @@ Réponse de `GET /pages/:id` (et de `GET /admin/pages/:id/preview`) :
 {
   "id": "…", "name": "Tournoi", "publishedAt": "…",
   "theme": { "id": "…", "config": { } },
-  "showHeader": true, "showFooter": true,
+  "darkTheme": { "id": "…", "config": { } },
+  "showHeader": true, "showFooter": true, "showSidebar": false,
   "zones": {
     "main": [
       { "id": "r1", "columns": [
@@ -281,7 +285,8 @@ Réponse de `GET /pages/:id` (et de `GET /admin/pages/:id/preview`) :
 - Les liens « Ma page personnelle » sont déjà résolus en identifiant de page.
 - Les valeurs insérées dans un Contenu libre sont **déjà résolues** (`{ "value": "4 250", "needsRecalc": false }`).
 - Les lignes des tableaux et catalogues ne sont pas incluses : elles sont chargées page par page via `rowsUrl`. De même, les sujets d'un espace de discussion via `topicsUrl` (avec `config = { name, sortMode, canCreateTopic, canPost }`), et l'historique d'un chat via `messagesUrl`.
-- Une zone non cochée vaut `null` (`main` ou `sidebar`).
+- `darkTheme` est le thème du mode sombre désigné dans les réglages (`null` s'il n'y en a pas) : le frontend l'applique à la place de `theme` quand l'utilisateur a choisi le mode sombre. Ce choix reste dans le navigateur ; l'API ne le connaît pas.
+- Une zone absente vaut `null` (`main` ou `sidebar`). `zones.sidebar` est la sidebar propre à la page ; avec `showSidebar: true`, la page affiche à la place la sidebar commune de `GET /layout`.
 - Si une source est injoignable, la page est tout de même renvoyée. Les blocs concernés portent `"error": "SOURCE_UNAVAILABLE"`. `unavailableSources` (`[{ id, name }]`) n'est renseigné que pour l'admin (aperçu, ou lecture d'une page par l'admin) ; il reste vide pour les utilisateurs, qui ne voient jamais une source.
 - Contenu libre : chaque valeur insérée est remplacée dans le HTML par `<span data-value="i"></span>`, et `config.values[i] = { value, needsRecalc }`. Tableau et Catalogue ne portent ni source, ni feuille, ni plage : seulement les libellés, formats et réglages d'affichage, et `rowsUrl`.
 - Formulaire : `config = { formId, formUrl, submitUrl }` (`formUrl` : `GET /forms/:id`, ou la route d'aperçu admin ; `submitUrl` : `null` en aperçu). Un formulaire de ligne n'est pas rendu seul : le Tableau ou le Catalogue relié porte `rowForms: [{ formId, title, formUrl, submitUrl }]`, et chaque ligne ou carte de `rowsUrl` porte `rowKeys: { [formId]: valeurDeClé }`.

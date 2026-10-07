@@ -128,14 +128,14 @@ export class LayoutService {
     return assembleRows(rows, await this.readers.forPreview(admin, asGroup, rows));
   }
 
-  /** Header et footer publiés, assemblés pour un lecteur. */
+  /** Header, footer et sidebar commune publiés, assemblés pour un lecteur. */
   async read(user: User): Promise<AssembledLayout> {
     return this.assemblePublished((rows) => this.readers.forUser(user, rows));
   }
 
   /**
-   * Header et footer publiés, vus par l'admin ou avec les droits d'un groupe :
-   * ceux qui encadrent l'aperçu d'une page.
+   * Header, footer et sidebar commune publiés, vus par l'admin ou avec les
+   * droits d'un groupe : ceux qui encadrent l'aperçu d'une page.
    */
   async previewPublished(admin: User, asGroup?: string): Promise<AssembledLayout> {
     return this.assemblePublished((rows) => this.readers.forPreview(admin, asGroup, rows));
@@ -151,10 +151,12 @@ export class LayoutService {
     };
     const header = published(LayoutKind.header);
     const footer = published(LayoutKind.footer);
-    const ctx = await contextFor([...(header?.rows ?? []), ...(footer?.rows ?? [])]);
+    const sidebar = published(LayoutKind.sidebar);
+    const ctx = await contextFor([header, footer, sidebar].flatMap((part) => part?.rows ?? []));
     return {
       header: header ? assembleRows(header.rows, ctx) : null,
       footer: footer ? assembleRows(footer.rows, ctx) : null,
+      sidebar: sidebar ? assembleRows(sidebar.rows, ctx) : null,
     };
   }
 }

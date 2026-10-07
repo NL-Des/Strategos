@@ -14,9 +14,11 @@
   --muted: color-mix(in srgb, var(--t-text) 68%, var(--t-bg));
   --border-strong: color-mix(in srgb, var(--t-text) 50%, var(--t-surface));
   /* Teintes des messages rapprochées de la couleur du texte : lisibles sur fond clair comme sombre. */
-  --danger: color-mix(in srgb, #d93025 62%, var(--t-text));
-  --ok: color-mix(in srgb, #1f9d55 62%, var(--t-text));
-  --warn: color-mix(in srgb, #c98a00 62%, var(--t-text));
+  --danger: color-mix(in srgb, var(--tint-danger) 62%, var(--t-text));
+  --ok: color-mix(in srgb, var(--tint-ok) 62%, var(--t-text));
+  --warn: color-mix(in srgb, var(--tint-warn) 62%, var(--t-text));
+  /* Sur un fond d'accent, la couleur du fond de page reste lisible, thème clair ou sombre. */
+  --on-accent: var(--t-bg);
   --btn-bg: var(--t-btn-bg);
   --btn-fg: var(--t-btn-color);
   --btn-border: var(--t-btn-border);
@@ -81,6 +83,16 @@
   margin-bottom: var(--space-4);
 }
 
+/* Sidebar : les colonnes d'une rangée s'empilent toujours, à toutes les largeurs. */
+.zone-sidebar .layout-row,
+.zone-sidebar .layout-row.cols-3 {
+  grid-template-columns: 1fr;
+}
+
+.zone-sidebar .layout-row.cols-3 > :last-child {
+  grid-column: auto;
+}
+
 .layout-column {
   min-width: 0;
 }
@@ -143,7 +155,7 @@
 .theme-button {
   padding: var(--space-2) var(--space-4);
   background: var(--btn-bg, var(--accent));
-  color: var(--btn-fg, #fff);
+  color: var(--btn-fg, var(--on-accent));
   border: 1px solid var(--btn-border, var(--accent));
   border-radius: var(--btn-radius, var(--radius-md));
 }

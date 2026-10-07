@@ -35,6 +35,7 @@ const config = (main: Row[]): PageConfig => ({
   themeId: null,
   showHeader: true,
   showFooter: true,
+  showSidebar: false,
 });
 
 /** Donne à un groupe des droits sur un espace (en gardant ses autres permissions). */

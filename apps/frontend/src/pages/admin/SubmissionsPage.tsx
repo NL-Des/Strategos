@@ -1,4 +1,6 @@
 import {
+  BULK_VALIDATE_MAX,
+  type BulkValidateResult,
   type PageConfig,
   SubmissionStatus,
   type SubmissionQueueItem,
@@ -24,15 +26,18 @@ import {
   type QueueFilters,
   rejectSubmission,
   validateSubmission,
+  validateSubmissions,
 } from '../../api/forms';
 import { getAdminPage, listPages } from '../../api/pages';
 import { listUsers } from '../../api/users';
 import { Warnings } from '../../builder/FormEditor';
-import { Modal, usePrompt } from '../../components/Dialog';
+import { Modal, useConfirm, usePrompt } from '../../components/Dialog';
 import { EmptyState } from '../../components/EmptyState';
 import { formatDateTime } from '../../format';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { Notice } from '../../components/Notice';
 import { Pagination } from '../../components/Pagination';
+import { useToast } from '../../components/Toast';
 
 const show = (value: SubmissionValue | undefined) =>
   value === null || value === undefined
@@ -105,15 +110,32 @@ export function SubmissionsPage() {
     queryFn: () => listSubmissions(query, page),
     placeholderData: keepPreviousData,
   });
+  // Sélection pour la validation groupée : propre à la page affichée de la file.
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [report, setReport] = useState<BulkReport | null>(null);
+  const changePage = (next: number) => {
+    setPage(next);
+    setSelected(new Set());
+  };
   const set = (patch: Partial<QueueFilters>) => {
     setFilters({ ...filters, ...patch });
-    setPage(1);
+    changePage(1);
   };
   const searchUser = (username: string) => {
     setUserQuery(username);
-    setPage(1);
+    changePage(1);
   };
   const conflicting = new Set(queue.data?.items.flatMap((i) => i.conflicts) ?? []);
+  const inConflict = (item: SubmissionQueueItem) =>
+    item.conflicts.length > 0 || conflicting.has(item.submission.id);
+  const pendingItems = (queue.data?.items ?? []).filter((i) => i.submission.status === 'pending');
+  const checked = pendingItems.filter((i) => selected.has(i.submission.id));
+  const toggle = (id: string, on: boolean) => {
+    const next = new Set(selected);
+    if (on) next.add(id);
+    else next.delete(id);
+    setSelected(next);
+  };
 
   return (
     <section>
@@ -218,12 +240,28 @@ export function SubmissionsPage() {
         </label>
       </div>
       <ErrorMessage error={queue.error} />
+      {pendingItems.length > 0 && (
+        <BulkBar
+          checked={checked}
+          onSelectAll={() =>
+            // Les soumissions en conflit se cochent à la main : leur ordre de validation compte.
+            setSelected(
+              new Set(pendingItems.filter((i) => !inConflict(i)).map((i) => i.submission.id)),
+            )
+          }
+          onClear={() => setSelected(new Set())}
+          onReport={setReport}
+        />
+      )}
+      {report && <BulkReportNotice report={report} onClose={() => setReport(null)} />}
       {queue.data?.items.map((item) => (
         <QueueItem
           key={item.submission.id}
           item={item}
-          inConflict={item.conflicts.length > 0 || conflicting.has(item.submission.id)}
+          inConflict={inConflict(item)}
           filterByUser={() => searchUser(item.user.username)}
+          selected={selected.has(item.submission.id)}
+          onSelect={(on) => toggle(item.submission.id, on)}
         />
       ))}
       {userId && (
@@ -237,10 +275,192 @@ export function SubmissionsPage() {
           page={page}
           total={queue.data.total}
           pageSize={queue.data.pageSize}
-          onChange={setPage}
+          onChange={changePage}
         />
       )}
     </section>
+  );
+}
+
+/** Bilan d'une validation groupée, avec le libellé des soumissions au moment de l'envoi. */
+type BulkReport = {
+  validated: number;
+  /** Restées en attente : `code` d'erreur, ou `null` si l'écrasement d'une formule n'a pas été confirmé. */
+  pending: { id: string; label: string; code: string | null }[];
+};
+
+const labelOf = (item: SubmissionQueueItem) => `${item.form.title} — ${item.user.username}`;
+
+/** Barre de la validation groupée : tout cocher, compteur et « Valider la sélection ». */
+function BulkBar({
+  checked,
+  onSelectAll,
+  onClear,
+  onReport,
+}: {
+  checked: SubmissionQueueItem[];
+  onSelectAll: () => void;
+  onClear: () => void;
+  onReport: (report: BulkReport) => void;
+}) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const confirm = useConfirm();
+  const toast = useToast();
+  // Soumissions qui visent une cellule-formule : validées seulement après confirmation.
+  const [toConfirm, setToConfirm] = useState<{
+    done: BulkValidateResult;
+    labels: Map<string, string>;
+  } | null>(null);
+
+  const finish = (result: BulkValidateResult, labels: Map<string, string>) => {
+    setToConfirm(null);
+    onClear();
+    onReport({
+      validated: result.validated.length,
+      pending: [
+        ...result.failed.map((f) => ({ id: f.id, label: labels.get(f.id) ?? '', code: f.code })),
+        ...result.confirmationRequired.map((c) => ({
+          id: c.id,
+          label: labels.get(c.id) ?? '',
+          code: null,
+        })),
+      ],
+    });
+    if (result.validated.length > 0) {
+      toast(t('submissions.admin.bulk.validated', { count: result.validated.length }));
+    }
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'submissions'] });
+    void queryClient.invalidateQueries({ queryKey: ['rows'] });
+  };
+  const run = useMutation({
+    mutationFn: async () => {
+      const labels = new Map(checked.map((i) => [i.submission.id, labelOf(i)]));
+      const result = await validateSubmissions(checked.map((i) => i.submission.id));
+      return { result, labels };
+    },
+    onSuccess: ({ result, labels }) => {
+      if (result.confirmationRequired.length > 0) setToConfirm({ done: result, labels });
+      else finish(result, labels);
+    },
+  });
+  const replay = useMutation({
+    mutationFn: ({ done }: NonNullable<typeof toConfirm>) =>
+      validateSubmissions(
+        done.confirmationRequired.map((c) => c.id),
+        true,
+      ),
+    onSuccess: (result, { done, labels }) =>
+      finish(
+        {
+          validated: [...done.validated, ...result.validated],
+          failed: [...done.failed, ...result.failed],
+          confirmationRequired: result.confirmationRequired,
+        },
+        labels,
+      ),
+  });
+  const tooMany = checked.length > BULK_VALIDATE_MAX;
+
+  return (
+    <div className="bulk-bar">
+      <button type="button" className="secondary" onClick={onSelectAll}>
+        {t('submissions.admin.bulk.selectAll')}
+      </button>
+      <button type="button" className="secondary" disabled={checked.length === 0} onClick={onClear}>
+        {t('submissions.admin.bulk.clear')}
+      </button>
+      <span className="muted" role="status">
+        {t('submissions.admin.bulk.selected', { count: checked.length })}
+      </span>
+      <button
+        type="button"
+        disabled={checked.length === 0 || tooMany || run.isPending}
+        onClick={() =>
+          void confirm({
+            title: t('submissions.admin.bulk.confirmTitle', { count: checked.length }),
+            message: t('submissions.admin.bulk.confirmMessage'),
+            confirmLabel: t('submissions.admin.bulk.validate'),
+          }).then((ok) => {
+            if (ok) run.mutate();
+          })
+        }
+      >
+        {t('submissions.admin.bulk.validate')}
+      </button>
+      <ErrorMessage error={run.error ?? replay.error} />
+      {toConfirm && (
+        <Modal
+          title={t('submissions.admin.bulk.formulasTitle', {
+            count: toConfirm.done.confirmationRequired.length,
+          })}
+          onClose={() => finish(toConfirm.done, toConfirm.labels)}
+        >
+          <ul>
+            {toConfirm.done.confirmationRequired.map((c) => (
+              <li key={c.id}>{toConfirm.labels.get(c.id)}</li>
+            ))}
+          </ul>
+          <Warnings warnings={mergeWarnings(toConfirm.done.confirmationRequired)} />
+          <div className="dialog-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => finish(toConfirm.done, toConfirm.labels)}
+            >
+              {t('submissions.admin.bulk.leavePending')}
+            </button>
+            <button
+              type="button"
+              autoFocus
+              disabled={replay.isPending}
+              onClick={() => replay.mutate(toConfirm)}
+            >
+              {t('submissions.admin.validateAnyway')}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/** Un avertissement par code, avec les cellules de toutes les soumissions concernées. */
+function mergeWarnings(items: BulkValidateResult['confirmationRequired']): Warning[] {
+  const merged = new Map<string, Warning>();
+  for (const warning of items.flatMap((i) => i.warnings)) {
+    const known = merged.get(warning.code);
+    if (!known) {
+      merged.set(warning.code, { ...warning });
+    } else if (Array.isArray(known.cells) && Array.isArray(warning.cells)) {
+      known.cells = [...new Set([...(known.cells as string[]), ...(warning.cells as string[])])];
+    }
+  }
+  return [...merged.values()];
+}
+
+function BulkReportNotice({ report, onClose }: { report: BulkReport; onClose: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Notice tone={report.pending.length > 0 ? 'warning' : 'success'} role="status">
+      <p>{t('submissions.admin.bulk.validated', { count: report.validated })}</p>
+      {report.pending.length > 0 && (
+        <>
+          <p>{t('submissions.admin.bulk.stillPending', { count: report.pending.length })}</p>
+          <ul>
+            {report.pending.map((p) => (
+              <li key={p.id}>
+                {p.label} :{' '}
+                {p.code ? t(`errors.${p.code}`) : t('submissions.admin.bulk.notConfirmed')}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <button type="button" className="link" onClick={onClose}>
+        {t('common.close')}
+      </button>
+    </Notice>
   );
 }
 
@@ -250,10 +470,14 @@ function QueueItem({
   item,
   inConflict,
   filterByUser,
+  selected,
+  onSelect,
 }: {
   item: SubmissionQueueItem;
   inConflict: boolean;
   filterByUser: () => void;
+  selected: boolean;
+  onSelect: (on: boolean) => void;
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -302,6 +526,17 @@ function QueueItem({
   return (
     <article className={`card submission-item${inConflict && pending ? ' conflict' : ''}`}>
       <header className="submission-header">
+        {pending && (
+          <input
+            type="checkbox"
+            aria-label={t('submissions.admin.bulk.select', {
+              form: form.title,
+              user: user.username,
+            })}
+            checked={selected}
+            onChange={(e) => onSelect(e.target.checked)}
+          />
+        )}
         <strong>{form.title}</strong>
         <span className={`status status-${submission.status}`}>
           {t(`submissions.status.${submission.status}`)}

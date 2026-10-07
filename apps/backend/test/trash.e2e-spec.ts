@@ -20,6 +20,7 @@ const config = (main: Row[]): PageConfig => ({
   themeId: null,
   showHeader: true,
   showFooter: true,
+  showSidebar: false,
 });
 
 describe('Corbeille (e2e)', () => {

@@ -166,7 +166,10 @@ class StructureValidator {
   }
 }
 
-/** Brouillon d'une page : zones Main et Sidebar (ou `null`), thème, header et footer affichés. */
+/**
+ * Brouillon d'une page : zones Main et Sidebar (ou `null`), thème, header, footer
+ * et sidebar commune affichés. Une page a sa propre sidebar ou la commune, pas les deux.
+ */
 export function validatePageConfig(value: unknown): PageConfig {
   const v = new StructureValidator();
   if (!isRecord(value) || !isRecord(value.zones)) {
@@ -176,7 +179,7 @@ export function validatePageConfig(value: unknown): PageConfig {
   const raw = value as Record<string, unknown>;
   const zones = raw.zones as Record<string, unknown>;
   for (const key of Object.keys(raw)) {
-    if (!['zones', 'themeId', 'showHeader', 'showFooter'].includes(key)) {
+    if (!['zones', 'themeId', 'showHeader', 'showFooter', 'showSidebar'].includes(key)) {
       v.fail(`config.${key}`, 'whitelistValidation');
     }
   }
@@ -192,17 +195,21 @@ export function validatePageConfig(value: unknown): PageConfig {
     themeId: raw.themeId === null || raw.themeId === undefined ? null : String(raw.themeId),
     showHeader: raw.showHeader !== false,
     showFooter: raw.showFooter !== false,
+    showSidebar: raw.showSidebar === true,
   };
   if (config.themeId !== null && !isUUID(config.themeId)) v.fail('config.themeId', 'isUuid');
-  for (const key of ['showHeader', 'showFooter'] as const) {
+  for (const key of ['showHeader', 'showFooter', 'showSidebar'] as const) {
     if (raw[key] !== undefined && typeof raw[key] !== 'boolean')
       v.fail(`config.${key}`, 'isBoolean');
+  }
+  if (config.showSidebar && config.zones.sidebar !== null) {
+    v.fail('config.showSidebar', 'sidebarConflict');
   }
   v.throwIfInvalid();
   return config;
 }
 
-/** Brouillon du header ou du footer : formulaires, espaces et chats refusés (`422`). */
+/** Brouillon du header, du footer ou de la sidebar commune : formulaires, espaces et chats refusés (`422`). */
 export function validateLayoutConfig(value: unknown): LayoutConfig {
   const v = new StructureValidator(LAYOUT_FORBIDDEN_BLOCK_TYPES);
   if (!isRecord(value)) {

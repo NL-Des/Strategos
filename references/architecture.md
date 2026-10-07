@@ -47,11 +47,11 @@ Un module par domaine, chacun avec ses guards et ses DTOs validés via `class-va
 - **UsersModule** : CRUD des comptes, réinitialisation du mot de passe, désactivation/réactivation — voir [02](conception/02-comptes-authentification.md).
 - **GroupsModule** : groupes, appartenance user↔groupe, calcul des permissions effectives et endpoints de lecture des droits — voir [03](conception/03-droits-groupes.md).
 - **PermissionsModule** : `PermissionsGuard` (`@RequireRead`, lecture d'une page) ; les autres contrôles passent par les services d'accès de chaque domaine, tous via `RightsService` — voir [03](conception/03-droits-groupes.md#points-techniques).
-- **SettingsModule** : réglages de l'instance (page d'arrivée, thème par défaut, rétention des sauvegardes) — voir [04](conception/04-administration.md#réglages-de-linstance).
+- **SettingsModule** : réglages de l'instance (page d'arrivée, thème par défaut, thème du mode sombre, rétention des sauvegardes) — voir [04](conception/04-administration.md#réglages-de-linstance).
 - **AuditModule** : journal des modifications ; appelé par tous les modules qui modifient des données et par les commandes serveur — voir [04](conception/04-administration.md#points-techniques).
 - **ProfileModule** : page administrative du profil et notes personnelles — voir [05](conception/05-profil-utilisateur.md).
-- **PagesModule** : CRUD des pages, brouillon/publication, header/footer partagés, assemblage, soft-delete ; **PageAccessModule** en extrait la lecture d'une page (`PageAccessService`) pour les autres modules — voir [06](conception/06-page-builder.md).
-- **ThemesModule** : thèmes nommés — voir [06](conception/06-page-builder.md#thèmes).
+- **PagesModule** : CRUD des pages, brouillon/publication, header, footer et sidebar partagés, assemblage, soft-delete ; **PageAccessModule** en extrait la lecture d'une page (`PageAccessService`) pour les autres modules — voir [06](conception/06-page-builder.md).
+- **ThemesModule** : thèmes nommés, dont les thèmes fournis à l'installation — voir [06](conception/06-page-builder.md#thèmes).
 - **MediaModule** : médiathèque (upload, stockage sur le volume `uploads`, métadonnées en base) — voir [06](conception/06-page-builder.md#médiathèque).
 - **DiscussionsModule** : espaces de discussion, sujets et messages, pièces jointes images, modération — voir [07](conception/07-discussions.md).
 - **ChatModule** : chat temps réel et sa passerelle WebSocket (`/api/v1/ws`), historique par curseur, modération ; l'accès suit la lecture de la page (pas une ressource de droits) — voir [07](conception/07-discussions.md#chat).
@@ -72,8 +72,8 @@ Le schéma complet (colonnes, clés, index, contraintes, ordre des migrations) e
 |---|---|---|
 | Comptes et sessions | `users`, `sessions`, `login_attempts` | [02](conception/02-comptes-authentification.md) |
 | Groupes et droits | `groups`, `user_groups`, `group_permissions` (cible : page **ou** espace de discussion) | [03](conception/03-droits-groupes.md) |
-| Instance | `settings` (ligne unique : page d'arrivée, thème par défaut, rétention), `themes`, `media`, `backups` | [04](conception/04-administration.md), [06](conception/06-page-builder.md), [11](conception/11-transverse.md) |
-| Pages | `pages` (brouillon et version publiée en JSON), `layout_parts` (header, footer) | [06](conception/06-page-builder.md) |
+| Instance | `settings` (ligne unique : page d'arrivée, thème par défaut, thème du mode sombre, rétention), `themes`, `media`, `backups` | [04](conception/04-administration.md), [06](conception/06-page-builder.md), [11](conception/11-transverse.md) |
+| Pages | `pages` (brouillon et version publiée en JSON), `layout_parts` (header, footer, sidebar commune) | [06](conception/06-page-builder.md) |
 | Discussions | `discussion_spaces`, `topics`, `topic_messages`, `chats`, `chat_messages`, `message_revisions`, `attachments` | [07](conception/07-discussions.md) |
 | Sources | `sources`, `staging_cells` (uploads seulement), `cell_references`, `onedrive_credentials`, `reimport_previews`, `source_cell_edits` | [08](conception/08-sources-donnees.md) |
 | Formulaires | `forms`, `form_versions`, `submissions` | [09](conception/09-formulaires-soumissions.md) |

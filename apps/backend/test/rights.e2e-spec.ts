@@ -127,6 +127,7 @@ describe('Droits effectifs (e2e)', () => {
           themeId: null,
           showHeader: true,
           showFooter: true,
+          showSidebar: false,
         },
         version: page.version,
       }),

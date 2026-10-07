@@ -36,6 +36,9 @@ import { ActionMenu } from '../../components/ActionMenu';
 import { useUnsavedGuard } from '../../useUnsavedGuard';
 
 /** Éditeur d'une page : on modifie toujours le brouillon, publié par un bouton dédié. */
+const SIDEBAR_MODES = ['none', 'shared', 'own'] as const;
+type SidebarMode = (typeof SIDEBAR_MODES)[number];
+
 export function PageEditorPage() {
   const { id = '' } = useParams();
   const page = useQuery({ queryKey: ['admin', 'page', id], queryFn: () => getAdminPage(id) });
@@ -85,6 +88,29 @@ function Editor({ initial }: { initial: AdminPage }) {
         danger: true,
       },
       () => setZone(zone, null),
+    );
+  };
+
+  /** Sidebar de la page : aucune, la commune, ou la sienne (06 — Structure d'une page). */
+  const sidebarMode: SidebarMode = draft.showSidebar
+    ? 'shared'
+    : draft.zones.sidebar !== null
+      ? 'own'
+      : 'none';
+  const setSidebarMode = (mode: SidebarMode) => {
+    const apply = () =>
+      edit({
+        showSidebar: mode === 'shared',
+        zones: { ...draft.zones, sidebar: mode === 'own' ? (draft.zones.sidebar ?? []) : null },
+      });
+    if (mode === 'own' || !draft.zones.sidebar?.length) return apply();
+    confirmed(
+      {
+        title: t('builder.removeZoneConfirm', { zone: t('builder.zoneNames.sidebar') }),
+        confirmLabel: t('common.delete'),
+        danger: true,
+      },
+      apply,
     );
   };
 
@@ -288,20 +314,25 @@ function Editor({ initial }: { initial: AdminPage }) {
           <label className="inline">
             <input
               type="checkbox"
-              checked={draft.zones.sidebar !== null}
-              onChange={(e) => toggleZone('sidebar', e.target.checked)}
-            />
-            {t('builder.zoneNames.sidebar')}
-          </label>
-          <label className="inline">
-            <input
-              type="checkbox"
               checked={draft.showFooter}
               onChange={(e) => edit({ showFooter: e.target.checked })}
             />
             {t('builder.zoneNames.footer')}
           </label>
         </fieldset>
+        <label>
+          {t('builder.zoneNames.sidebar')}
+          <select
+            value={sidebarMode}
+            onChange={(e) => setSidebarMode(e.target.value as SidebarMode)}
+          >
+            {SIDEBAR_MODES.map((mode) => (
+              <option key={mode} value={mode}>
+                {t(`builder.sidebarModes.${mode}`)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <PageEditorContext.Provider value={context}>
@@ -310,6 +341,7 @@ function Editor({ initial }: { initial: AdminPage }) {
             draft.zones[zone] && (
               <div key={zone} className="zone-editor">
                 <h2>{t(`builder.zoneNames.${zone}`)}</h2>
+                {zone === 'sidebar' && <p className="muted">{t('builder.sidebarHint')}</p>}
                 <RowsEditor rows={draft.zones[zone]} onChange={(rows) => setZone(zone, rows)} />
               </div>
             ),

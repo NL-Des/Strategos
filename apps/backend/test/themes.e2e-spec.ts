@@ -3,6 +3,8 @@ import {
   type AdminPage,
   type AssembledPage,
   DEFAULT_THEME_CONFIG,
+  type InstanceSettings,
+  THEME_PRESETS,
   type Theme,
   type ThemeConfig,
 } from '@strategos/shared';
@@ -50,6 +52,13 @@ describe('Thèmes (e2e)', () => {
     expectStatus(res, 201);
     return res.body as Theme;
   }
+
+  it('chaque thème fourni est un thème valide, utilisable comme point de départ', async () => {
+    for (const preset of THEME_PRESETS) {
+      const theme = await createTheme(`Copie de ${preset.name}`, preset.config);
+      expect(theme.config).toEqual(preset.config);
+    }
+  });
 
   it('création, lecture, modification et liste ; le thème de l’installation est le thème par défaut', async () => {
     const theme = await createTheme('Nuit');
@@ -171,6 +180,47 @@ describe('Thèmes (e2e)', () => {
     expect(
       await prisma.auditLog.count({ where: { action: 'theme.delete', targetId: theme.id } }),
     ).toBe(1);
+  });
+
+  it('thème du mode sombre : désigné dans les réglages, joint à chaque page ; supprimé → plus aucun', async () => {
+    const kira = await userClient(app, admin, 'kira');
+    const theme = await createTheme('Nuit');
+    const page = (await admin.send('post', '/admin/pages', { name: 'Taverne' })).body as AdminPage;
+    await createGroup(admin, 'Lecteurs', { userIds: [await meId(kira)], pageIds: [page.id] });
+    expectStatus(await admin.send('post', `/admin/pages/${page.id}/publish`), 200);
+    const seen = async () => (await kira.get(`/pages/${page.id}`)).body as AssembledPage;
+
+    // Base de test : aucun thème désigné, les pages gardent leur thème en mode sombre.
+    const settings = (await admin.get('/admin/settings')).body as InstanceSettings;
+    expect(settings.darkThemeId).toBeNull();
+    expect((await seen()).darkTheme).toBeNull();
+
+    const unknown = await admin.send('put', '/admin/settings', {
+      ...settings,
+      darkThemeId: '0190f5c0-0000-7000-8000-00000000dead',
+    });
+    expect(unknown.status).toBe(400);
+    expect(unknown.body.details.fields).toEqual({ darkThemeId: ['notFound'] });
+
+    const saved = await admin.send('put', '/admin/settings', {
+      ...settings,
+      darkThemeId: theme.id,
+    });
+    expectStatus(saved, 200);
+    expect((saved.body as InstanceSettings).darkThemeId).toBe(theme.id);
+    const page2 = await seen();
+    expect(page2.darkTheme).toEqual({ id: theme.id, config: dark });
+    expect(page2.theme.config).toEqual(DEFAULT_THEME_CONFIG);
+    const list = (await admin.get('/admin/themes')).body as Theme[];
+    expect(list.map((t) => [t.name, t.isDefault, t.isDark])).toEqual([
+      ['Nuit', false, true],
+      ['Sobre', true, false],
+    ]);
+
+    // Contrairement au thème par défaut, il peut être supprimé.
+    expectStatus(await admin.send('delete', `/admin/themes/${theme.id}`), 204);
+    expect(((await admin.get('/admin/settings')).body as InstanceSettings).darkThemeId).toBeNull();
+    expect((await seen()).darkTheme).toBeNull();
   });
 
   it('routes réservées à l’admin', async () => {

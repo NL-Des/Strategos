@@ -92,6 +92,7 @@ describe('réinitialisation des modèles', () => {
       themeId: null,
       showHeader: true,
       showFooter: true,
+      showSidebar: false,
     };
     const reset = resetPageConfig(config);
     expect(reset.zones.main![0]!.columns[0]!.block!.config).toMatchObject({

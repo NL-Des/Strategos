@@ -37,6 +37,7 @@ L'unique voie d'écriture des utilisateurs vers les documents : des formulaires 
 
 ### Soumissions
 - **Soumissions concurrentes** : si plusieurs utilisateurs soumettent des modifications sur la même cellule, toutes restent visibles en attente — l'administrateur voit le conflit et choisit, laquelle valider (ou les fusionne manuellement). Pour un formulaire de ligne, la cellule est identifiée par la clé et la colonne. Les champs « mouvement » ne sont **jamais en conflit**, puisqu'ils s'additionnent.
+- **Validation groupée** : l'administrateur peut cocher plusieurs soumissions en attente et les valider ensemble. Elles sont alors validées **une par une, de la plus ancienne à la plus récente**, exactement comme à l'unité (une entrée de journal chacune). Une soumission qui ne peut pas être validée (clé introuvable, zone d'ajout pleine, source injoignable…) reste en attente sans bloquer les autres, et un bilan indique lesquelles et pourquoi. Celles qui écraseraient une formule sont mises de côté et validées après une seule confirmation. Modifier et refuser restent des actions à l'unité.
 - **Suivi des soumissions** : l'utilisateur dispose d'une page "mes soumissions" listant ses propositions et leur statut (en attente, validée, refusée, modifiée par l'admin, invalidée par un changement du formulaire). Pas de notification active (email, push...) — l'information est consultable, pas poussée.
 - **Brouillon et publication** : la configuration d'un formulaire suit le cycle de sa page (voir [Page builder](06-page-builder.md#brouillon-et-publication)). L'admin modifie un brouillon ; rien ne change pour les utilisateurs ni pour les soumissions en attente tant que la page n'est pas publiée. Seuls les réglages opérationnels (ouvrir, fermer, date limite, validation automatique) sont immédiats.
 - **Formulaire modifié ou supprimé** : si l'administrateur change le mapping champ→cellule d'un formulaire ou le supprime alors que des soumissions sont encore en attente dessus, ces soumissions sont automatiquement invalidées **au moment de la publication** ; l'utilisateur devra resoumettre via la nouvelle version du formulaire. Avant de publier, l'admin voit combien de soumissions seraient invalidées. Précisément :
@@ -63,6 +64,9 @@ La ligne cible n'est calculée qu'à ce moment-là, jamais à la soumission.
 ### Validation automatique
 - Même chemin de code que la validation manuelle, déclenché à la soumission, avec l'utilisateur comme auteur de la soumission et le « système » comme valideur dans le journal.
 - Les écritures d'une même source sont **sérialisées** (file par `source_id`) pour que deux validations simultanées ne choisissent pas la même ligne vide ni ne lisent la même valeur de départ d'un mouvement.
+
+### Validation groupée
+- Pas de transaction commune : chaque soumission a la sienne, avec le verrou de sa source. L'ordre (date de soumission croissante) fixe les lignes attribuées aux ajouts et l'ordre d'écriture de deux valeurs sur une même cellule.
 
 ### Sécurité
 - Validation stricte des mappings champ→cellule pour empêcher toute écriture hors du périmètre défini par l'admin. Pour un formulaire `ajout`, cette validation couvre aussi : les colonnes doivent appartenir à la plage autorisée par l'admin, la ligne assignée doit appartenir à la zone d'ajout et être vide au moment de l'écriture — vérifié côté backend à la validation, jamais seulement côté frontend.

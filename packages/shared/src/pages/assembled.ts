@@ -191,15 +191,20 @@ export interface AssembledPage {
   name: string;
   publishedAt: string | null;
   theme: { id: string; config: ThemeConfig };
+  /** Thème qui remplace `theme` quand l'utilisateur est en mode sombre ; `null` : aucun. */
+  darkTheme: { id: string; config: ThemeConfig } | null;
   showHeader: boolean;
   showFooter: boolean;
+  /** Sidebar commune affichée (la page n'a alors pas de sidebar propre). */
+  showSidebar: boolean;
   zones: { main: AssembledRow[] | null; sidebar: AssembledRow[] | null };
   /** Sources injoignables : renseigné pour l'admin seul, vide pour les utilisateurs. */
   unavailableSources: { id: string; name: string }[];
 }
 
-/** Header et footer partagés publiés (`GET /layout`) ; `null` s'ils ne l'ont jamais été. */
+/** Header, footer et sidebar commune publiés (`GET /layout`) ; `null` s'ils ne l'ont jamais été. */
 export interface AssembledLayout {
   header: AssembledRow[] | null;
   footer: AssembledRow[] | null;
+  sidebar: AssembledRow[] | null;
 }

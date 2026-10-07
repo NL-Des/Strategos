@@ -2,6 +2,7 @@ import { expect, type Locator, type Page, test } from '@playwright/test';
 import {
   adminNav,
   clickAndWait,
+  dialogButton,
   login,
   loginAsAdmin,
   openAdminPage,
@@ -179,11 +180,16 @@ test('4. Nadia valide : la ligne est écrite, Kira voit « validée »', async (
   await page.getByRole('button', { name: t('submissions.admin.allUsers') }).click();
   await userFilter.fill('kira');
   await expect(card).toHaveCount(1);
+  // Validation groupée : la soumission est cochée, puis « Valider la sélection ».
+  await card.getByRole('checkbox').check();
+  await expect(page.getByText(t('submissions.admin.bulk.selected_one'))).toBeVisible();
+  await page.getByRole('button', { name: t('submissions.admin.bulk.validate') }).click();
   await clickAndWait(
     page,
-    card.getByRole('button', { name: t('submissions.admin.validate') }),
-    '/validate',
+    dialogButton(page, t('submissions.admin.bulk.validate')),
+    '/admin/submissions/validate',
   );
+  await expect(page.getByText(t('submissions.admin.bulk.validated_one')).first()).toBeVisible();
   // Traitée, elle quitte la file des soumissions en attente.
   await expect(card).toHaveCount(0);
 

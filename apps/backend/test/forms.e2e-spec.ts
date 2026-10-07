@@ -3,6 +3,7 @@ import type {
   AdminPage,
   AssembledPage,
   Block,
+  BulkValidateResult,
   FormDefinition,
   FormField,
   FormMode,
@@ -204,6 +205,7 @@ describe('Formulaires et soumissions (e2e)', () => {
         themeId: null,
         showHeader: true,
         showFooter: true,
+        showSidebar: false,
       },
       version: page.version,
     });
@@ -698,6 +700,85 @@ describe('Formulaires et soumissions (e2e)', () => {
         orderBy: { col: 'asc' },
       });
       expect(linked.map((c) => c.needsRecalc)).toEqual([true, true]);
+    });
+  });
+
+  describe('validation groupée', () => {
+    const validateMany = (ids: string[], confirm?: boolean) =>
+      admin.send('post', '/admin/submissions/validate', { ids, confirm });
+
+    it('de la plus ancienne à la plus récente ; formule à confirmer, id inconnu : les autres passent', async () => {
+      const { formIds } = await buildPage([
+        { mode: 'ajout', def: inscription },
+        { mode: 'modification', def: () => tresor('G3') },
+      ]);
+      const first = await submitted(kira, formIds[0]!, { classe: 'Mage', niveau: 12 });
+      const second = await submitted(paul, formIds[0]!, { classe: 'Voleur', niveau: 20 });
+      const formula = await submitted(kira, formIds[1]!, { or: 7 });
+      const unknown = uid();
+
+      const res = await validateMany([formula.id, second.id, unknown, first.id]);
+      expectStatus(res, 200);
+      const result = res.body as BulkValidateResult;
+      expect(result.validated).toEqual([first.id, second.id]);
+      expect(result.failed).toEqual([{ id: unknown, code: 'NOT_FOUND' }]);
+      expect(result.confirmationRequired).toEqual([
+        {
+          id: formula.id,
+          warnings: [
+            expect.objectContaining({ code: 'FORMULA_CELL_TARGETED', cells: [`${SHEET}!G3`] }),
+          ],
+        },
+      ]);
+      const rows = await prisma.submission.findMany({ orderBy: { createdAt: 'asc' } });
+      expect(rows.map((r) => [r.status, r.assignedRow])).toEqual([
+        ['validated', 3],
+        ['validated', 4],
+        ['pending', null],
+      ]);
+      expect((await staged(SHEET, 3, 7))!.formula).not.toBeNull();
+
+      const replay = await validateMany([formula.id], true);
+      expect(replay.body).toEqual({
+        validated: [formula.id],
+        confirmationRequired: [],
+        failed: [],
+      });
+      expect(await staged(SHEET, 3, 7)).toMatchObject({ formula: null, valueText: '7' });
+      // Une entrée de journal par soumission, comme pour une validation à l'unité.
+      expect(await prisma.auditLog.count({ where: { action: 'submission.validate' } })).toBe(3);
+    });
+
+    it('un échec laisse la soumission en attente, avec son code ; déjà décidée → SUBMISSION_NOT_PENDING', async () => {
+      const { formIds } = await buildPage([{ mode: 'ajout', def: inscription }]);
+      const subs = [];
+      for (const niveau of [1, 2, 3, 4]) {
+        subs.push(await submitted(kira, formIds[0]!, { classe: 'Mage', niveau }));
+      }
+      expectStatus(await validate(subs[0]!.id), 200);
+      const res = await validateMany(subs.map((s) => s.id));
+      expectStatus(res, 200);
+      expect(res.body).toEqual({
+        validated: [subs[1]!.id, subs[2]!.id],
+        confirmationRequired: [],
+        failed: [
+          { id: subs[0]!.id, code: 'SUBMISSION_NOT_PENDING' },
+          { id: subs[3]!.id, code: 'ADD_ZONE_FULL' },
+        ],
+      });
+      expect(await prisma.submission.count({ where: { status: 'pending' } })).toBe(1);
+    });
+
+    it('liste vide, doublon, trop longue ou mal formée → 400 ; réservée à l’admin', async () => {
+      const id = uid();
+      for (const ids of [[], [id, id], ['pas-un-uuid'], Array.from({ length: 101 }, uid)]) {
+        const res = await validateMany(ids);
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('VALIDATION_FAILED');
+      }
+      expect((await kira.send('post', '/admin/submissions/validate', { ids: [id] })).status).toBe(
+        404,
+      );
     });
   });
 

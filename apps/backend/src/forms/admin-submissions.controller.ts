@@ -9,11 +9,17 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import type { Paginated, Submission, SubmissionQueueItem } from '@strategos/shared';
+import type {
+  BulkValidateResult,
+  Paginated,
+  Submission,
+  SubmissionQueueItem,
+} from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import {
+  BulkValidateSubmissionsDto,
   ModifySubmissionDto,
   RejectSubmissionDto,
   SubmissionsQueryDto,
@@ -39,6 +45,21 @@ export class AdminSubmissionsController {
   @Get('count')
   async count(): Promise<{ count: number }> {
     return { count: await this.submissions.pendingCount() };
+  }
+
+  /** Valide les soumissions cochées ; le bilan dit lesquelles restent en attente, et pourquoi. */
+  @HttpCode(HttpStatus.OK)
+  @Post('validate')
+  validateMany(
+    @Body() dto: BulkValidateSubmissionsDto,
+    @CurrentAuth() auth: AuthContext,
+    @Actor() actor: AuditActor,
+  ): Promise<BulkValidateResult> {
+    return this.processor.validateMany(dto.ids, {
+      actor,
+      deciderId: auth.user.id,
+      confirm: dto.confirm === true,
+    });
   }
 
   @HttpCode(HttpStatus.OK)

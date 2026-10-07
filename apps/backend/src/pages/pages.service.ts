@@ -48,6 +48,7 @@ function auditState(page: Page, config: PageConfig | null) {
           themeId: config.themeId,
           showHeader: config.showHeader,
           showFooter: config.showFooter,
+          showSidebar: config.showSidebar === true,
           blocks: countBlocks([config.zones.main, config.zones.sidebar]),
         }
       : {}),
@@ -262,8 +263,11 @@ export class PagesService {
       name: page.name,
       publishedAt: page.publishedAt?.toISOString() ?? null,
       theme: await this.themes.resolve(config.themeId),
+      darkTheme: await this.themes.resolveDark(),
       showHeader: config.showHeader,
       showFooter: config.showFooter,
+      // Absent des pages publiées avant la sidebar commune.
+      showSidebar: config.showSidebar === true,
       zones: {
         main: config.zones.main ? assembleRows(config.zones.main, ctx) : null,
         sidebar: config.zones.sidebar ? assembleRows(config.zones.sidebar, ctx) : null,

@@ -86,10 +86,10 @@
   background:
     linear-gradient(to right, var(--surface) 30%, transparent) left / 2.5rem 100% no-repeat local,
     linear-gradient(to left, var(--surface) 30%, transparent) right / 2.5rem 100% no-repeat local,
-    radial-gradient(farthest-side at 0 50%, rgb(16 24 40 / 22%), transparent) left / 0.9rem 100%
+    radial-gradient(farthest-side at 0 50%, var(--scroll-shadow), transparent) left / 0.9rem 100%
       no-repeat scroll,
-    radial-gradient(farthest-side at 100% 50%, rgb(16 24 40 / 22%), transparent) right / 0.9rem 100%
-      no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--scroll-shadow), transparent) right / 0.9rem
+      100% no-repeat scroll,
     var(--surface);
 }
 
@@ -155,6 +155,20 @@ a.usage {
 
 .submission-item.conflict {
   border-left: 4px solid var(--danger);
+}
+
+/* Validation groupée : reste visible pendant le défilement de la file. */
+.bulk-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .submission-header {

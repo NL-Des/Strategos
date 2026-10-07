@@ -16,7 +16,7 @@ L'administrateur dispose d'un **espace d'administration dédié** pour gérer le
 | Groupe | Écrans |
 |---|---|
 | Activité | Soumissions (avec le compteur des propositions en attente) |
-| Contenu | Pages, Header, Footer, Médiathèque, Thèmes, Modèles |
+| Contenu | Pages, Header, Footer, Sidebar commune, Médiathèque, Thèmes, Modèles |
 | Données | Sources |
 | Accès | Comptes, Groupes, Droits |
 | Système | Réglages, Journal, Corbeille |
@@ -33,10 +33,10 @@ Un écran liste les sources de données et permet de les gérer (voir [Sources d
 - **connecter ou reconnecter** le compte OneDrive, puis ajouter un fichier ;
 - **uploader** un Excel, le **télécharger** et le **réimporter** (avec l'avertissement prévu) ;
 - **voir et modifier les cellules** d'un Excel uploadé : sa version de référence présentée comme un tableur (feuilles, fenêtres de 50 lignes × 26 colonnes, « aller à » une cellule). Un clic sur une cellule affiche sa formule ou sa valeur dans une barre de formule, où l'admin la modifie comme dans Excel : `=…` pour une formule, nombre, date, `VRAI`/`FAUX` ou texte. Les formules se lisent et s'écrivent **comme dans Excel en français** (`=SOMME(B2:B10;1,5)`) ; Strategos les convertit vers la syntaxe du fichier (`SUM(B2:B10,1.5)`) à l'enregistrement. À droite de la grille (dessous sur écran étroit), un **assistant de formules** aide à les lire et à les écrire, sans rien calculer : la formule décomposée en arbre (fonctions et leurs arguments nommés, opérations, références avec la valeur enregistrée des cellules citées), ses références surlignées dans la grille d'une couleur chacune, le guide des arguments de la fonction sous le curseur et un catalogue des fonctions courantes (recherche, catégories, insertion au curseur). Pendant la saisie d'une formule, un clic sur une cellule insère sa référence (Maj+clic ou glisser pour une plage, préfixée de la feuille si elle est ailleurs), comme dans Excel. Rien n'est calculé : une formule saisie garde la valeur de l'ancienne formule (vide s'il n'y en avait pas) et passe « à recalculer », comme les cellules qui dépendent d'une valeur modifiée ; Excel recalcule à l'ouverture du fichier téléchargé. Une formule ne peut pas citer un autre classeur (la liaison se crée dans Excel). Si une validation a changé la cellule pendant la saisie, la modification est refusée (conflit). Chaque modification est tracée et comptée au réimport comme une validation (voir [08](08-sources-donnees.md#excel-uploadé--version-de-référence-et-réimport)). Les sources connectées se consultent et se modifient dans Google Sheets ou OneDrive ;
-- pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages qui l'utilisent, par un module ou par un formulaire (le header et le footer compris). Retirer une source encore utilisée déclenche un avertissement.
+- pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages qui l'utilisent, par un module ou par un formulaire (le header, le footer et la sidebar commune compris). Retirer une source encore utilisée déclenche un avertissement.
 
 ### Réglages de l'instance
-Un écran regroupe les réglages globaux : **page d'arrivée**, **thème par défaut**, **durée de conservation des sauvegardes**, et téléchargement d'une sauvegarde.
+Un écran regroupe les réglages globaux : **page d'arrivée**, **thème par défaut**, **thème du mode sombre** (facultatif, voir [Thèmes](06-page-builder.md#thèmes)), **durée de conservation des sauvegardes**, et téléchargement d'une sauvegarde.
 
 ### Visualisation des droits
 Lecture seule, calculée selon la règle d'union des groupes :
@@ -49,7 +49,8 @@ Lecture seule, calculée selon la règle d'union des groupes :
 Sans notifications (voir [Transverse](11-transverse.md#notifications)), l'espace admin rend les soumissions en attente impossibles à manquer :
 - un **compteur** des soumissions en attente, visible en permanence dans l'espace admin ;
 - une **file** triable et filtrable par formulaire, page, utilisateur et date : le formulaire se choisit parmi ceux de la page filtrée, l'utilisateur se cherche par pseudo (ou d'un clic sur une soumission) ;
-- les **conflits** mis en évidence, c'est-à-dire plusieurs soumissions en attente sur une même cellule (voir [Formulaires et soumissions](09-formulaires-soumissions.md#soumissions)).
+- les **conflits** mis en évidence, c'est-à-dire plusieurs soumissions en attente sur une même cellule (voir [Formulaires et soumissions](09-formulaires-soumissions.md#soumissions)) ;
+- une **validation groupée** : chaque soumission en attente a une case à cocher, et « Valider la sélection » valide d'un coup celles qui sont cochées (voir [Formulaires et soumissions](09-formulaires-soumissions.md#soumissions)). « Tout cocher » prend les soumissions en attente de la page affichée, sauf celles en conflit, qui se cochent à la main.
 
 ### Corbeille
 Les éléments supprimés en douceur (pages, formulaires, sujets, messages des sujets et du chat, groupes, utilisateurs) sont listés dans une corbeille, filtrable par type, d'où l'administrateur peut les **restaurer** (voir [Suppression de contenu](11-transverse.md#suppression-de-contenu)).
@@ -71,7 +72,7 @@ Sont tracées (action, cible, état avant/après, date) :
 - la **validation, le refus et la modification des soumissions**, y compris les validations automatiques, avec la valeur réellement écrite (avant/après pour un mouvement), la cellule et la source ;
 - les sources : upload, ajout d'un Google Sheet ou d'un fichier OneDrive, saisie des identifiants Google (ID client, jamais le code secret), connexion du compte Google ou OneDrive (compte connecté, jamais le jeton), téléchargement d'un Excel uploadé, modification d'une cellule dans la grille (cellule, contenu avant et après), réimport avec le choix fait (annuler, écraser, réappliquer) et retrait ;
 - la modération par l'admin : masquage et rétablissement d'un message, modification ou suppression du message d'un autre, suppression d'un sujet ;
-- les modifications et **publications** de pages, du header et du footer partagés, les modifications, publications et réglages de formulaires ;
+- les modifications et **publications** de pages, du header, du footer et de la sidebar partagés, les modifications, publications et réglages de formulaires ;
 - l'upload et la suppression des images de la médiathèque ;
 - la création, la modification et la suppression des thèmes ;
 - l'enregistrement, la suppression et l'instanciation des modèles ;

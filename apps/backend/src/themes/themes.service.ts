@@ -29,17 +29,17 @@ export class ThemesService {
   ) {}
 
   async list(): Promise<Theme[]> {
-    const [themes, defaultId] = await Promise.all([
+    const [themes, designated] = await Promise.all([
       this.prisma.theme.findMany({ orderBy: { name: 'asc' } }),
-      this.defaultId(this.prisma),
+      this.designated(this.prisma),
     ]);
-    return themes.map((t) => toTheme(t, defaultId));
+    return themes.map((t) => toTheme(t, designated));
   }
 
   async get(id: string): Promise<Theme> {
     const theme = await this.prisma.theme.findUnique({ where: { id } });
     if (!theme) throw notFound();
-    return toTheme(theme, await this.defaultId(this.prisma));
+    return toTheme(theme, await this.designated(this.prisma));
   }
 
   async exists(id: string): Promise<boolean> {
@@ -60,6 +60,16 @@ export class ThemesService {
     return { id: theme.id, config: withThemeDefaults(theme.config) };
   }
 
+  /** Thème du mode sombre désigné dans les réglages, s'il y en a un. */
+  async resolveDark(): Promise<{ id: string; config: ThemeConfig } | null> {
+    const settings = await this.prisma.setting.findUnique({
+      where: { id: 1 },
+      include: { darkTheme: true },
+    });
+    const theme = settings?.darkTheme;
+    return theme ? { id: theme.id, config: withThemeDefaults(theme.config) } : null;
+  }
+
   async create(dto: CreateThemeDto, actor: AuditActor): Promise<Theme> {
     await this.checkMedia(dto.config);
     return this.withNameCheck(() =>
@@ -73,7 +83,7 @@ export class ThemesService {
           targetId: theme.id,
           after: themeState(theme),
         });
-        return toTheme(theme, await this.defaultId(tx));
+        return toTheme(theme, await this.designated(tx));
       }),
     );
   }
@@ -97,7 +107,7 @@ export class ThemesService {
           before: themeState(before),
           after: themeState(after),
         });
-        return toTheme(after, await this.defaultId(tx));
+        return toTheme(after, await this.designated(tx));
       }),
     );
   }
@@ -106,12 +116,13 @@ export class ThemesService {
    * Suppression physique (14 — `themes`), refusée pour le thème par défaut. Les
    * pages publiées qui l'utilisaient reviennent au thème par défaut (`on delete
    * set null`) ; les brouillons qui le citent aussi, pour rester enregistrables.
+   * S'il était le thème du mode sombre, les réglages n'en désignent plus (`set null`).
    */
   async remove(id: string, actor: AuditActor): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const theme = await tx.theme.findUnique({ where: { id } });
       if (!theme) throw notFound();
-      if ((await this.defaultId(tx)) === id) {
+      if ((await this.designated(tx)).defaultId === id) {
         throw new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.DEFAULT_THEME);
       }
       await tx.$executeRaw`
@@ -127,9 +138,13 @@ export class ThemesService {
     });
   }
 
-  private async defaultId(db: Db): Promise<string | null> {
+  /** Thèmes désignés dans les réglages : par défaut, et pour le mode sombre. */
+  private async designated(db: Db): Promise<Designated> {
     const settings = await db.setting.findUnique({ where: { id: 1 } });
-    return settings?.defaultThemeId ?? null;
+    return {
+      defaultId: settings?.defaultThemeId ?? null,
+      darkId: settings?.darkThemeId ?? null,
+    };
   }
 
   /** L'image de fond vient de la médiathèque. */
@@ -157,13 +172,19 @@ export class ThemesService {
 /** Config en JSON pur : pas d'instances de classes de validation dans la base. */
 const json = (config: ThemeConfig) => JSON.parse(JSON.stringify(config)) as Prisma.InputJsonValue;
 
-function toTheme(theme: ThemeRow, defaultId: string | null): Theme {
+interface Designated {
+  defaultId: string | null;
+  darkId: string | null;
+}
+
+function toTheme(theme: ThemeRow, { defaultId, darkId }: Designated): Theme {
   return {
     id: theme.id,
     name: theme.name,
     config: withThemeDefaults(theme.config),
     version: theme.version,
     isDefault: theme.id === defaultId,
+    isDark: theme.id === darkId,
   };
 }
 

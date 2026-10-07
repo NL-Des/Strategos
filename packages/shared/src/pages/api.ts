@@ -59,6 +59,8 @@ export const MEDIA_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image
 export interface InstanceSettings {
   landingPageId: string | null;
   defaultThemeId: string;
+  /** Thème de toutes les pages en mode sombre ; `null` : les pages gardent leur thème. */
+  darkThemeId: string | null;
   backupRetentionDays: number;
   version: number;
 }

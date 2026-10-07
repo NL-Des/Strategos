@@ -47,6 +47,7 @@ const config = (main: Row[], extra: Partial<PageConfig> = {}): PageConfig => ({
   themeId: null,
   showHeader: true,
   showFooter: true,
+  showSidebar: false,
   ...extra,
 });
 
@@ -217,12 +218,12 @@ describe('Pages (e2e)', () => {
     });
   });
 
-  describe('header et footer partagés', () => {
+  describe('header, footer et sidebar partagés', () => {
     const layoutRow = (type: string, cfg: object = {}): Row =>
       ({ id: uid(), columns: [{ width: '1/1', block: { id: uid(), type, config: cfg } }] }) as Row;
 
     it('formulaire, espace ou chat → 422 BLOCK_NOT_ALLOWED_IN_LAYOUT', async () => {
-      for (const kind of ['header', 'footer']) {
+      for (const kind of ['header', 'footer', 'sidebar']) {
         const part = (await admin.get(`/admin/layout/${kind}/draft`)).body;
         for (const type of ['form', 'discussion_space', 'chat']) {
           const res = await admin.send('put', `/admin/layout/${kind}/draft`, {
@@ -254,7 +255,11 @@ describe('Pages (e2e)', () => {
         }),
         200,
       );
-      expect((await kira.get('/layout')).body).toEqual({ header: null, footer: null });
+      expect((await kira.get('/layout')).body).toEqual({
+        header: null,
+        footer: null,
+        sidebar: null,
+      });
 
       expectStatus(await admin.send('post', '/admin/layout/header/publish'), 200);
       const layout = (await kira.get('/layout')).body;
@@ -264,7 +269,45 @@ describe('Pages (e2e)', () => {
     });
 
     it('kind inconnu → 400', async () => {
-      expect((await admin.get('/admin/layout/sidebar/draft')).status).toBe(400);
+      expect((await admin.get('/admin/layout/menu/draft')).status).toBe(400);
+    });
+
+    it('sidebar commune : publiée dans /layout, affichée par les pages qui la choisissent', async () => {
+      const target = await createPage('Tournoi');
+      await publish(target.id);
+      const part = (await admin.get('/admin/layout/sidebar/draft')).body;
+      expectStatus(
+        await admin.send('put', '/admin/layout/sidebar/draft', {
+          config: { rows: [buttonsTo({ label: 'Tournoi', pageId: target.id })] },
+          version: part.version,
+        }),
+        200,
+      );
+      expectStatus(await admin.send('post', '/admin/layout/sidebar/publish'), 200);
+      const layout = (await kira.get('/layout')).body;
+      expect(layout.sidebar[0].columns[0].block.config.buttons).toHaveLength(1);
+
+      // Par défaut, une page n'affiche pas la sidebar commune ; le choix suit la publication.
+      let page = await createPage('Accueil');
+      page = await publish(page.id);
+      expect((await kira.get(`/pages/${page.id}`)).body.showSidebar).toBe(false);
+      page = (await saveDraft(page, config([], { showSidebar: true }))).body;
+      expect((await kira.get(`/pages/${page.id}`)).body.showSidebar).toBe(false);
+      page = await publish(page.id);
+      expect((await kira.get(`/pages/${page.id}`)).body).toMatchObject({
+        showSidebar: true,
+        zones: { sidebar: null },
+      });
+    });
+
+    it('sidebar commune et sidebar propre à la page ensemble → 400', async () => {
+      const page = await createPage('Accueil');
+      const res = await saveDraft(page, {
+        ...config([], { showSidebar: true }),
+        zones: { main: [], sidebar: [] },
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.details.fields['config.showSidebar']).toEqual(['sidebarConflict']);
     });
   });
 

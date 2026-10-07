@@ -177,6 +177,7 @@ describe('Sources connectées : Google Sheets et OneDrive (e2e)', () => {
         themeId: null,
         showHeader: true,
         showFooter: true,
+        showSidebar: false,
       },
       version: page.version,
     });

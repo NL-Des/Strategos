@@ -1,4 +1,5 @@
 import {
+  BULK_VALIDATE_MAX,
   FormMode,
   REIMPORT_MODES,
   type ReimportMode,
@@ -7,6 +8,10 @@ import {
 } from '@strategos/shared';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
   IsBoolean,
   IsDefined,
   IsIn,
@@ -83,6 +88,16 @@ export class ValidateSubmissionDto {
   @IsOptional()
   @IsBoolean()
   confirm?: boolean;
+}
+
+/** Validation groupée des soumissions cochées dans la file. */
+export class BulkValidateSubmissionsDto extends ValidateSubmissionDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(BULK_VALIDATE_MAX)
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
+  ids: string[];
 }
 
 export class ModifySubmissionDto extends ValidateSubmissionDto {

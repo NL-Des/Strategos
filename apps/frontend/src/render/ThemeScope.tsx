@@ -4,6 +4,12 @@ import type { CSSProperties, ReactNode } from 'react';
 const font = (key: string) =>
   THEME_FONT_STACKS[key as keyof typeof THEME_FONT_STACKS] ?? THEME_FONT_STACKS.system;
 
+/** Fond sombre : les champs et barres de défilement du navigateur suivent. */
+function isDark(hex: string): boolean {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b! < 128;
+}
+
 /**
  * Applique un thème (06 — Thèmes) par variables CSS ; tout ce qui est à
  * l'intérieur en hérite : fond, textes, encadrés, boutons, tableaux, cartes et
@@ -52,6 +58,7 @@ export function ThemeScope({
     '--t-disc-msg-bg': discussions.messageBackground,
     '--t-disc-author': discussions.authorColor,
     '--t-disc-radius': `${discussions.radius}px`,
+    colorScheme: isDark(background.color) ? 'dark' : 'light',
   } as CSSProperties;
   return (
     <div className={`themed ${className}`.trim()} style={style}>

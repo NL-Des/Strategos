@@ -1,0 +1,25 @@
+-- Thèmes fournis (06 — Thèmes) : copie de `THEME_PRESETS` (packages/shared) au
+-- moment de la migration. Un thème du même nom, créé par l'admin, est laissé tel quel.
+INSERT INTO "themes" ("id", "name", "config")
+SELECT uuidv7(), 'Océan', '{"background":{"color":"#f1f6fb","imageMediaId":null},"text":{"color":"#14283d","headingColor":"#0f3d66","linkColor":"#0b63b3","font":"system","headingFont":"humanist","size":16},"surface":{"color":"#ffffff","borderColor":"#c9d8e8","radius":8},"buttons":{"background":"#0b63b3","color":"#ffffff","radius":6,"style":"filled"},"tables":{"headerBackground":"#dfeaf5","headerColor":"#0f3d66","borderColor":"#c9d8e8","stripeColor":"#f5f9fd"},"cards":{"background":"#ffffff","borderColor":"#c9d8e8","titleColor":"#0f3d66","radius":8,"shadow":false},"discussions":{"background":"#ffffff","borderColor":"#c9d8e8","messageBackground":"#f1f6fb","authorColor":"#0b63b3","radius":8}}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM "themes" WHERE "name" = 'Océan');
+
+INSERT INTO "themes" ("id", "name", "config")
+SELECT uuidv7(), 'Forêt', '{"background":{"color":"#f3f7f2","imageMediaId":null},"text":{"color":"#1d2b22","headingColor":"#1f4d33","linkColor":"#1f6b43","font":"system","headingFont":"system","size":16},"surface":{"color":"#ffffff","borderColor":"#cddccf","radius":8},"buttons":{"background":"#1f6b43","color":"#ffffff","radius":6,"style":"filled"},"tables":{"headerBackground":"#e1ece2","headerColor":"#1f4d33","borderColor":"#cddccf","stripeColor":"#f6faf5"},"cards":{"background":"#ffffff","borderColor":"#cddccf","titleColor":"#1f4d33","radius":8,"shadow":false},"discussions":{"background":"#ffffff","borderColor":"#cddccf","messageBackground":"#f3f7f2","authorColor":"#1f6b43","radius":8}}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM "themes" WHERE "name" = 'Forêt');
+
+INSERT INTO "themes" ("id", "name", "config")
+SELECT uuidv7(), 'Sable', '{"background":{"color":"#faf6ef","imageMediaId":null},"text":{"color":"#2e261c","headingColor":"#5a3d1a","linkColor":"#8a4b12","font":"system","headingFont":"serif","size":16},"surface":{"color":"#fffdf9","borderColor":"#e3d7c3","radius":8},"buttons":{"background":"#8a4b12","color":"#ffffff","radius":6,"style":"filled"},"tables":{"headerBackground":"#f0e6d4","headerColor":"#5a3d1a","borderColor":"#e3d7c3","stripeColor":"#fcf8f1"},"cards":{"background":"#fffdf9","borderColor":"#e3d7c3","titleColor":"#5a3d1a","radius":8,"shadow":false},"discussions":{"background":"#fffdf9","borderColor":"#e3d7c3","messageBackground":"#faf6ef","authorColor":"#8a4b12","radius":8}}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM "themes" WHERE "name" = 'Sable');
+
+INSERT INTO "themes" ("id", "name", "config")
+SELECT uuidv7(), 'Prune', '{"background":{"color":"#f8f4f9","imageMediaId":null},"text":{"color":"#2a1f30","headingColor":"#4d2360","linkColor":"#7a2f96","font":"system","headingFont":"system","size":16},"surface":{"color":"#ffffff","borderColor":"#dccfe2","radius":8},"buttons":{"background":"#7a2f96","color":"#ffffff","radius":6,"style":"filled"},"tables":{"headerBackground":"#ecdff0","headerColor":"#4d2360","borderColor":"#dccfe2","stripeColor":"#faf6fb"},"cards":{"background":"#ffffff","borderColor":"#dccfe2","titleColor":"#4d2360","radius":8,"shadow":true},"discussions":{"background":"#ffffff","borderColor":"#dccfe2","messageBackground":"#f8f4f9","authorColor":"#7a2f96","radius":8}}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM "themes" WHERE "name" = 'Prune');
+
+INSERT INTO "themes" ("id", "name", "config")
+SELECT uuidv7(), 'Sombre', '{"background":{"color":"#14171c","imageMediaId":null},"text":{"color":"#e6e9ee","headingColor":"#f4f6f9","linkColor":"#8ab4ff","font":"system","headingFont":"system","size":16},"surface":{"color":"#1d2128","borderColor":"#343b47","radius":8},"buttons":{"background":"#8ab4ff","color":"#10141a","radius":6,"style":"filled"},"tables":{"headerBackground":"#262c36","headerColor":"#f4f6f9","borderColor":"#343b47","stripeColor":"#191d23"},"cards":{"background":"#1d2128","borderColor":"#343b47","titleColor":"#f4f6f9","radius":8,"shadow":false},"discussions":{"background":"#1d2128","borderColor":"#343b47","messageBackground":"#262c36","authorColor":"#8ab4ff","radius":8}}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM "themes" WHERE "name" = 'Sombre');
+
+INSERT INTO "themes" ("id", "name", "config")
+SELECT uuidv7(), 'Bleu nuit', '{"background":{"color":"#0e1626","imageMediaId":null},"text":{"color":"#dfe6f3","headingColor":"#f1f5fc","linkColor":"#7cc4ff","font":"system","headingFont":"geometric","size":16},"surface":{"color":"#162036","borderColor":"#2b3a57","radius":8},"buttons":{"background":"#6aa5ff","color":"#0b1220","radius":6,"style":"filled"},"tables":{"headerBackground":"#1e2b47","headerColor":"#f1f5fc","borderColor":"#2b3a57","stripeColor":"#121b2e"},"cards":{"background":"#162036","borderColor":"#2b3a57","titleColor":"#f1f5fc","radius":8,"shadow":false},"discussions":{"background":"#162036","borderColor":"#2b3a57","messageBackground":"#1e2b47","authorColor":"#7cc4ff","radius":8}}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM "themes" WHERE "name" = 'Bleu nuit');

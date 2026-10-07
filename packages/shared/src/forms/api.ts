@@ -145,6 +145,27 @@ export interface ModifySubmissionInput {
   confirm?: boolean;
 }
 
+/** Soumissions cochées dans la file, à valider d'un coup (au plus `BULK_VALIDATE_MAX`). */
+export const BULK_VALIDATE_MAX = 100;
+
+export interface BulkValidateInput {
+  ids: string[];
+  /** Écraser les cellules-formules visées. */
+  confirm?: boolean;
+}
+
+/**
+ * Bilan de `POST /admin/submissions/validate` : chaque soumission est validée
+ * séparément, de la plus ancienne à la plus récente ; un échec n'empêche pas les
+ * autres. Celles de `confirmationRequired` et de `failed` restent en attente.
+ */
+export interface BulkValidateResult {
+  validated: string[];
+  /** Cellules-formules visées : à rejouer avec `confirm: true`. */
+  confirmationRequired: { id: string; warnings: Warning[] }[];
+  failed: { id: string; code: ErrorCode }[];
+}
+
 /** `GET /admin/pages/:id/publish/preview`. */
 export interface PublishPreview {
   forms: {

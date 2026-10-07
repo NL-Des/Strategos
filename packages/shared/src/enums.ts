@@ -16,6 +16,7 @@ export type BackupStatus = (typeof BackupStatus)[keyof typeof BackupStatus];
 export const LayoutKind = {
   header: 'header',
   footer: 'footer',
+  sidebar: 'sidebar',
 } as const;
 export type LayoutKind = (typeof LayoutKind)[keyof typeof LayoutKind];
 

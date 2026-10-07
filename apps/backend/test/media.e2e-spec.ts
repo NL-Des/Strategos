@@ -66,6 +66,7 @@ describe('Médiathèque et réglages (e2e)', () => {
         themeId: null,
         showHeader: true,
         showFooter: true,
+        showSidebar: false,
       },
     });
     expectStatus(res, 200);

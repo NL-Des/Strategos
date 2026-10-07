@@ -1,5 +1,6 @@
 import type {
   AdminForm,
+  BulkValidateResult,
   FormDefinition,
   FormMode,
   FormPrefill,
@@ -66,6 +67,11 @@ export function listSubmissions(filters: QueueFilters, page: number) {
 export const pendingCount = () => apiFetch<{ count: number }>('/admin/submissions/count');
 export const validateSubmission = (id: string, confirm = false) =>
   apiFetch<Submission>(`/admin/submissions/${id}/validate`, { method: 'POST', body: { confirm } });
+export const validateSubmissions = (ids: string[], confirm = false) =>
+  apiFetch<BulkValidateResult>('/admin/submissions/validate', {
+    method: 'POST',
+    body: { ids, confirm },
+  });
 export const modifySubmission = (id: string, values: SubmissionValues, confirm = false) =>
   apiFetch<Submission>(`/admin/submissions/${id}/modify`, {
     method: 'POST',

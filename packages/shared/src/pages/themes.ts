@@ -171,4 +171,6 @@ export interface Theme {
   version: number;
   /** Thème désigné dans les réglages de l'instance ; il ne peut pas être supprimé. */
   isDefault: boolean;
+  /** Thème du mode sombre, désigné dans les réglages de l'instance. */
+  isDark: boolean;
 }

@@ -92,6 +92,7 @@ function ThemeEditor({ theme }: { theme: Theme }) {
       <h1>
         {theme.name}
         {theme.isDefault && <span className="badge">{t('themes.default')}</span>}
+        {theme.isDark && <span className="badge">{t('themes.darkMode')}</span>}
       </h1>
       <div className="theme-editor">
         <form
