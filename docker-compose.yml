@@ -23,6 +23,7 @@ services:
     environment:
       DOMAIN: ${DOMAIN:-localhost}
       HSTS: ${HSTS:-max-age=31536000}
+      TLS_DIRECTIVE: ${TLS_DIRECTIVE:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

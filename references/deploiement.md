@@ -1,6 +1,6 @@
 # Mise en production
 
-Ce guide installe Strategos sur une machine accessible depuis Internet, avec un nom de domaine et le HTTPS automatique. Il vaut pour deux cas :
+Ce guide installe Strategos sur une machine accessible depuis Internet, avec un nom de domaine et le HTTPS automatique. Pour un site réservé à un réseau interne (entreprise, association, maison), suivez-le aussi, avec les différences de la [section 11](#11-installation-sur-un-réseau-interne). Il vaut pour deux cas :
 
 - **un serveur loué (VPS)** chez un hébergeur (OVH, Hetzner, Scaleway…) ;
 - **une machine chez vous**, derrière votre box Internet.
@@ -23,6 +23,11 @@ sudo usermod -aG docker "$USER"   # puis se déconnecter et se reconnecter
 sudo apt install -y git
 docker compose version            # doit afficher une version 2.x
 ```
+
+Deux précautions :
+
+- `curl … | sudo sh` exécute en administrateur un script téléchargé à l'instant. C'est la méthode que Docker documente, mais vous pouvez préférer l'installation par les dépôts `apt` de Docker, décrite sur la même page de sa documentation.
+- **Le groupe `docker` équivaut aux droits d'administrateur** : tout compte qui en fait partie peut lire et modifier toute la machine. N'y ajoutez que le compte qui administre le site, et protégez ce compte comme un compte `root`.
 
 ## 2. Nom de domaine
 
@@ -54,6 +59,14 @@ Trois ports doivent être ouverts vers la machine : **80/TCP**, **443/TCP** et *
 - **À domicile** : dans l'interface de la box, créez une **redirection de ports** (NAT/PAT) des ports 80 et 443 (TCP, et 443 en UDP) vers l'adresse locale de la machine, et donnez à celle-ci une adresse locale fixe (bail DHCP statique).
 
 La base de données n'est **pas** exposée : seul Caddy écoute sur Internet.
+
+### Protéger l'accès à la machine
+
+Le site ne vaut pas mieux que la machine qui le porte.
+
+- **SSH par clé, sans mot de passe ni connexion `root`.** Une fois votre clé installée (`ssh-copy-id utilisateur@serveur`) et la connexion par clé vérifiée, mettez dans `/etc/ssh/sshd_config` : `PasswordAuthentication no` et `PermitRootLogin no`, puis `sudo systemctl restart ssh`. Gardez une session ouverte pendant l'essai, pour ne pas vous enfermer dehors.
+- **Mises à jour de sécurité automatiques** : `sudo apt install unattended-upgrades`, puis `sudo dpkg-reconfigure -plow unattended-upgrades`.
+- **Rien d'autre d'ouvert** : `sudo ufw status` ne doit lister que SSH, 80 et 443.
 
 ## 4. Installation
 
@@ -88,7 +101,7 @@ docker compose up -d --build
 La première construction prend quelques minutes. Au démarrage, le backend applique lui-même les migrations de la base. Pour vérifier :
 
 ```bash
-docker compose ps                          # les quatre services « running » (db « healthy »)
+docker compose ps                          # quatre services « running » (db « healthy »)
 docker compose logs -f backend proxy       # Ctrl+C pour quitter
 curl https://strategos.mon-domaine.fr/api/v1/health
 ```
@@ -97,7 +110,9 @@ Dans les journaux de `proxy`, Caddy indique l'obtention du certificat (`certific
 
 ## 6. Première connexion
 
-Connectez-vous avec **`admin` / `admin`**. Strategos impose aussitôt de choisir un nouveau nom et un mot de passe (12 caractères au moins) : rien d'autre n'est accessible avant. Faites-le tout de suite après le lancement.
+Connectez-vous avec **`admin` / `admin`**. Strategos impose aussitôt de choisir un nouveau nom et un mot de passe (12 caractères au moins) : rien d'autre n'est accessible avant.
+
+> **Faites-le dans la minute qui suit le lancement.** Tant que ce changement n'est pas fait, quiconque atteint le site peut se connecter avec `admin` / `admin` et en prendre le contrôle. Sur un serveur exposé, le nom de domaine devient public dès que le certificat est obtenu : des robots le repèrent en quelques minutes.
 
 Si vous perdez ce mot de passe plus tard :
 
@@ -110,6 +125,7 @@ La commande affiche un mot de passe temporaire, à changer à la connexion suiva
 ## 7. Sauvegardes
 
 - Une sauvegarde de la base et des fichiers uploadés est faite **chaque nuit à 3 h** (fuseau `TZ`), dans le volume Docker `backups`. Leur durée de conservation se règle dans **Admin › Réglages** (7 jours par défaut).
+- Une archive contient **toute la base en clair** (comptes, empreintes des mots de passe, notes, messages, journal) : gardez vos copies sur un support chiffré ou dans un coffre, et ne les envoyez pas par e-mail.
 - Ces archives restent sur la même machine : si le disque ou le serveur est perdu, elles le sont aussi. **Routine à tenir** : téléchargez régulièrement la dernière sauvegarde depuis **Admin › Réglages › Sauvegardes** (par exemple chaque semaine, et avant chaque mise à jour) et gardez-la sur un autre support (PC, disque externe, stockage en ligne).
 - Sauvegarde immédiate : `docker compose exec backend node dist/src/cli/run-backup.js`.
 - Restauration : voir les commandes de la section « Exploitation » du [README](../README.md#exploitation-docker).
@@ -186,3 +202,46 @@ Pour que le gérant n'ait rien à saisir, faites vous-même les six étapes ci-d
 Puis `docker compose up -d`. Ces valeurs ont priorité sur celles du formulaire, qui n'est alors plus affiché : le gérant voit directement **Connecter mon compte Google**.
 
 Si la connexion Google expire (accès révoqué depuis le compte Google, mot de passe changé, six mois sans usage), un bandeau le signale dans l'espace admin : **Reconnecter** suffit.
+
+## 11. Installation sur un réseau interne
+
+Pour un site qui ne doit pas être joignable depuis Internet. Les sections 1, 4, 5, 6, 7 et 8 s'appliquent telles quelles ; voici ce qui change.
+
+### Nom et certificat
+
+Il n'y a ni nom de domaine public ni Let's Encrypt : Caddy fabrique lui-même le certificat.
+
+1. Choisissez un nom que les postes du réseau savent résoudre vers la machine, par exemple `strategos.lan` : enregistrement dans le DNS interne (souvent celui de la box ou du routeur), ou ligne dans le fichier `hosts` de chaque poste.
+2. Dans `.env` :
+
+   ```bash
+   DOMAIN=strategos.lan
+   TLS_DIRECTIVE=tls internal
+   HSTS=max-age=0
+   ```
+
+3. Lancez le site (section 5), puis récupérez le certificat racine de Caddy :
+
+   ```bash
+   docker compose cp proxy:/data/caddy/pki/authorities/local/root.crt ./strategos-racine.crt
+   ```
+
+4. **Installez ce certificat sur chaque poste**, comme autorité de confiance (Windows : « Autorités de certification racines de confiance » ; macOS : Trousseau d'accès ; Firefox : Paramètres › Certificats › Autorités). Sans cela, le navigateur affiche une alerte à chaque visite, et des utilisateurs habitués à passer outre une alerte ne remarqueront pas celle qui signalerait une vraie attaque.
+5. Une fois le certificat installé partout, retirez la ligne `HSTS=max-age=0` de `.env` et relancez (`docker compose up -d`) : les navigateurs refuseront alors toute connexion non chiffrée au site.
+
+Le fichier `root.key`, à côté du certificat, ne doit jamais quitter la machine.
+
+### Réseau
+
+- Aucun port à ouvrir vers Internet, aucune redirection sur la box. Le port 80 ne sert qu'à renvoyer vers le 443.
+- Limitez l'accès au sous-réseau prévu, par exemple : `sudo ufw allow from 192.168.1.0/24 to any port 443 proto tcp` (et de même pour le port 80), à la place des règles de la section 3.
+- **Un autre proxy devant le site ?** (proxy d'entreprise, répartiteur de charge.) Ajoutez `TRUST_PROXY=2` dans `.env`. Sinon Strategos voit tous les utilisateurs arriver de la même adresse : la limitation des tentatives de connexion et la limite de débit s'appliquent alors à tout le monde à la fois, et un utilisateur maladroit peut bloquer ses collègues pendant quinze minutes.
+- Même sans autre proxy, des postes qui sortent par une même adresse (NAT) partagent le blocage par adresse : il faut 20 échecs de connexion consécutifs depuis cette adresse pour le déclencher.
+
+### Sauvegardes
+
+Copiez les archives sur un **autre support du réseau** (serveur de fichiers, NAS), pas seulement sur la machine du site.
+
+### Ce qui ne change pas
+
+La menace principale d'un site interne vient de ses propres utilisateurs et des postes compromis : gardez le site à jour (section 8) et changez les identifiants `admin` / `admin` dès le lancement, comme sur un serveur exposé.

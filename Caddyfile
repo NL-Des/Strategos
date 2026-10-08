@@ -8,6 +8,10 @@
 {$DOMAIN:localhost} {
 	encode zstd gzip
 
+	# Vide par défaut. TLS_DIRECTIVE="tls internal" dans .env impose le certificat interne
+	# de Caddy pour un nom qui n'existe que sur un réseau interne (deploiement.md §11).
+	{$TLS_DIRECTIVE}
+
 	# En-têtes de sécurité (bilan-securite.md, M1). `?` : seulement si le backend n'a pas
 	# posé le sien (les images et pièces jointes sont servies avec une CSP plus stricte).
 	header {

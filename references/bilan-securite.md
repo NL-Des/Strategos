@@ -21,7 +21,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | Réf. | Gravité | Constat | État |
 |---|---|---|---|
 | C1 | Critique | Contournement de `AdminGuard` par la casse de l'URL | **Corrigé** (guard fondé sur `@AdminOnly()`, routage sensible à la casse, test `admin-guard.e2e-spec.ts`) |
-| E1 | Élevée | Compte `admin` / `admin` actif au déploiement | Théorique (conception) |
+| E1 | Élevée | Compte `admin` / `admin` actif au déploiement | **Ouvert** (reporté ; le guide de déploiement demande de changer les identifiants dans la minute) |
 | M1 | Moyenne | Aucun en-tête de sécurité HTTP | **Corrigé** (`Caddyfile` ; CSP rejouée sur les parcours navigateur, sélecteur Google réel non testé) |
 | M2 | Moyenne | Un tiers peut verrouiller n'importe quel compte | **Corrigé** (blocage par couple pseudo + adresse ; délai de 15 s au plus sur le pseudo, nul depuis une adresse connue) |
 | M3 | Moyenne | Limitation des tentatives contournable par des requêtes simultanées | **Corrigé** (tentative enregistrée avant la vérification, sous verrou) |
@@ -29,9 +29,9 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | M5 | Moyenne | Aucune limite de débit ni de quota hors connexion ; classeur très compressé | **Corrigé** (300 requêtes par minute et par session ; quota et purge des images libres ; taille décompressée mesurée ; mémoire et processus des conteneurs plafonnés) |
 | M6 | Moyenne | Conteneurs en `root`, sans durcissement ; images non épinglées | **Corrigé**, sauf l'épinglage : backend sous `node`, lecture seule, capacités retirées, deux réseaux, `.dockerignore` complété. Les images restent désignées par étiquette (choix assumé : les correctifs arrivent par `build --pull`) |
 | M7 | Moyenne | Mot de passe PostgreSQL par défaut `strategos` | **Corrigé** (`POSTGRES_PASSWORD` obligatoire) |
-| M8 | Moyenne | Sauvegardes en clair, téléchargeables depuis le site | Lecture du code |
-| M9 | Moyenne | RGPD : pas d'effacement, journal sans purge | Conception (point connu) |
-| M10 | Moyenne | Pas de second facteur pour l'admin | Conception |
+| M8 | Moyenne | Sauvegardes en clair, téléchargeables depuis le site | **Ouvert** (hors de ce chantier) |
+| M9 | Moyenne | RGPD : pas d'effacement, journal sans purge | **Ouvert** (hors de ce chantier) |
+| M10 | Moyenne | Pas de second facteur pour l'admin | **Ouvert** (hors de ce chantier) |
 | F1 | Faible | Salon de chat non revérifié après retrait d'un droit | **Corrigé** (revérifié toutes les 30 s) |
 | F2 | Faible | Protections qui dépendent de `NODE_ENV=production` | **Corrigé** (protégé par défaut, ouvert si `development` ou `test`) |
 | F3 | Faible | Session sans durée de vie maximale | **Corrigé** (30 jours ; pas de liste des sessions dans le profil) |
@@ -40,7 +40,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | F6 | Faible | Mot de passe de la base visible dans la liste des processus | **Corrigé** (`PGPASSWORD`) |
 | I1 | Information | En-tête `X-Powered-By: Express` | **Corrigé** |
 | I2 | Information | Poste de développement : fichiers et droits à ranger | **Corrigé** pour les droits (`600`) ; `.env` racine et `secrets/` à ranger à la main |
-| I3 | Information | Guide de déploiement : compléments | Lecture |
+| I3 | Information | Guide de déploiement : compléments | **Corrigé** (section « réseau interne », SSH, mises à jour, avertissements) |
 
 ## 2. Méthode et limites
 
