@@ -1,3 +1,8 @@
+{
+	# Le certificat interne n'a pas à être installé dans le conteneur (lecture seule).
+	skip_install_trust
+}
+
 # DOMAIN=localhost → certificat interne de Caddy (HTTPS local) ;
 # un vrai nom de domaine → certificat Let's Encrypt obtenu et renouvelé automatiquement.
 {$DOMAIN:localhost} {

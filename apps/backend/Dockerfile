@@ -13,6 +13,9 @@ ENV NODE_ENV=production
 RUN apk add --no-cache postgresql18-client tzdata
 WORKDIR /app
 COPY --from=build /out .
+# Le serveur tourne sans droits d'administration ; il n'écrit que dans ses volumes.
+RUN mkdir -p /data/uploads /data/backups /data/keys && chown -R node:node /data
+USER node
 EXPOSE 3000
 # Applique les migrations en attente, puis démarre le serveur.
 CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/src/main.js"]

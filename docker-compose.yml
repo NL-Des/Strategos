@@ -1,10 +1,21 @@
 # Strategos : une seule commande, `docker compose up` (architecture.md §7).
+#
+# Cloisonnement (bilan-securite.md, M6) : système de fichiers en lecture seule, aucune
+# capacité Linux hors celles citées, pas d'élévation de privilèges, et deux réseaux :
+# `front` (proxy, frontend, backend) et `back` (backend, base). Le proxy et le frontend
+# ne peuvent pas joindre la base.
 services:
   proxy:
     image: caddy:2-alpine
     restart: unless-stopped
     mem_limit: 256m
     pids_limit: 200
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    # Écoute sur les ports 80 et 443.
+    cap_add: [NET_BIND_SERVICE]
+    networks: [front]
     ports:
       - '80:80'
       - '443:443'
@@ -27,6 +38,12 @@ services:
     restart: unless-stopped
     mem_limit: 128m
     pids_limit: 100
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    cap_add: [NET_BIND_SERVICE]
+    tmpfs: [/data, /config]
+    networks: [front]
 
   backend:
     build:
@@ -36,6 +53,12 @@ services:
     # Plafonds : un conteneur emballé ne prend pas toute la machine (2 Go conseillés).
     mem_limit: ${BACKEND_MEM_LIMIT:-1g}
     pids_limit: 300
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    # Dossier de travail des sauvegardes et des restaurations.
+    tmpfs: [/tmp]
+    networks: [front, back]
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -75,12 +98,40 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      volumes-init:
+        condition: service_completed_successfully
+
+  # Donne les volumes du backend à son utilisateur (`node`), puis s'arrête. Nécessaire pour
+  # une installation dont les volumes ont été créés quand le backend tournait en root.
+  volumes-init:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    user: root
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt: ['no-new-privileges:true']
+    command: ['chown', '-R', 'node:node', '/data/uploads', '/data/backups', '/data/keys']
+    volumes:
+      - uploads:/data/uploads
+      - backups:/data/backups
+      - keys:/data/keys
 
   db:
     image: postgres:18-alpine
     restart: unless-stopped
     mem_limit: 512m
     pids_limit: 200
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    # Ce que demande le démarrage de l'image : prise de propriété du dossier de données,
+    # puis passage à l'utilisateur `postgres`.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    tmpfs: [/tmp, /var/run/postgresql]
+    networks: [back]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-strategos}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD est à définir dans .env (voir .env.example)}
@@ -92,6 +143,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+networks:
+  front:
+  back:
 
 volumes:
   db_data:

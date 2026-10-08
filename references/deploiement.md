@@ -127,6 +127,10 @@ docker compose up -d --build
 
 Les migrations sont appliquées au redémarrage du backend. Téléchargez aussi la sauvegarde faite juste avant (section 7).
 
+Les images de base (`node:22-alpine`, `caddy:2-alpine`, `postgres:18-alpine`) sont désignées par leur étiquette : `--build` reprend celles déjà présentes sur la machine. Pour recevoir leurs correctifs de sécurité, ajoutez de temps en temps `docker compose build --pull` et `docker compose pull` avant le `up`.
+
+Au démarrage, le service `volumes-init` s'exécute une fois puis s'arrête (`Exited (0)` dans `docker compose ps -a`) : il donne les volumes du site à l'utilisateur sans privilèges sous lequel tourne le backend. C'est normal.
+
 Pour les mises à jour du système : `sudo apt update && sudo apt upgrade`, et de temps en temps `docker system prune` pour libérer l'espace des anciennes images.
 
 ## 9. Dépannage
