@@ -14,5 +14,5 @@ if (existsSync('.env')) process.loadEnvFile('.env');
 const app = await NestFactory.create<NestExpressApplication>(AppModule);
 configureApp(app);
 // Spécification OpenAPI consultable en développement seulement : `/api/docs`.
-if (!config.isProduction) SwaggerModule.setup('api/docs', app, buildOpenApiDocument(app));
+if (config.isDevelopment) SwaggerModule.setup('api/docs', app, buildOpenApiDocument(app));
 await app.listen(Number(process.env.PORT ?? 3000));

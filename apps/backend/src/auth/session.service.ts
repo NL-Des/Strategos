@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Db } from '../prisma/prisma.types.js';
-import { SESSION_TOUCH_INTERVAL_MS, SESSION_TTL_MS } from './auth.constants.js';
+import { SESSION_MAX_AGE_MS, SESSION_TOUCH_INTERVAL_MS, SESSION_TTL_MS } from './auth.constants.js';
 import { randomSecret } from './csrf.js';
 import type { AuthContext } from './request-context.js';
 
@@ -36,7 +36,10 @@ export class SessionService {
     return token;
   }
 
-  /** Session valide d'un compte actif, prolongée si besoin ; sinon `null`. */
+  /**
+   * Session valide d'un compte actif, prolongée si besoin ; sinon `null`. La
+   * prolongation ne dépasse jamais `SESSION_MAX_AGE_MS` après l'ouverture.
+   */
   async resolve(token: string): Promise<AuthContext | null> {
     const id = hashSessionToken(token);
     const session = await this.prisma.session.findUnique({
@@ -47,7 +50,9 @@ export class SessionService {
 
     const now = Date.now();
     const { user } = session;
-    if (session.expiresAt.getTime() <= now || user.disabledAt || user.deletedAt) {
+    // Fin de vie : 30 jours après l'ouverture, même si la session n'a jamais cessé de servir.
+    const maxAge = session.createdAt.getTime() + SESSION_MAX_AGE_MS;
+    if (session.expiresAt.getTime() <= now || maxAge <= now || user.disabledAt || user.deletedAt) {
       await this.prisma.session.deleteMany({ where: { id } });
       return null;
     }
@@ -56,7 +61,10 @@ export class SessionService {
     if (renewed) {
       await this.prisma.session.update({
         where: { id },
-        data: { lastSeenAt: new Date(now), expiresAt: new Date(now + SESSION_TTL_MS) },
+        data: {
+          lastSeenAt: new Date(now),
+          expiresAt: new Date(Math.min(now + SESSION_TTL_MS, maxAge)),
+        },
       });
     }
     return { sessionId: id, csrfSecret: session.csrfSecret, user, renewed };

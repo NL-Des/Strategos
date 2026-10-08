@@ -3,7 +3,7 @@ import { config } from '../config.js';
 import { SESSION_COOKIE, SESSION_TTL_MS } from './auth.constants.js';
 
 export function cookieOptions(): CookieOptions {
-  return { httpOnly: true, sameSite: 'strict', secure: config.isProduction, path: '/' };
+  return { httpOnly: true, sameSite: 'strict', secure: !config.isDevelopment, path: '/' };
 }
 
 /** Pose le cookie de session pour 7 jours : à la connexion, puis à chaque prolongation. */

@@ -41,6 +41,18 @@ export function toPgUrl(databaseUrl: string): string {
   return url.toString();
 }
 
+/**
+ * Adresse de la base pour `pg_dump` et `pg_restore`, **sans le mot de passe** :
+ * un argument se lit dans la liste des processus, pas l'environnement d'un
+ * autre processus. Le mot de passe passe donc par `PGPASSWORD`.
+ */
+export function pgTarget(databaseUrl: string): { url: string; env: NodeJS.ProcessEnv } {
+  const url = new URL(toPgUrl(databaseUrl));
+  const password = decodeURIComponent(url.password);
+  url.password = '';
+  return { url: url.toString(), env: password ? { PGPASSWORD: password } : {} };
+}
+
 export interface BackupLike {
   id: string;
   status: 'running' | 'ok' | 'failed';

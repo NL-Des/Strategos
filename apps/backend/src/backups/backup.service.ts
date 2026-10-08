@@ -11,7 +11,7 @@ import { AppException } from '../common/app-exception.js';
 import { config } from '../config.js';
 import type { Backup } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { archiveDate, archiveName, selectExpired, toPgUrl } from './backup-archive.js';
+import { archiveDate, archiveName, pgTarget, selectExpired } from './backup-archive.js';
 
 const run = promisify(execFile);
 const notFound = () => new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
@@ -80,14 +80,19 @@ export class BackupService {
     const partial = `${target}.partial`;
     const work = await mkdtemp(join(tmpdir(), 'strategos-backup-'));
     try {
-      await run(config.pgDumpBin, [
-        '--format=custom',
-        '--no-owner',
-        // La table des sauvegardes décrit le volume `backups`, pas l'état à restaurer.
-        '--exclude-table-data=backups',
-        `--file=${join(work, 'db.dump')}`,
-        `--dbname=${toPgUrl(config.databaseUrl)}`,
-      ]);
+      const pg = pgTarget(config.databaseUrl);
+      await run(
+        config.pgDumpBin,
+        [
+          '--format=custom',
+          '--no-owner',
+          // La table des sauvegardes décrit le volume `backups`, pas l'état à restaurer.
+          '--exclude-table-data=backups',
+          `--file=${join(work, 'db.dump')}`,
+          `--dbname=${pg.url}`,
+        ],
+        { env: { ...process.env, ...pg.env } },
+      );
       await mkdir(join(work, 'uploads'));
       await cp(config.uploadsDir, join(work, 'uploads'), { recursive: true, force: true }).catch(
         (error: NodeJS.ErrnoException) => {

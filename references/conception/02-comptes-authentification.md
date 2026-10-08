@@ -6,7 +6,7 @@ Comment un compte naît, se connecte, évolue et disparaît. Les comptes sont ex
 ## Règles fonctionnelles
 
 ### Authentification
-Authentification par **session**, mots de passe **hachés** (argon2id — à sens unique, jamais réversible). Une session expire après **7 jours sans activité**.
+Authentification par **session**, mots de passe **hachés** (argon2id — à sens unique, jamais réversible). Une session expire après **7 jours sans activité**, et dans tous les cas **30 jours après la connexion** : il faut alors se reconnecter.
 
 Mot de passe : **12 à 128 caractères**, sans autre règle (une phrase facile à retenir convient). Pseudo : 2 à 32 caractères, insensible à la casse.
 
@@ -36,7 +36,7 @@ Géré depuis l'espace d'administration (voir [Administration](04-administration
 ## Points techniques
 - **AuthModule** : session (jeton aléatoire de 256 bits dans le cookie ; la table `sessions` n'en garde que l'empreinte SHA-256), hash argon2id, `AuthGuard`.
 - **UsersModule** : CRUD des comptes, réinitialisation du mot de passe par l'admin, désactivation/réactivation (révocation des sessions via la table `sessions` d'AuthModule).
-- Sessions : cookie `httpOnly`, `SameSite=Strict`, `secure` en production, rotation à la connexion. Glissantes : 7 jours après la dernière activité (prolongation écrite au plus une fois par minute, et le cookie est alors renvoyé avec la nouvelle échéance) ; purge quotidienne des sessions expirées.
+- Sessions : cookie `httpOnly`, `SameSite=Strict`, `secure` sauf si `NODE_ENV` vaut `development` ou `test` (protégé par défaut : un `NODE_ENV` oublié ne retire rien), rotation à la connexion. Glissantes : 7 jours après la dernière activité (prolongation écrite au plus une fois par minute, et le cookie est alors renvoyé avec la nouvelle échéance), sans jamais dépasser 30 jours après l'ouverture de la session (`sessions.created_at`) ; purge quotidienne des sessions expirées.
 - Désactivation ou suppression d'un compte → révocation immédiate de toutes ses sessions.
 - Création d'un compte et réinitialisation par l'admin → `must_change_credentials = true` sur le compte, et révocation de ses sessions.
 - Limitation des tentatives : table `login_attempts`. Trois règles, évaluées dans cet ordre : (1) les 5 dernières tentatives du couple pseudo + adresse sont des échecs et la dernière date de moins de 15 minutes → refus jusqu'à la fin des 15 minutes ; (2) même règle sur les 20 dernières tentatives de l'adresse (seuil plus haut : plusieurs personnes peuvent partager une adresse) ; (3) à partir de 5 échecs consécutifs récents sur le pseudo, toutes adresses confondues, un délai de 1, 2, 4, 8 puis 15 secondes au plus doit séparer deux tentatives, sauf depuis une adresse connue du compte (une connexion réussie dans `login_attempts`, ou une session ouverte depuis elle). Le refus est un `429 AUTH_TOO_MANY_ATTEMPTS` avec `retryAfter` ; une tentative refusée n'est pas enregistrée. La tentative est contrôlée puis **enregistrée comme un échec avant** la vérification du mot de passe, sous un verrou consultatif par pseudo et par adresse, et passée en succès ensuite : des requêtes simultanées ne dépassent pas les seuils. Limite connue de la règle (3) : pendant une attaque en cours, le titulaire qui se connecte depuis une adresse nouvelle peut devoir réessayer quelques secondes plus tard. L'adresse du client est lue derrière `TRUST_PROXY` proxys (1 par défaut : Caddy). S'applique aussi au mot de passe actuel saisi lors d'un changement d'identifiants ou de mot de passe : un échec compte comme à la connexion, un mot de passe actuel correct remet le compteur à zéro. Un compte désactivé ou supprimé n'est signalé (`AUTH_ACCOUNT_DISABLED`) qu'avec le bon mot de passe, pour ne pas révéler quels comptes existent.
@@ -61,6 +61,6 @@ _Aucune pour l'instant._
 - Récupération par commande serveur uniquement : pas de question secrète.
 
 **Décisions (2026-09-26)**
-- Session de 7 jours glissants ; blocage de 15 minutes après 5 échecs ; mot de passe de 12 à 128 caractères sans autre règle.
+- Session de 7 jours glissants, 30 jours au plus ; blocage de 15 minutes après 5 échecs ; mot de passe de 12 à 128 caractères sans autre règle.
 - Jeton CSRF avant connexion porté par un cookie de pré-session.
 - Compte admin protégé des actions web de désactivation, suppression et réinitialisation.

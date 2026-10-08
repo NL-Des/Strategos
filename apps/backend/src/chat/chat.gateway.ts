@@ -52,7 +52,8 @@ const CLOSE_TRY_LATER = 1013;
  * pas aux passerelles, d'où le chemin explicite. Authentifiée par le **cookie de
  * session** au handshake, avec vérification de l'en-tête `Origin`. Une session
  * révoquée (compte désactivé) ferme la connexion — au message suivant et par une
- * revalidation périodique. L'accès à un salon suit la lecture de la page.
+ * revalidation périodique. L'accès à un salon suit la lecture de la page, à
+ * l'entrée puis à chaque revalidation.
  *
  * Tout ce qu'un client envoie est borné (`config.ws`) : taille d'une trame,
  * nombre de connexions par compte, nombre de trames par connexion.
@@ -193,6 +194,18 @@ export class ChatGateway
       if (!auth) {
         socket.close();
         this.handleDisconnect(socket);
+        continue;
+      }
+      socket.user = auth.user;
+      // Le droit de lire un salon peut être retiré après l'entrée (groupe quitté,
+      // page dépubliée) : le socket en sort, et ne reçoit plus ses messages.
+      for (const blockId of [...(socket.rooms ?? [])]) {
+        try {
+          await this.access.requireChatByBlock(auth.user, blockId);
+        } catch (err) {
+          // Une panne (base injoignable) ne fait sortir personne : seul un refus compte.
+          if (err instanceof AppException) this.realtime.leave(blockId, socket);
+        }
       }
     }
   }

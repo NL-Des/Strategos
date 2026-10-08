@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "prisma generate && nest build",
-    "dev": "nest start --watch",
+    "dev": "NODE_ENV=development nest start --watch",
     "start": "node dist/src/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",

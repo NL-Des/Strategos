@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { config } from '../config.js';
-import { toPgUrl } from './backup-archive.js';
+import { pgTarget } from './backup-archive.js';
 
 const run = promisify(execFile);
 
@@ -24,16 +24,21 @@ export async function restoreArchive(archive: string): Promise<void> {
     if (!(await stat(dump).catch(() => null))) {
       throw new Error("Cette archive n'est pas une sauvegarde Strategos (db.dump absent).");
     }
-    await run(config.pgRestoreBin, [
-      '--clean',
-      '--if-exists',
-      '--no-owner',
-      '--no-privileges',
-      '--single-transaction',
-      '--exit-on-error',
-      `--dbname=${toPgUrl(config.databaseUrl)}`,
-      dump,
-    ]);
+    const target = pgTarget(config.databaseUrl);
+    await run(
+      config.pgRestoreBin,
+      [
+        '--clean',
+        '--if-exists',
+        '--no-owner',
+        '--no-privileges',
+        '--single-transaction',
+        '--exit-on-error',
+        `--dbname=${target.url}`,
+        dump,
+      ],
+      { env: { ...process.env, ...target.env } },
+    );
     // Le dossier des fichiers est un point de montage : on vide son contenu sans le supprimer.
     await mkdir(config.uploadsDir, { recursive: true });
     for (const entry of await readdir(config.uploadsDir)) {

@@ -4,6 +4,7 @@ import {
   archiveName,
   type BackupLike,
   selectExpired,
+  pgTarget,
   toPgUrl,
 } from './backup-archive.js';
 
@@ -29,6 +30,19 @@ describe('toPgUrl', () => {
     expect(toPgUrl('postgresql://u:p@db:5432/base?schema=public&sslmode=require')).toBe(
       'postgresql://u:p@db:5432/base?sslmode=require',
     );
+  });
+});
+
+describe('pgTarget', () => {
+  it('sort le mot de passe de l’adresse et le passe par PGPASSWORD', () => {
+    expect(pgTarget('postgresql://u:p%40ss@db:5432/base?schema=public')).toEqual({
+      url: 'postgresql://u@db:5432/base',
+      env: { PGPASSWORD: 'p@ss' },
+    });
+    expect(pgTarget('postgresql://u@db:5432/base')).toEqual({
+      url: 'postgresql://u@db:5432/base',
+      env: {},
+    });
   });
 });
 

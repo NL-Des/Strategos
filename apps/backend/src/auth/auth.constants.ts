@@ -5,6 +5,8 @@ export const PRESESSION_COOKIE = 'strategos_presession';
 
 /** Session glissante : expire après 7 jours sans activité. */
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/** Durée de vie maximale d'une session, quelle que soit son activité : 30 jours. */
+export const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 /** La prolongation n'est écrite en base qu'une fois par minute au plus. */
 export const SESSION_TOUCH_INTERVAL_MS = 60 * 1000;
 

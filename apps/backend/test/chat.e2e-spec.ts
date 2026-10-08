@@ -4,6 +4,7 @@ import type { AdminPage, ChatMessageView, PageConfig, Row } from '@strategos/sha
 import { CHAT_WS_EVENTS } from '@strategos/shared';
 import type { Response } from 'supertest';
 import WebSocket from 'ws';
+import { ChatGateway } from '../src/chat/chat.gateway.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import {
   ADMIN_PASSWORD,
@@ -376,6 +377,36 @@ describe('Chat temps réel (e2e)', () => {
     const closed = wa.closed();
     wa.send(CHAT_WS_EVENTS.send, { blockId, clientId: 'c-1', content: 'encore là ?' });
     await expect(closed).resolves.toBeGreaterThanOrEqual(1000);
+  });
+
+  it('droit retiré après l’entrée → le socket sort du salon à la revalidation', async () => {
+    const { page, blockId } = await pageWithChat();
+    const alice = await member(app, admin, 'alice');
+    const bob = await member(app, admin, 'bob');
+    const group = await createGroup(admin, 'lecteurs', {
+      userIds: [alice.id, bob.id],
+      pageIds: [page.id],
+    });
+    const wa = new WsClient(port, alice.cookie);
+    const wb = new WsClient(port, bob.cookie);
+    await Promise.all([wa.open(), wb.open()]);
+    for (const ws of [wa, wb]) {
+      ws.send(CHAT_WS_EVENTS.join, { blockId });
+      await ws.next((f) => f.event === CHAT_WS_EVENTS.joined);
+    }
+
+    // Bob quitte le groupe : sa connexion reste ouverte, mais plus dans le salon.
+    expectStatus(
+      await admin.send('put', `/admin/groups/${group}/members`, { userIds: [alice.id] }),
+      200,
+    );
+    await (app.get(ChatGateway) as unknown as { revalidateAll(): Promise<void> }).revalidateAll();
+
+    wa.send(CHAT_WS_EVENTS.send, { blockId, clientId: 'a-1', content: 'entre nous' });
+    await wa.next((f) => f.event === CHAT_WS_EVENTS.ack);
+    await expect(wb.next((f) => f.event === 'chat.message.created', 300)).rejects.toThrow();
+    wa.close();
+    wb.close();
   });
 
   describe('plafonds de la passerelle', () => {

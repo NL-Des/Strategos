@@ -22,8 +22,13 @@ export const config = {
   get pgRestoreBin(): string {
     return process.env.PG_RESTORE_BIN || 'pg_restore';
   },
-  get isProduction(): boolean {
-    return process.env.NODE_ENV === 'production';
+  /**
+   * Poste de développement ou tests, déclarés explicitement. Tout le reste est
+   * traité comme de la production : oublier `NODE_ENV` laisse les protections
+   * en place (cookie `Secure`, documentation de l'API fermée).
+   */
+  get isDevelopment(): boolean {
+    return process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
   },
   /**
    * Nombre de proxys devant le backend : 1 (Caddy) par défaut, 2 si un autre proxy

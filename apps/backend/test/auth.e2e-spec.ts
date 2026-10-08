@@ -123,6 +123,29 @@ describe('Authentification (e2e)', () => {
     });
   });
 
+  describe('durée de vie d’une session', () => {
+    it('30 jours après son ouverture → refusée, même active', async () => {
+      const client = new TestClient(app);
+      expect((await client.login('admin', 'admin')).status).toBe(200);
+      expect((await client.get('/auth/me')).status).toBe(200);
+
+      const day = 24 * 60 * 60 * 1000;
+      await prisma.session.updateMany({ data: { createdAt: new Date(Date.now() - 29 * day) } });
+      expect((await client.get('/auth/me')).status).toBe(200);
+      // La prolongation glissante ne dépasse pas le 30e jour.
+      await prisma.session.updateMany({ data: { lastSeenAt: new Date(Date.now() - 5 * 60_000) } });
+      expect((await client.get('/auth/me')).status).toBe(200);
+      const session = await prisma.session.findFirstOrThrow();
+      expect(session.expiresAt.getTime()).toBeLessThanOrEqual(
+        session.createdAt.getTime() + 30 * day,
+      );
+
+      await prisma.session.updateMany({ data: { createdAt: new Date(Date.now() - 31 * day) } });
+      expect((await client.get('/auth/me')).status).toBe(401);
+      expect(await prisma.session.count()).toBe(0);
+    });
+  });
+
   describe('limitation des tentatives', () => {
     it('5 échecs d’un couple pseudo + adresse → 429 pendant 15 minutes', async () => {
       const client = new TestClient(app);

@@ -32,12 +32,12 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | M8 | Moyenne | Sauvegardes en clair, téléchargeables depuis le site | Lecture du code |
 | M9 | Moyenne | RGPD : pas d'effacement, journal sans purge | Conception (point connu) |
 | M10 | Moyenne | Pas de second facteur pour l'admin | Conception |
-| F1 | Faible | Salon de chat non revérifié après retrait d'un droit | Théorique |
-| F2 | Faible | Protections qui dépendent de `NODE_ENV=production` | Confirmé |
-| F3 | Faible | Session sans durée de vie maximale | Lecture du code |
+| F1 | Faible | Salon de chat non revérifié après retrait d'un droit | **Corrigé** (revérifié toutes les 30 s) |
+| F2 | Faible | Protections qui dépendent de `NODE_ENV=production` | **Corrigé** (protégé par défaut, ouvert si `development` ou `test`) |
+| F3 | Faible | Session sans durée de vie maximale | **Corrigé** (30 jours ; pas de liste des sessions dans le profil) |
 | F4 | Faible | Dépendances : cinq avis, non atteignables ; `exceljs` peu maintenu | Confirmé (`pnpm audit`) |
 | F5 | Faible | Image externe dans un catalogue : traçage des lecteurs | Théorique |
-| F6 | Faible | Mot de passe de la base visible dans la liste des processus | Lecture du code |
+| F6 | Faible | Mot de passe de la base visible dans la liste des processus | **Corrigé** (`PGPASSWORD`) |
 | I1 | Information | En-tête `X-Powered-By: Express` | **Corrigé** |
 | I2 | Information | Poste de développement : fichiers et droits à ranger | **Corrigé** pour les droits (`600`) ; `.env` racine et `secrets/` à ranger à la main |
 | I3 | Information | Guide de déploiement : compléments | Lecture |
