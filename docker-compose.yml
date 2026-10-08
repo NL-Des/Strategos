@@ -53,6 +53,10 @@ services:
       # Clé de chiffrement des secrets en base : facultative, créée dans le volume `keys` sinon.
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
       KEYS_DIR: /data/keys
+      # Plafonds (voir .env.example) : vides, le backend applique ses valeurs par défaut.
+      WS_MAX_PAYLOAD_KB: ${WS_MAX_PAYLOAD_KB:-}
+      WS_MAX_CONNECTIONS_PER_USER: ${WS_MAX_CONNECTIONS_PER_USER:-}
+      WS_MESSAGES_PER_10S: ${WS_MESSAGES_PER_10S:-}
     volumes:
       - uploads:/data/uploads
       - backups:/data/backups

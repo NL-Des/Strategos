@@ -378,6 +378,64 @@ describe('Chat temps réel (e2e)', () => {
     await expect(closed).resolves.toBeGreaterThanOrEqual(1000);
   });
 
+  describe('plafonds de la passerelle', () => {
+    async function joined() {
+      const { page, blockId } = await pageWithChat();
+      const alice = await member(app, admin, 'alice');
+      await createGroup(admin, 'lecteurs', { userIds: [alice.id], pageIds: [page.id] });
+      const ws = new WsClient(port, alice.cookie);
+      await ws.open();
+      ws.send(CHAT_WS_EVENTS.join, { blockId });
+      await ws.next((f) => f.event === CHAT_WS_EVENTS.joined);
+      return { alice, blockId, ws };
+    }
+
+    it('trame plus grande que le plafond → connexion fermée (1009)', async () => {
+      const { blockId, ws } = await joined();
+      const closed = ws.closed();
+      ws.send(CHAT_WS_EVENTS.send, { blockId, clientId: 'c-1', content: 'x'.repeat(300 * 1024) });
+      await expect(closed).resolves.toBe(1009);
+    });
+
+    it('trame sans données → erreur, la connexion reste ouverte', async () => {
+      const { blockId, ws } = await joined();
+      ws.ws.send(JSON.stringify({ event: CHAT_WS_EVENTS.join }));
+      const error = await ws.next((f) => f.event === CHAT_WS_EVENTS.error);
+      expect(error.data).toEqual({ code: 'VALIDATION_FAILED' });
+      ws.ws.send(JSON.stringify({ event: CHAT_WS_EVENTS.leave }));
+      ws.send(CHAT_WS_EVENTS.send, { blockId, clientId: 'c-1', content: 'toujours là' });
+      await ws.next((f) => f.event === CHAT_WS_EVENTS.ack);
+      ws.close();
+    });
+
+    it('trop de trames en dix secondes → connexion fermée (1008)', async () => {
+      const { ws } = await joined();
+      const closed = ws.closed();
+      for (let i = 0; i < 25; i++) ws.send(CHAT_WS_EVENTS.leave, { blockId: 'inconnu' });
+      await expect(closed).resolves.toBe(1008);
+    });
+
+    it('onzième connexion du même compte → refusée (1013)', async () => {
+      const { alice, ws } = await joined();
+      const others: WsClient[] = [];
+      for (let i = 0; i < 9; i++) {
+        const other = new WsClient(port, alice.cookie);
+        await other.open();
+        others.push(other);
+      }
+      const extra = new WsClient(port, alice.cookie);
+      await expect(extra.closed()).resolves.toBe(1013);
+      // Une connexion fermée libère sa place.
+      const freed = ws.closed();
+      ws.close();
+      await freed;
+      await new Promise((r) => setTimeout(r, 100));
+      const again = new WsClient(port, alice.cookie);
+      await again.open();
+      for (const socket of [...others, again]) socket.close();
+    });
+  });
+
   it('reconnexion : ?after= rattrape les messages manqués', async () => {
     const { page, blockId } = await pageWithChat();
     const alice = await member(app, admin, 'alice');

@@ -10,6 +10,8 @@ export interface ChatSocket extends WebSocket {
   user?: User;
   /** `blockId` des salons rejoints par ce socket. */
   rooms?: Set<string>;
+  /** Fenêtre de débit en cours : début et nombre de trames reçues. */
+  rate?: { start: number; count: number };
 }
 
 /**

@@ -87,6 +87,19 @@ export const config = {
       graph: process.env.GRAPH_API || 'https://graph.microsoft.com/v1.0',
     };
   },
+  /**
+   * Plafonds de la passerelle WebSocket du chat (13 §4). La trame maximale laisse
+   * passer un message de `MESSAGE_MAX_LENGTH` caractères, même tout en caractères
+   * échappés ; au-delà, la connexion est fermée sans rien allouer.
+   */
+  get ws() {
+    return {
+      maxPayloadBytes: Number(process.env.WS_MAX_PAYLOAD_KB || 256) * 1024,
+      maxConnectionsPerUser: Number(process.env.WS_MAX_CONNECTIONS_PER_USER || 10),
+      /** Trames acceptées par connexion sur 10 secondes glissantes. */
+      maxFramesPer10s: Number(process.env.WS_MESSAGES_PER_10S || 20),
+    };
+  },
   /** Durée du cache mémoire des sources connectées (08 : 30 à 60 secondes). */
   get sourceCacheMs(): number {
     return Number(process.env.SOURCE_CACHE_MS || 45_000);

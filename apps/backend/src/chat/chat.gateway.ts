@@ -5,6 +5,7 @@ import {
   MessageBody,
   type OnGatewayConnection,
   type OnGatewayDisconnect,
+  type OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
@@ -17,6 +18,7 @@ import {
   ErrorCode,
   MESSAGE_MAX_LENGTH,
 } from '@strategos/shared';
+import type { Server } from 'ws';
 import { AppException } from '../common/app-exception.js';
 import { config } from '../config.js';
 import { SESSION_COOKIE } from '../auth/auth.constants.js';
@@ -40,6 +42,10 @@ function readCookie(header: string | undefined, name: string): string | undefine
 }
 
 const REVALIDATE_INTERVAL_MS = 30_000;
+const RATE_WINDOW_MS = 10_000;
+/** Codes de fermeture WebSocket : règle enfreinte, trop de connexions. */
+const CLOSE_POLICY = 1008;
+const CLOSE_TRY_LATER = 1013;
 
 /**
  * Passerelle WebSocket du chat (13 §4). Le préfixe global `api/v1` ne s'applique
@@ -47,10 +53,13 @@ const REVALIDATE_INTERVAL_MS = 30_000;
  * session** au handshake, avec vérification de l'en-tête `Origin`. Une session
  * révoquée (compte désactivé) ferme la connexion — au message suivant et par une
  * revalidation périodique. L'accès à un salon suit la lecture de la page.
+ *
+ * Tout ce qu'un client envoie est borné (`config.ws`) : taille d'une trame,
+ * nombre de connexions par compte, nombre de trames par connexion.
  */
 @WebSocketGateway({ path: CHAT_WS_PATH })
 export class ChatGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
 {
   private readonly sockets = new Set<ChatSocket>();
   private timer?: ReturnType<typeof setInterval>;
@@ -61,6 +70,11 @@ export class ChatGateway
     private readonly messages: ChatMessagesService,
     private readonly realtime: ChatRealtimeService,
   ) {}
+
+  /** `ws` refuse une trame trop grande avant de la lire en entier (fermeture `1009`). */
+  afterInit(server: Server): void {
+    server.options.maxPayload = config.ws.maxPayloadBytes;
+  }
 
   onModuleInit(): void {
     this.timer = setInterval(() => void this.revalidateAll(), REVALIDATE_INTERVAL_MS);
@@ -85,9 +99,24 @@ export class ChatGateway
       client.close();
       return;
     }
+    let open = 0;
+    for (const socket of this.sockets) if (socket.user?.id === auth.user.id) open += 1;
+    if (open >= config.ws.maxConnectionsPerUser) {
+      client.close(CLOSE_TRY_LATER);
+      return;
+    }
     client.sessionToken = token;
     client.user = auth.user;
     this.sockets.add(client);
+    // Débit : toute trame compte, connue ou non ; au-delà du plafond, fermeture.
+    client.on('message', () => {
+      const now = Date.now();
+      if (!client.rate || now - client.rate.start > RATE_WINDOW_MS) {
+        client.rate = { start: now, count: 0 };
+      }
+      client.rate.count += 1;
+      if (client.rate.count > config.ws.maxFramesPer10s) client.close(CLOSE_POLICY);
+    });
   }
 
   handleDisconnect(client: ChatSocket): void {
@@ -100,6 +129,7 @@ export class ChatGateway
     @ConnectedSocket() client: ChatSocket,
     @MessageBody() body: ChatJoinFrame,
   ): Promise<Frame> {
+    if (typeof body?.blockId !== 'string') return this.error(ErrorCode.VALIDATION_FAILED);
     const user = await this.reauth(client);
     if (!user) return this.error();
     try {
@@ -113,7 +143,7 @@ export class ChatGateway
 
   @SubscribeMessage(CHAT_WS_EVENTS.leave)
   leave(@ConnectedSocket() client: ChatSocket, @MessageBody() body: ChatJoinFrame): void {
-    this.realtime.leave(body.blockId, client);
+    if (typeof body?.blockId === 'string') this.realtime.leave(body.blockId, client);
   }
 
   @SubscribeMessage(CHAT_WS_EVENTS.send)
@@ -124,7 +154,12 @@ export class ChatGateway
     const user = await this.reauth(client);
     if (!user) return this.error(ErrorCode.UNAUTHENTICATED, body?.clientId);
     const content = body?.content;
-    if (typeof content !== 'string' || content.length < 1 || content.length > MESSAGE_MAX_LENGTH) {
+    if (
+      typeof body?.blockId !== 'string' ||
+      typeof content !== 'string' ||
+      content.length < 1 ||
+      content.length > MESSAGE_MAX_LENGTH
+    ) {
       return this.error(ErrorCode.VALIDATION_FAILED, body?.clientId);
     }
     try {
