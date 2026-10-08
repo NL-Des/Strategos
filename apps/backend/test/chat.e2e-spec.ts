@@ -1,7 +1,7 @@
 import type { AddressInfo } from 'node:net';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { AdminPage, ChatMessageView, PageConfig, Row } from '@strategos/shared';
-import { CHAT_WS_EVENTS } from '@strategos/shared';
+import { CHAT_WS_EVENTS, MESSAGE_MAX_LENGTH } from '@strategos/shared';
 import type { Response } from 'supertest';
 import WebSocket from 'ws';
 import { ChatGateway } from '../src/chat/chat.gateway.js';
@@ -424,8 +424,19 @@ describe('Chat temps réel (e2e)', () => {
     it('trame plus grande que le plafond → connexion fermée (1009)', async () => {
       const { blockId, ws } = await joined();
       const closed = ws.closed();
-      ws.send(CHAT_WS_EVENTS.send, { blockId, clientId: 'c-1', content: 'x'.repeat(300 * 1024) });
+      ws.send(CHAT_WS_EVENTS.send, { blockId, clientId: 'c-1', content: 'x'.repeat(80 * 1024) });
       await expect(closed).resolves.toBe(1009);
+    });
+
+    it('message de la longueur maximale → accepté', async () => {
+      const { blockId, ws } = await joined();
+      ws.send(CHAT_WS_EVENTS.send, {
+        blockId,
+        clientId: 'c-1',
+        content: 'é'.repeat(MESSAGE_MAX_LENGTH),
+      });
+      await ws.next((f) => f.event === CHAT_WS_EVENTS.ack);
+      ws.close();
     });
 
     it('trame sans données → erreur, la connexion reste ouverte', async () => {

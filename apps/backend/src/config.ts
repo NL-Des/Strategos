@@ -113,13 +113,14 @@ export const config = {
     return Number(process.env.XLSX_MAX_UNCOMPRESSED_MB || 200) * 1024 * 1024;
   },
   /**
-   * Plafonds de la passerelle WebSocket du chat (13 §4). La trame maximale laisse
-   * passer un message de `MESSAGE_MAX_LENGTH` caractères, même tout en caractères
-   * échappés ; au-delà, la connexion est fermée sans rien allouer.
+   * Plafonds de la passerelle WebSocket du chat (13 §4). Au-delà de la trame
+   * maximale, la connexion est fermée sans rien allouer. 64 Ko laissent passer un
+   * message de `MESSAGE_MAX_LENGTH` caractères, sauf s'il n'est fait que de
+   * caractères à échapper en JSON (guillemets, retours à la ligne).
    */
   get ws() {
     return {
-      maxPayloadBytes: Number(process.env.WS_MAX_PAYLOAD_KB || 256) * 1024,
+      maxPayloadBytes: Number(process.env.WS_MAX_PAYLOAD_KB || 64) * 1024,
       maxConnectionsPerUser: Number(process.env.WS_MAX_CONNECTIONS_PER_USER || 10),
       /** Trames acceptées par connexion sur 10 secondes glissantes. */
       maxFramesPer10s: Number(process.env.WS_MESSAGES_PER_10S || 20),

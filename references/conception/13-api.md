@@ -248,7 +248,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 
 ## 4. WebSocket du chat
 - **Connexion** : `wss://…/api/v1/ws`, authentifiée par le cookie de session. L'en-tête `Origin` est vérifié à la connexion. Un compte qui doit encore changer ses identifiants est refusé. Une session révoquée (compte désactivé) ferme la connexion. Toutes les 30 secondes, la passerelle revérifie la session et le droit de lire chaque salon rejoint : un utilisateur retiré d'un groupe, ou dont la page est dépubliée, sort du salon et n'en reçoit plus les messages.
-- **Plafonds** (réglables par l'environnement) : une trame de plus de 256 Ko ferme la connexion sans être lue (`1009`) ; 10 connexions par compte, la suivante est refusée (`1013`) ; 20 trames par connexion sur dix secondes, au-delà la connexion est fermée (`1008`). Une trame sans `blockId` reçoit `error` (`VALIDATION_FAILED`).
+- **Plafonds** (réglables par l'environnement) : une trame de plus de 64 Ko ferme la connexion sans être lue (`1009`) ; 10 connexions par compte, la suivante est refusée (`1013`) ; 20 trames par connexion sur dix secondes, au-delà la connexion est fermée (`1008`). Une trame sans `blockId` reçoit `error` (`VALIDATION_FAILED`).
 - **Trames** : dans les deux sens, `{ "event": "<nom>", "data": { … } }`.
 - **Rejoindre un salon** : le client envoie `chat.join { blockId }`. Le serveur vérifie le droit de lecture sur la page qui contient le bloc, puis répond `chat.joined` ou `chat.error { code: "NOT_FOUND" }`. `chat.leave { blockId }` pour quitter.
 - **Envoyer** : `chat.send { blockId, clientId, content }` → accusé `chat.ack { clientId, message }` ou `chat.error { clientId, code }`. Les validations sont les mêmes qu'en REST.

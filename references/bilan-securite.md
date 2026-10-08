@@ -25,7 +25,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | M1 | Moyenne | Aucun en-tête de sécurité HTTP | **Corrigé** (`Caddyfile` ; CSP rejouée sur les parcours navigateur, sélecteur Google réel non testé) |
 | M2 | Moyenne | Un tiers peut verrouiller n'importe quel compte | **Corrigé** (blocage par couple pseudo + adresse ; délai de 15 s au plus sur le pseudo, nul depuis une adresse connue) |
 | M3 | Moyenne | Limitation des tentatives contournable par des requêtes simultanées | **Corrigé** (tentative enregistrée avant la vérification, sous verrou) |
-| M4 | Moyenne | WebSocket : trames de 60 Mo acceptées, aucun débit maximal | **Corrigé** (trame de 256 Ko, 10 connexions par compte, 20 trames par 10 s) |
+| M4 | Moyenne | WebSocket : trames de 60 Mo acceptées, aucun débit maximal | **Corrigé** (trame de 64 Ko, 10 connexions par compte, 20 trames par 10 s) |
 | M5 | Moyenne | Aucune limite de débit ni de quota hors connexion ; classeur très compressé | **Corrigé** (300 requêtes par minute et par session ; quota et purge des images libres ; taille décompressée mesurée ; mémoire et processus des conteneurs plafonnés) |
 | M6 | Moyenne | Conteneurs en `root`, sans durcissement ; images non épinglées | **Corrigé**, sauf l'épinglage : backend sous `node`, lecture seule, capacités retirées, deux réseaux, `.dockerignore` complété. Les images restent désignées par étiquette (choix assumé : les correctifs arrivent par `build --pull`) |
 | M7 | Moyenne | Mot de passe PostgreSQL par défaut `strategos` | **Corrigé** (`POSTGRES_PASSWORD` obligatoire) |
