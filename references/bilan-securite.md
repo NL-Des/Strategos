@@ -54,7 +54,7 @@ Un constat est **confirmé** quand une requête réelle l'a montré, **théoriqu
 
 ### Ce qui n'a pas été testé
 
-- **Le cloisonnement entre groupes** (un utilisateur du groupe B qui vise les pages, formulaires, chats et espaces du groupe A). Le scénario a été préparé (deux pages, deux groupes, un classeur piégé), mais le test lui-même n'a pas été exécuté. Les contrôles d'accès correspondants sont donc validés **par lecture du code seulement** (section 5).
+- **Le cloisonnement entre groupes** (un utilisateur du groupe B qui vise les pages, formulaires, chats et espaces du groupe A). Le scénario a été préparé (deux pages, deux groupes, un classeur piégé), mais le test lui-même n'a pas été exécuté. Les contrôles d'accès correspondants sont donc validés **par lecture du code seulement** (section 5). **Rejoué depuis** : le test `apps/backend/test/isolation.e2e-spec.ts` vise chaque ressource de la page d'un autre groupe (page, lignes de tableau, formulaire, soumission, espace, sujet, message, pièce jointe, chat par REST et par WebSocket, notes) en lecture et en écriture. Résultat : `404` partout, aucun contenu divulgué, aucun écart trouvé.
 - **Le déni de service par classeur compressé, les pièces jointes en masse, l'injection de formule de bout en bout et la restauration d'une archive hostile** : lecture du code seulement.
 - **La pile Docker complète** (Caddy, TLS, conteneurs) : auditée par lecture de `docker-compose.yml`, des `Dockerfile` et des `Caddyfile`. Elle n'a pas été lancée, pour ne pas recréer la base Docker locale.
 - **Le frontend dans un navigateur** : le rendu a été lu, pas exécuté.
