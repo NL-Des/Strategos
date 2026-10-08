@@ -22,7 +22,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 |---|---|---|---|
 | C1 | Critique | Contournement de `AdminGuard` par la casse de l'URL | **Corrigé** (guard fondé sur `@AdminOnly()`, routage sensible à la casse, test `admin-guard.e2e-spec.ts`) |
 | E1 | Élevée | Compte `admin` / `admin` actif au déploiement | Théorique (conception) |
-| M1 | Moyenne | Aucun en-tête de sécurité HTTP | Confirmé |
+| M1 | Moyenne | Aucun en-tête de sécurité HTTP | **Corrigé** (`Caddyfile` ; CSP rejouée sur les parcours navigateur, sélecteur Google réel non testé) |
 | M2 | Moyenne | Un tiers peut verrouiller n'importe quel compte | Confirmé |
 | M3 | Moyenne | Limitation des tentatives contournable par des requêtes simultanées | Confirmé |
 | M4 | Moyenne | WebSocket : trames de 60 Mo acceptées, aucun débit maximal | Confirmé |
@@ -38,7 +38,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | F4 | Faible | Dépendances : cinq avis, non atteignables ; `exceljs` peu maintenu | Confirmé (`pnpm audit`) |
 | F5 | Faible | Image externe dans un catalogue : traçage des lecteurs | Théorique |
 | F6 | Faible | Mot de passe de la base visible dans la liste des processus | Lecture du code |
-| I1 | Information | En-tête `X-Powered-By: Express` | Confirmé |
+| I1 | Information | En-tête `X-Powered-By: Express` | **Corrigé** |
 | I2 | Information | Poste de développement : fichiers et droits à ranger | Confirmé |
 | I3 | Information | Guide de déploiement : compléments | Lecture |
 

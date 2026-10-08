@@ -13,6 +13,7 @@ export function configureApp(app: NestExpressApplication): void {
   app.set('case sensitive routing', true);
   const { router } = app.getHttpAdapter().getInstance();
   (router as unknown as { caseSensitive: boolean }).caseSensitive = true;
+  app.disable('x-powered-by');
   app.use(cookieParser());
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(createValidationPipe());
