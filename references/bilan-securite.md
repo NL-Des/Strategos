@@ -35,7 +35,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | F1 | Faible | Salon de chat non revérifié après retrait d'un droit | **Corrigé** (revérifié toutes les 30 s) |
 | F2 | Faible | Protections qui dépendent de `NODE_ENV=production` | **Corrigé** (protégé par défaut, ouvert si `development` ou `test`) |
 | F3 | Faible | Session sans durée de vie maximale | **Corrigé** (30 jours ; pas de liste des sessions dans le profil) |
-| F4 | Faible | Dépendances : cinq avis, non atteignables ; `exceljs` peu maintenu | Confirmé (`pnpm audit`) |
+| F4 | Faible | Dépendances : cinq avis, non atteignables ; `exceljs` peu maintenu | **Corrigé** pour les cinq avis (`overrides`, script `pnpm audit:deps`) ; `exceljs` reste à surveiller |
 | F5 | Faible | Image externe dans un catalogue : traçage des lecteurs | **Réglable** : l'admin choisit entre toutes les adresses (défaut, comportement d'origine), une liste de domaines, ou aucune. Le risque demeure tant que le réglage reste sur « toutes » |
 | F6 | Faible | Mot de passe de la base visible dans la liste des processus | **Corrigé** (`PGPASSWORD`) |
 | I1 | Information | En-tête `X-Powered-By: Express` | **Corrigé** |

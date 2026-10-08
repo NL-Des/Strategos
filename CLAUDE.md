@@ -65,6 +65,7 @@ Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, 
 | Base seule pour le dev | `pnpm db:up` (Postgres sur `127.0.0.1:5432` ; demande le `.env` de la racine, avec `POSTGRES_PASSWORD=strategos`). À relancer après un `docker compose up`, qui recrée la base sans exposer son port (`ECONNREFUSED 127.0.0.1:5432` dans les tests e2e) |
 | Dev avec rechargement | `cp apps/backend/.env.example apps/backend/.env` une fois, puis `pnpm dev` → `http://localhost:5173` |
 | **Tout vérifier (avant chaque commit ; pas de CI)** | `pnpm check` (base de test : `pnpm db:up`) |
+| Avis de sécurité des dépendances | `pnpm audit:deps` (réseau requis, hors `pnpm check`). Un avis sur un paquet indirect se lève par une entrée `overrides` dans `pnpm-workspace.yaml`, à retirer quand le paquet parent suit |
 | Lint / format | `pnpm lint` · `pnpm format` · `pnpm format:check` |
 | Typage | `pnpm typecheck` |
 | Tests unitaires | `pnpm test` |

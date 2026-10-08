@@ -8,3 +8,11 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - esbuild
   - prisma
+
+# Dépendances indirectes signalées par `pnpm audit:deps` (bilan-securite.md, F4) : version
+# corrigée imposée en attendant que le paquet parent la demande lui-même. À retirer alors.
+overrides:
+  'exceljs>uuid': ^11.1.1
+  '@prisma/config>deepmerge-ts': ^8.0.0
+  mysql2: ^3.23.1
+  source-map-js: ^1.2.2

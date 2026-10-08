@@ -20,6 +20,7 @@
     "openapi": "pnpm --filter @strategos/backend build && pnpm --filter @strategos/backend exec node dist/src/cli/openapi.js",
     "test:browser": "pnpm build:shared && pnpm --filter @strategos/backend build && pnpm --filter @strategos/e2e browser",
     "test:browser:install": "pnpm --filter @strategos/e2e exec playwright install chromium",
+    "audit:deps": "pnpm audit --audit-level=moderate",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build"
   },
   "devDependencies": {
