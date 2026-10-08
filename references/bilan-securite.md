@@ -26,7 +26,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | M2 | Moyenne | Un tiers peut verrouiller n'importe quel compte | **Corrigé** (blocage par couple pseudo + adresse ; délai de 15 s au plus sur le pseudo, nul depuis une adresse connue) |
 | M3 | Moyenne | Limitation des tentatives contournable par des requêtes simultanées | **Corrigé** (tentative enregistrée avant la vérification, sous verrou) |
 | M4 | Moyenne | WebSocket : trames de 60 Mo acceptées, aucun débit maximal | **Corrigé** (trame de 256 Ko, 10 connexions par compte, 20 trames par 10 s) |
-| M5 | Moyenne | Aucune limite de débit ni de quota hors connexion ; classeur très compressé | Théorique |
+| M5 | Moyenne | Aucune limite de débit ni de quota hors connexion ; classeur très compressé | **Corrigé** (300 requêtes par minute et par session ; quota et purge des images libres ; taille décompressée mesurée ; mémoire et processus des conteneurs plafonnés) |
 | M6 | Moyenne | Conteneurs en `root`, sans durcissement ; images non épinglées | Lecture de la configuration |
 | M7 | Moyenne | Mot de passe PostgreSQL par défaut `strategos` | **Corrigé** (`POSTGRES_PASSWORD` obligatoire) |
 | M8 | Moyenne | Sauvegardes en clair, téléchargeables depuis le site | Lecture du code |

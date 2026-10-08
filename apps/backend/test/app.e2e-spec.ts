@@ -29,6 +29,24 @@ describe('Socle (e2e)', () => {
     await request(app.getHttpServer()).get('/api/v1/health').expect(200, { status: 'ok' });
   });
 
+  it('au-delà du débit permis → 429 RATE_LIMITED, par adresse pour un visiteur', async () => {
+    const previous = process.env.RATE_LIMIT_PER_MINUTE;
+    process.env.RATE_LIMIT_PER_MINUTE = '5';
+    try {
+      const get = (ip: string) =>
+        request(app.getHttpServer()).get('/api/v1/health').set('X-Forwarded-For', ip);
+      for (let i = 0; i < 5; i++) await get('10.9.9.1').expect(200);
+      const res = await get('10.9.9.1').expect(429);
+      expect(res.body.code).toBe('RATE_LIMITED');
+      expect(res.body.details.retryAfter).toBeGreaterThan(0);
+      expect(res.body.details.retryAfter).toBeLessThanOrEqual(60);
+      // Une autre adresse n'est pas concernée.
+      await get('10.9.9.2').expect(200);
+    } finally {
+      process.env.RATE_LIMIT_PER_MINUTE = previous!;
+    }
+  });
+
   it('exception non gérée → 500 au format commun, sans la cause', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/test-only/crash').expect(500);
     expect(res.body).toEqual({ code: 'INTERNAL_ERROR', message: expect.any(String), details: {} });

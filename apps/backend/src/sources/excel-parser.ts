@@ -1,6 +1,7 @@
 import { CellType } from '@strategos/shared';
 import ExcelJS from 'exceljs';
-import { strFromU8, unzipSync } from 'fflate';
+import { strFromU8, Unzip, UnzipInflate, unzipSync } from 'fflate';
+import { config } from '../config.js';
 
 /**
  * Lecture d'un classeur `.xlsx` pour le staging (08). Aucune formule n'est
@@ -24,6 +25,39 @@ export interface ParsedWorkbook {
 }
 
 export class ExcelParseError extends Error {}
+/** Classeur refusé avant lecture : trop volumineux une fois décompressé. */
+export class WorkbookTooLargeError extends ExcelParseError {}
+
+const INFLATE_SLICE_BYTES = 64 * 1024;
+
+/**
+ * Vrai si le paquet `.xlsx`, une fois décompressé, dépasse `maxBytes`. Un
+ * classeur de quelques Mo peut en occuper plusieurs Go : ExcelJS le décompresse
+ * en entier en mémoire, donc on mesure avant de le lui confier. Les tailles
+ * annoncées dans l'archive ne sont pas crues : chaque partie est réellement
+ * décompressée, par tranches, et l'on s'arrête dès le dépassement.
+ */
+export function exceedsUncompressedSize(buffer: Uint8Array, maxBytes: number): boolean {
+  let total = 0;
+  let exceeded = false;
+  const unzip = new Unzip((file) => {
+    file.ondata = (error, chunk) => {
+      if (error) throw error;
+      total += chunk.length;
+      if (total > maxBytes) {
+        exceeded = true;
+        file.terminate();
+      }
+    };
+    file.start();
+  });
+  unzip.register(UnzipInflate);
+  for (let offset = 0; offset < buffer.length && !exceeded; offset += INFLATE_SLICE_BYTES) {
+    const end = Math.min(offset + INFLATE_SLICE_BYTES, buffer.length);
+    unzip.push(buffer.subarray(offset, end), end === buffer.length);
+  }
+  return exceeded;
+}
 
 /** Numéro de série Excel d'une date (jours depuis le 30/12/1899), pour les tris. */
 export function excelSerial(date: Date): number {
@@ -128,6 +162,13 @@ export function readExternalBooks(buffer: Uint8Array): Map<number, string> {
 }
 
 export async function parseWorkbook(buffer: Buffer): Promise<ParsedWorkbook> {
+  let tooLarge: boolean;
+  try {
+    tooLarge = exceedsUncompressedSize(buffer, config.xlsxMaxUncompressedBytes);
+  } catch (error) {
+    throw new ExcelParseError(String(error));
+  }
+  if (tooLarge) throw new WorkbookTooLargeError('classeur trop volumineux une fois décompressé');
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(buffer as unknown as ArrayBuffer);

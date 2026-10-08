@@ -95,6 +95,18 @@ export const config = {
       graph: process.env.GRAPH_API || 'https://graph.microsoft.com/v1.0',
     };
   },
+  /** Requêtes HTTP par minute et par session (par adresse sans session). */
+  get rateLimitPerMinute(): number {
+    return Number(process.env.RATE_LIMIT_PER_MINUTE || 300);
+  },
+  /** Images envoyées mais pas encore jointes à un message : total permis par compte. */
+  get attachmentPendingQuotaBytes(): number {
+    return Number(process.env.ATTACHMENT_PENDING_QUOTA_MB || 50) * 1024 * 1024;
+  },
+  /** Taille décompressée maximale d'un classeur `.xlsx`, vérifiée avant de le lire. */
+  get xlsxMaxUncompressedBytes(): number {
+    return Number(process.env.XLSX_MAX_UNCOMPRESSED_MB || 200) * 1024 * 1024;
+  },
   /**
    * Plafonds de la passerelle WebSocket du chat (13 §4). La trame maximale laisse
    * passer un message de `MESSAGE_MAX_LENGTH` caractères, même tout en caractères

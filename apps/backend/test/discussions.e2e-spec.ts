@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type {
   AdminPage,
@@ -6,6 +8,7 @@ import type {
   Row,
   TopicWithMessages,
 } from '@strategos/shared';
+import { AttachmentsService } from '../src/discussions/attachments.service.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import {
   adminClient,
@@ -393,6 +396,68 @@ describe('Espaces de discussion (e2e)', () => {
       // Un utilisateur sans accès à l'espace → 404.
       const bob = await userClient(app, admin, 'bob');
       expectStatus(await bob.get(`/attachments/${attachmentId}`), 404);
+    });
+
+    it('sans la lecture d’aucun espace → 403, rien n’est enregistré', async () => {
+      const bob = await userClient(app, admin, 'bob');
+      const res = await bob.upload('/attachments', PNG, 'photo.png');
+      expect(res.status).toBe(403);
+      expect(await prisma.attachment.count()).toBe(0);
+    });
+
+    it('images en attente plafonnées par compte → 429 ATTACHMENT_QUOTA_EXCEEDED', async () => {
+      const previous = process.env.ATTACHMENT_PENDING_QUOTA_MB;
+      // Quota d'une image et demie.
+      process.env.ATTACHMENT_PENDING_QUOTA_MB = String((PNG.length * 1.5) / (1024 * 1024));
+      try {
+        const first = await kira.upload('/attachments', PNG, 'a.png');
+        expectStatus(first, 201);
+        const refused = await kira.upload('/attachments', PNG, 'b.png');
+        expect(refused.status).toBe(429);
+        expect(refused.body.code).toBe('ATTACHMENT_QUOTA_EXCEEDED');
+
+        // Une image jointe à un message ne compte plus.
+        expectStatus(
+          await kira.send('post', `/spaces/${spaceId}/topics`, {
+            title: 'T',
+            firstMessage: '<p>photo</p>',
+            attachmentIds: [first.body.id as string],
+          }),
+          201,
+        );
+        expectStatus(await kira.upload('/attachments', PNG, 'c.png'), 201);
+      } finally {
+        if (previous === undefined) delete process.env.ATTACHMENT_PENDING_QUOTA_MB;
+        else process.env.ATTACHMENT_PENDING_QUOTA_MB = previous;
+      }
+    });
+
+    it('image restée libre plus de 24 h → supprimée, fichier compris', async () => {
+      const kept = await kira.upload('/attachments', PNG, 'recente.png');
+      const stale = await kira.upload('/attachments', PNG, 'oubliee.png');
+      const joined = await kira.upload('/attachments', PNG, 'jointe.png');
+      expectStatus(
+        await kira.send('post', `/spaces/${spaceId}/topics`, {
+          title: 'T',
+          firstMessage: '<p>photo</p>',
+          attachmentIds: [joined.body.id as string],
+        }),
+        201,
+      );
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      await prisma.attachment.updateMany({
+        where: { id: { in: [stale.body.id as string, joined.body.id as string] } },
+        data: { createdAt: twoDaysAgo },
+      });
+      const { storagePath } = await prisma.attachment.findUniqueOrThrow({
+        where: { id: stale.body.id as string },
+      });
+
+      await app.get(AttachmentsService).purgePending();
+
+      const left = await prisma.attachment.findMany({ select: { id: true } });
+      expect(left.map((a) => a.id).sort()).toEqual([kept.body.id, joined.body.id].sort());
+      expect(existsSync(join(process.env.UPLOADS_DIR!, storagePath))).toBe(false);
     });
 
     it('type non image → 415', async () => {

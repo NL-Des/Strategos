@@ -15,6 +15,13 @@ export async function buildXlsx(
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
+/** Ajoute au paquet une partie de `bytes` zéros : quelques Ko compressés, beaucoup plus en mémoire. */
+export function withPadding(xlsx: Buffer, bytes: number): Buffer {
+  const files = unzipSync(new Uint8Array(xlsx));
+  files['xl/media/remplissage.bin'] = new Uint8Array(bytes);
+  return Buffer.from(zipSync(files));
+}
+
 /**
  * Ajoute au paquet les parties d'une liaison vers un autre classeur, comme le
  * fait Excel : `[1]` dans les formules désigne alors `target`.

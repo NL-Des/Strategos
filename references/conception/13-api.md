@@ -35,7 +35,7 @@ Toute erreur a le même format :
 | `404` | `NOT_FOUND` : la ressource n'existe pas **ou n'est pas lisible** par l'utilisateur. On ne distingue pas les deux, pour ne jamais révéler l'existence d'une page ou d'un espace invisible (cohérent avec « module invisible », [Droits et groupes](03-droits-groupes.md#visibilité-et-page-darrivée)) |
 | `409` | Conflit d'état : modification concurrente, soumission déjà traitée, confirmation d'avertissement requise, élément encore utilisé |
 | `422` | Règle métier bloquante (zone d'ajout pleine, clé introuvable, formulaire fermé, écriture dans une source en lecture seule `SOURCE_READ_ONLY`, restauration d'un élément dont le parent est supprimé `RESTORE_PARENT_DELETED`…) |
-| `429` | Trop de tentatives (`AUTH_TOO_MANY_ATTEMPTS`, avec `details.retryAfter`) |
+| `429` | Trop de tentatives (`AUTH_TOO_MANY_ATTEMPTS`, avec `details.retryAfter`) ; trop de requêtes (`RATE_LIMITED`, avec `details.retryAfter` : 300 requêtes par minute et par session, ou par adresse sans session) ; trop d'images en attente (`ATTACHMENT_QUOTA_EXCEEDED`) |
 | `500` | Erreur inattendue (`INTERNAL_ERROR`) : ni sa cause ni sa trace ne sont renvoyées, elles sont journalisées côté serveur |
 | `503` | Source de données injoignable (`SOURCE_UNAVAILABLE`) ou connexion expirée (`SOURCE_AUTH_EXPIRED`) |
 
@@ -113,7 +113,7 @@ La page d'arrivée et la page personnelle sont connues via `Me` (`landingPageId`
 | POST | `/topics/:id/messages` | poster | Poster `{ content, attachmentIds? }` | `403 FORBIDDEN`, `422 TOPIC_CLOSED` |
 | PUT | `/messages/:id` | auteur ou admin | Modifier (l'ancienne version est archivée) ; par l'admin sur le message d'un autre : tracé au journal | `403 NOT_AUTHOR`, `422 TOPIC_CLOSED` |
 | DELETE | `/messages/:id` | auteur ou admin | Supprimer (archivé) ; par l'admin sur le message d'un autre : tracé au journal | `403 NOT_AUTHOR` |
-| POST | `/attachments` | connecté | Upload d'une image jointe (`multipart`), à rattacher ensuite à un message (d'ici là, seul celui qui l'a envoyée peut la lire) : JPEG, PNG, WebP ou GIF, 5 Mo au maximum, 4 par message au plus | `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE_TYPE`, `422 TOO_MANY_ATTACHMENTS` |
+| POST | `/attachments` | connecté | Upload d'une image jointe (`multipart`), à rattacher ensuite à un message (d'ici là, seul celui qui l'a envoyée peut la lire) : JPEG, PNG, WebP ou GIF, 5 Mo au maximum, 4 par message au plus. Exige la lecture d'au moins un espace ; 50 Mo d'images non rattachées par compte, supprimées après 24 h | `403 FORBIDDEN` (aucun espace lisible), `413 FILE_TOO_LARGE`, `429 ATTACHMENT_QUOTA_EXCEEDED`, `415 UNSUPPORTED_FILE_TYPE`, `422 TOO_MANY_ATTACHMENTS` |
 
 ### Chat — [07](07-discussions.md#chat)
 | Méthode | Chemin | Accès | Rôle | Erreurs |
@@ -172,7 +172,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 |---|---|---|---|
 | GET | `/sources` | Liste : type, état, dernière lecture ou import, usages, `writable` (`false` : lecture seule), `scriptOutdated` (script d'un Sheet à mettre à jour) | — |
 | POST | `/sources` | Ajouter un Google Sheet choisi dans le sélecteur `{ type: "gsheet", spreadsheetId }`, un fichier OneDrive `{ type: "onedrive", itemId }`, un Google Sheet par lien public `{ type: "gsheet_link", url, confirm? }` (lecture seule) ou un Google Sheet relié par un script `{ type: "gsheet_script", scriptUrl, secret }` ; teste l'accès. Un Sheet déjà ajouté est retesté et renvoyé, pas dupliqué | `SOURCE_UNAVAILABLE` (Sheet non choisi dans le sélecteur, ou non partagé par lien), `SOURCE_AUTH_EXPIRED`, `409 CONFIRMATION_REQUIRED` (`SOURCE_PUBLIC_LINK`), `400` si `url` n'est pas le lien d'un Sheet (`isSheetLink`) |
-| POST | `/sources/upload` | Uploader un Excel `.xlsx` (`multipart`, champ `file`, 20 Mo au plus) → nouvelle source de type upload. La liste renvoie aussi les feuilles (`sheets`) pour les sélecteurs du page builder | `413`, `415`, `422 EXCEL_PARSE_FAILED` |
+| POST | `/sources/upload` | Uploader un Excel `.xlsx` (`multipart`, champ `file`, 20 Mo au plus, et 200 Mo une fois décompressé : au-delà, `413` sans le lire) → nouvelle source de type upload. La liste renvoie aussi les feuilles (`sheets`) pour les sélecteurs du page builder | `413`, `415`, `422 EXCEL_PARSE_FAILED` |
 | POST | `/sources/script` | Préparer un script Apps Script et son secret : `{ script, secret }` ; rien n'est enregistré avant l'ajout de la source | — |
 | GET | `/sources/:id/script` | Script à jour d'un Google Sheet relié par un script, avec son secret : `{ script }`, pour le recoller dans le Sheet | `404` si la source n'est pas reliée par un script |
 | POST | `/sources/:id/test` | Tester l'accès ; renvoie la source avec son état et ses feuilles relues | `SOURCE_UNAVAILABLE`, `SOURCE_AUTH_EXPIRED` |
@@ -366,6 +366,7 @@ Pour `deleted` et `hidden`, seul `message.id` est envoyé. `mine` est calculé p
 |---|---|
 | `AuthGuard` (global) | Toutes les routes sauf `health`, `auth/csrf`, `auth/login` et `onedrive/callback` (protégée par `state`) |
 | Guard « identifiants à changer » (global) | Tout sauf `auth/me`, `auth/change-credentials`, `auth/logout` et les routes publiques ; la passerelle WebSocket refuse aussi ces comptes |
+| Limite de débit (globale) | Toutes les routes : 300 requêtes par minute et par session, ou par adresse sans session → `429 RATE_LIMITED`. Compteurs en mémoire |
 | Guard CSRF (global) | Toutes les méthodes qui modifient des données, sauf le retour OAuth (protégé par `state`) |
 | Guard admin | Tout `/api/v1/admin/**` (un non-admin reçoit `404`, l'espace admin n'est pas révélé), et la passerelle pour les événements de modération. Le guard lit une marque posée sur le contrôleur (`@AdminOnly()`), jamais le texte de l'adresse ; un test vérifie que toute route sous `admin/` la porte. Le routage respecte la casse : `/api/v1/Admin/…` n'existe pas |
 | `PermissionsGuard` | `GET /pages/:id` (lecture page) |

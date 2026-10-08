@@ -16,6 +16,9 @@ export default async function setup(): Promise<void> {
   // Fichiers envoyés pendant les tests : dossier temporaire, jamais le vrai volume.
   process.env.UPLOADS_DIR = mkdtempSync(join(tmpdir(), 'strategos-uploads-'));
 
+  // Les tests enchaînent les requêtes bien plus vite qu'un utilisateur.
+  process.env.RATE_LIMIT_PER_MINUTE = '1000000';
+
   const target = new URL(url);
   const database = target.pathname.slice(1);
   const admin = new URL(url);

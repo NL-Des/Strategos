@@ -1,6 +1,11 @@
 import { CellType } from '@strategos/shared';
-import { buildXlsx, withExternalLink } from '../../test/xlsx.js';
-import { externalRefs, parseWorkbook, pureExternalRef } from './excel-parser.js';
+import { buildXlsx, withExternalLink, withPadding } from '../../test/xlsx.js';
+import {
+  exceedsUncompressedSize,
+  externalRefs,
+  parseWorkbook,
+  pureExternalRef,
+} from './excel-parser.js';
 
 describe('lecture d’un classeur', () => {
   it('garde valeurs et formules, sans rien calculer', async () => {
@@ -60,5 +65,15 @@ describe('références externes', () => {
     expect(pureExternalRef('[1]Stock!B2*2')).toBeNull();
     expect(pureExternalRef('[1]Stock!B2:B9')).toBeNull();
     expect(pureExternalRef('Stock!B2')).toBeNull();
+  });
+});
+
+describe('classeur très compressé', () => {
+  it('la taille décompressée est mesurée, pas celle du fichier', async () => {
+    const MB = 1024 * 1024;
+    const bomb = withPadding(await buildXlsx({ Stock: { A1: 'Épée' } }), 8 * MB);
+    expect(bomb.length).toBeLessThan(MB / 4);
+    expect(exceedsUncompressedSize(bomb, 4 * MB)).toBe(true);
+    expect(exceedsUncompressedSize(bomb, 16 * MB)).toBe(false);
   });
 });

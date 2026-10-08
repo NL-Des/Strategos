@@ -169,6 +169,8 @@ describe('Authentification (e2e)', () => {
     it('tentatives simultanées : pas plus de 5 mots de passe testés', async () => {
       const client = new TestClient(app);
       await client.get('/auth/csrf');
+      // Quarante requêtes d'un coup : supertest ouvre une écoute par requête.
+      app.getHttpServer().setMaxListeners(100);
       const results = await Promise.all(
         Array.from({ length: 40 }, () => client.login('admin', 'faux')),
       );

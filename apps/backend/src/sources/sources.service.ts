@@ -35,6 +35,7 @@ import { decryptToken, encryptToken } from './connectors/token-crypto.js';
 import { SourceUnavailableError, sourceException } from './source-errors.js';
 import {
   ExcelParseError,
+  WorkbookTooLargeError,
   externalRefs,
   type ParsedCell,
   type ParsedWorkbook,
@@ -271,7 +272,10 @@ export class SourcesService {
     }
   }
 
-  /** Classeur `.xlsx` uploadé : `415` si ce n'en est pas un, `422 EXCEL_PARSE_FAILED` s'il est illisible. */
+  /**
+   * Classeur `.xlsx` uploadé : `415` si ce n'en est pas un, `413 FILE_TOO_LARGE` s'il est
+   * trop volumineux une fois décompressé, `422 EXCEL_PARSE_FAILED` s'il est illisible.
+   */
   async readWorkbook(buffer: Buffer): Promise<ParsedWorkbook> {
     const detected = await fileTypeFromBuffer(buffer);
     if (detected?.ext !== 'xlsx') {
@@ -280,6 +284,9 @@ export class SourcesService {
     try {
       return await parseWorkbook(buffer);
     } catch (error) {
+      if (error instanceof WorkbookTooLargeError) {
+        throw new AppException(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCode.FILE_TOO_LARGE);
+      }
       if (error instanceof ExcelParseError) {
         throw new AppException(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.EXCEL_PARSE_FAILED);
       }

@@ -27,6 +27,9 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
     'Ce module n’est pas autorisé dans le header, le footer ou la sidebar commune.',
   MEDIA_NAME_TAKEN: 'Une image porte déjà ce nom.',
   FILE_TOO_LARGE: 'Le fichier est trop volumineux.',
+  ATTACHMENT_QUOTA_EXCEEDED:
+    'Trop d’images en attente. Envoyez votre message ou réessayez plus tard.',
+  RATE_LIMITED: 'Trop de requêtes. Réessayez dans un instant.',
   UNSUPPORTED_FILE_TYPE: 'Ce type de fichier n’est pas accepté.',
   EXCEL_PARSE_FAILED: 'Ce fichier Excel n’a pas pu être lu.',
   SOURCE_AUTH_FAILED: 'La connexion au compte a échoué.',

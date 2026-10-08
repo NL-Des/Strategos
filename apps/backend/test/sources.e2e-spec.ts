@@ -27,7 +27,7 @@ import {
   uid,
   userClient,
 } from './helpers.js';
-import { buildXlsx, withExternalLink } from './xlsx.js';
+import { buildXlsx, withExternalLink, withPadding } from './xlsx.js';
 
 /** Feuille au nom reconnaissable : il ne doit jamais apparaître côté utilisateur. */
 const SHEET = 'FeuilleInterne';
@@ -183,6 +183,19 @@ describe('Sources et modules de données (e2e)', () => {
       expect(source.lastImportedAt).not.toBeNull();
 
       expect((await admin.upload('/admin/sources/upload', PNG, 'x.xlsx')).status).toBe(415);
+
+      // Classeur très compressé : refusé sur sa taille décompressée, avant lecture.
+      const previous = process.env.XLSX_MAX_UNCOMPRESSED_MB;
+      process.env.XLSX_MAX_UNCOMPRESSED_MB = '2';
+      try {
+        const bomb = withPadding(await buildXlsx({ Stock: { A1: 'Épée' } }), 4 * 1024 * 1024);
+        const refused = await admin.upload('/admin/sources/upload', bomb, 'bombe.xlsx');
+        expect(refused.status).toBe(413);
+        expect(refused.body.code).toBe('FILE_TOO_LARGE');
+      } finally {
+        if (previous === undefined) delete process.env.XLSX_MAX_UNCOMPRESSED_MB;
+        else process.env.XLSX_MAX_UNCOMPRESSED_MB = previous;
+      }
       const files = unzipSync(new Uint8Array(await stockXlsx()));
       files['xl/workbook.xml'] = strToU8('<pas du xml');
       const broken = await admin.upload(

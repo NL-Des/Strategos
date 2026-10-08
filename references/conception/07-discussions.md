@@ -30,7 +30,7 @@ L'administrateur peut **masquer** n'importe quel message, dans les sujets comme 
 - **Chat** : passerelle **WebSocket NestJS**, authentifiée par le cookie de session. À la connexion au canal d'un module chat, elle vérifie le droit de lecture sur la page qui le contient. Tables `chats` et `chat_messages`.
 - Historique des messages (sujets et chat) : table `message_revisions` (action `edit`, `delete`, `hide` ou `unhide`, contenu précédent, acteur). Une ligne est écrite avant chaque modification, suppression ou masquage, dans la même transaction.
 - Masquage : `hidden_at` sur les messages, et une route réservée au rôle admin. Dans le chat, le masquage est diffusé en `chat.message.hidden`, le rétablissement en `chat.message.updated`.
-- **Pièces jointes** : images uniquement (JPEG, PNG, WebP, GIF), 5 Mo au maximum chacune, 4 par message au plus. Elles sont accessibles à qui peut lire l'espace de discussion ; tant qu'une image n'est pas rattachée à un message, seul celui qui l'a envoyée peut la lire.
+- **Pièces jointes** : images uniquement (JPEG, PNG, WebP, GIF), 5 Mo au maximum chacune, 4 par message au plus. Elles sont accessibles à qui peut lire l'espace de discussion ; tant qu'une image n'est pas rattachée à un message, seul celui qui l'a envoyée peut la lire. Pour envoyer une image, il faut pouvoir lire au moins un espace. Les images envoyées mais pas encore rattachées sont limitées à 50 Mo par compte, et supprimées au bout de 24 heures si elles ne l'ont toujours pas été.
 - Espaces et chats sont créés à la **publication** de la page qui contient leur bloc (voir [Page builder](06-page-builder.md#brouillon-et-publication)) ; leurs réglages (nom, tri, hauteur) suivent le brouillon.
 
 ## Dépendances
