@@ -25,6 +25,14 @@ export const config = {
   get isProduction(): boolean {
     return process.env.NODE_ENV === 'production';
   },
+  /**
+   * Nombre de proxys devant le backend : 1 (Caddy) par défaut, 2 si un autre proxy
+   * précède Caddy. Trop bas, tous les utilisateurs semblent venir de la même adresse
+   * et partagent les blocages ; trop haut, un client peut se donner l'adresse qu'il veut.
+   */
+  get trustProxy(): number {
+    return Number(process.env.TRUST_PROXY || 1);
+  },
   /** Origines autorisées pour les requêtes qui modifient des données (en-tête `Origin`). */
   get appOrigins(): string[] {
     return (process.env.APP_ORIGINS ?? 'http://localhost:5173')

@@ -2,12 +2,13 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
 import cookieParser from 'cookie-parser';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
+import { config } from './config.js';
 import { createValidationPipe } from './common/validation.pipe.js';
 
 /** Réglages communs au serveur et aux tests e2e. */
 export function configureApp(app: NestExpressApplication): void {
-  // Un seul proxy devant le backend (Caddy) : `req.ip` est l'adresse réelle du client.
-  app.set('trust proxy', 1);
+  // Proxys devant le backend (Caddy seul par défaut) : `req.ip` est l'adresse réelle du client.
+  app.set('trust proxy', config.trustProxy);
   // Une seule adresse par route : `/api/v1/Admin/users` n'existe pas. Nest a déjà
   // créé le routeur d'Express, qui ne relit pas le réglage : on le pose aussi sur lui.
   app.set('case sensitive routing', true);

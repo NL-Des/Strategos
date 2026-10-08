@@ -230,6 +230,7 @@
     "CONFIRMATION_REQUIRED": "Cette action demande une confirmation.",
     "AUTH_TOO_MANY_ATTEMPTS": "Trop de tentatives. Réessayez plus tard.",
     "AUTH_TOO_MANY_ATTEMPTS_RETRY": "Trop de tentatives. Réessayez dans {{minutes}} min.",
+    "AUTH_TOO_MANY_ATTEMPTS_RETRY_SECONDS": "Trop de tentatives. Réessayez dans {{seconds}} s.",
     "SOURCE_UNAVAILABLE": "Les données sont momentanément indisponibles.",
     "SOURCE_AUTH_EXPIRED": "La connexion à la source de données a expiré.",
     "INTERNAL_ERROR": "Une erreur interne est survenue.",

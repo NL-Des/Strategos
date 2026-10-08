@@ -23,8 +23,8 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | C1 | Critique | Contournement de `AdminGuard` par la casse de l'URL | **Corrigé** (guard fondé sur `@AdminOnly()`, routage sensible à la casse, test `admin-guard.e2e-spec.ts`) |
 | E1 | Élevée | Compte `admin` / `admin` actif au déploiement | Théorique (conception) |
 | M1 | Moyenne | Aucun en-tête de sécurité HTTP | **Corrigé** (`Caddyfile` ; CSP rejouée sur les parcours navigateur, sélecteur Google réel non testé) |
-| M2 | Moyenne | Un tiers peut verrouiller n'importe quel compte | Confirmé |
-| M3 | Moyenne | Limitation des tentatives contournable par des requêtes simultanées | Confirmé |
+| M2 | Moyenne | Un tiers peut verrouiller n'importe quel compte | **Corrigé** (blocage par couple pseudo + adresse ; délai de 15 s au plus sur le pseudo, nul depuis une adresse connue) |
+| M3 | Moyenne | Limitation des tentatives contournable par des requêtes simultanées | **Corrigé** (tentative enregistrée avant la vérification, sous verrou) |
 | M4 | Moyenne | WebSocket : trames de 60 Mo acceptées, aucun débit maximal | **Corrigé** (trame de 256 Ko, 10 connexions par compte, 20 trames par 10 s) |
 | M5 | Moyenne | Aucune limite de débit ni de quota hors connexion ; classeur très compressé | Théorique |
 | M6 | Moyenne | Conteneurs en `root`, sans durcissement ; images non épinglées | Lecture de la configuration |

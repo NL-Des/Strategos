@@ -33,7 +33,7 @@ export class AuthService {
    */
   async login(dto: LoginDto, meta: ClientMeta, previousSessionId?: string) {
     const username = dto.username.trim();
-    await this.throttle.assertAllowed(username, meta.ip);
+    const attempt = await this.throttle.begin(username, meta.ip);
 
     const user =
       (await this.prisma.user.findFirst({ where: { username, deletedAt: null } })) ??
@@ -44,15 +44,14 @@ export class AuthService {
 
     const valid = await verifyPassword(user?.passwordHash ?? null, dto.password);
     if (!user || !valid) {
-      await this.throttle.record(username, meta.ip, false);
       throw new AppException(HttpStatus.UNAUTHORIZED, ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
+    // Compte désactivé : la tentative reste un échec.
     if (user.disabledAt || user.deletedAt) {
-      await this.throttle.record(username, meta.ip, false);
       throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.AUTH_ACCOUNT_DISABLED);
     }
 
-    await this.throttle.record(username, meta.ip, true);
+    await this.throttle.markSuccess(attempt);
     const token = await this.prisma.$transaction(async (tx) => {
       if (previousSessionId) await this.sessions.revoke(previousSessionId, tx);
       return this.sessions.create(user.id, meta, tx);
@@ -102,13 +101,12 @@ export class AuthService {
     action: AuditAction,
   ): Promise<User> {
     const { user } = auth;
-    await this.throttle.assertAllowed(user.username, meta.ip);
+    const attempt = await this.throttle.begin(user.username, meta.ip);
     if (!(await verifyPassword(user.passwordHash, dto.currentPassword))) {
-      await this.throttle.record(user.username, meta.ip, false);
       throw new AppException(HttpStatus.UNAUTHORIZED, ErrorCode.AUTH_INVALID_CREDENTIALS);
     }
     // Un succès remet le compteur à zéro, comme à la connexion.
-    await this.throttle.record(user.username, meta.ip, true);
+    await this.throttle.markSuccess(attempt);
     if (dto.newPassword === dto.currentPassword) {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, {
         fields: { newPassword: ['sameAsCurrent'] },

@@ -124,24 +124,57 @@ describe('Authentification (e2e)', () => {
   });
 
   describe('limitation des tentatives', () => {
-    it('5 échecs sur un compte → 429 avec retryAfter, même depuis une autre IP', async () => {
+    it('5 échecs d’un couple pseudo + adresse → 429 pendant 15 minutes', async () => {
+      const client = new TestClient(app);
       for (let i = 0; i < 5; i++) {
-        expect((await new TestClient(app).login('admin', 'faux')).status).toBe(401);
+        expect((await client.login('admin', 'faux')).status).toBe(401);
       }
-      const res = await new TestClient(app).login('admin', 'admin');
+      const res = await client.login('admin', 'admin');
       expect(res.status).toBe(429);
       expect(res.body.code).toBe('AUTH_TOO_MANY_ATTEMPTS');
       expect(res.body.details.retryAfter).toBeGreaterThan(14 * 60);
       expect(res.body.details.retryAfter).toBeLessThanOrEqual(15 * 60);
     });
 
-    it('5 échecs depuis une IP → 429 sur tout compte depuis cette IP', async () => {
-      const client = new TestClient(app);
+    it('les échecs d’un tiers ne verrouillent pas le compte : attente courte, puis connexion', async () => {
+      // Le titulaire s'est déjà connecté depuis son adresse.
+      const owner = new TestClient(app);
+      expect((await owner.login('admin', 'admin')).status).toBe(200);
+      const attacker = new TestClient(app);
       for (let i = 0; i < 5; i++) {
+        expect((await attacker.login('admin', 'faux')).status).toBe(401);
+      }
+      // Depuis son adresse habituelle : aucune attente.
+      expect((await new TestClient(app, owner.ip).login('admin', 'admin')).status).toBe(200);
+
+      for (let i = 0; i < 5; i++) await new TestClient(app).login('admin', 'faux');
+      // Depuis une adresse inconnue : quelques secondes au plus, jamais 15 minutes.
+      const stranger = new TestClient(app);
+      const slowed = await stranger.login('admin', 'admin');
+      expect(slowed.status).toBe(429);
+      expect(slowed.body.details.retryAfter).toBeLessThanOrEqual(15);
+      await new Promise((r) => setTimeout(r, slowed.body.details.retryAfter * 1000 + 50));
+      expect((await stranger.login('admin', 'admin')).status).toBe(200);
+    });
+
+    it('20 échecs depuis une adresse → 429 sur tout compte depuis cette adresse', async () => {
+      const client = new TestClient(app);
+      for (let i = 0; i < 20; i++) {
         expect((await client.login(`inconnu${i}`, 'faux')).status).toBe(401);
       }
       expect((await client.login('admin', 'admin')).status).toBe(429);
       expect((await new TestClient(app).login('admin', 'admin')).status).toBe(200);
+    });
+
+    it('tentatives simultanées : pas plus de 5 mots de passe testés', async () => {
+      const client = new TestClient(app);
+      await client.get('/auth/csrf');
+      const results = await Promise.all(
+        Array.from({ length: 40 }, () => client.login('admin', 'faux')),
+      );
+      const tested = results.filter((r) => r.status === 401).length;
+      expect(tested).toBeLessThanOrEqual(5);
+      expect(results.filter((r) => r.status === 429).length).toBe(40 - tested);
     });
 
     it('un succès remet le compteur à zéro', async () => {

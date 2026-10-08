@@ -38,9 +38,12 @@ export function ErrorMessage({ error }: { error: unknown }) {
   const details = error instanceof ApiRequestError ? error.error.details : {};
   let text = t(`errors.${code}`);
   if (code === 'AUTH_TOO_MANY_ATTEMPTS' && typeof details.retryAfter === 'number') {
-    text = t('errors.AUTH_TOO_MANY_ATTEMPTS_RETRY', {
-      minutes: Math.ceil(details.retryAfter / 60),
-    });
+    text =
+      details.retryAfter < 60
+        ? t('errors.AUTH_TOO_MANY_ATTEMPTS_RETRY_SECONDS', { seconds: details.retryAfter })
+        : t('errors.AUTH_TOO_MANY_ATTEMPTS_RETRY', {
+            minutes: Math.ceil(details.retryAfter / 60),
+          });
   }
 
   const fields = (details.fields ?? {}) as Record<string, string[]>;
