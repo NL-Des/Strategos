@@ -8,6 +8,11 @@ import { createValidationPipe } from './common/validation.pipe.js';
 export function configureApp(app: NestExpressApplication): void {
   // Un seul proxy devant le backend (Caddy) : `req.ip` est l'adresse réelle du client.
   app.set('trust proxy', 1);
+  // Une seule adresse par route : `/api/v1/Admin/users` n'existe pas. Nest a déjà
+  // créé le routeur d'Express, qui ne relit pas le réglage : on le pose aussi sur lui.
+  app.set('case sensitive routing', true);
+  const { router } = app.getHttpAdapter().getInstance();
+  (router as unknown as { caseSensitive: boolean }).caseSensitive = true;
   app.use(cookieParser());
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(createValidationPipe());

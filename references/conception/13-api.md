@@ -366,7 +366,7 @@ Pour `deleted` et `hidden`, seul `message.id` est envoyé. `mine` est calculé p
 | `AuthGuard` (global) | Toutes les routes sauf `health`, `auth/csrf`, `auth/login` et `onedrive/callback` (protégée par `state`) |
 | Guard « identifiants à changer » (global) | Tout sauf `auth/me`, `auth/change-credentials`, `auth/logout` et les routes publiques ; la passerelle WebSocket refuse aussi ces comptes |
 | Guard CSRF (global) | Toutes les méthodes qui modifient des données, sauf le retour OAuth (protégé par `state`) |
-| Guard admin | Tout `/api/v1/admin/**` (un non-admin reçoit `404`, l'espace admin n'est pas révélé), et la passerelle pour les événements de modération |
+| Guard admin | Tout `/api/v1/admin/**` (un non-admin reçoit `404`, l'espace admin n'est pas révélé), et la passerelle pour les événements de modération. Le guard lit une marque posée sur le contrôleur (`@AdminOnly()`), jamais le texte de l'adresse ; un test vérifie que toute route sous `admin/` la porte. Le routage respecte la casse : `/api/v1/Admin/…` n'existe pas |
 | `PermissionsGuard` | `GET /pages/:id` (lecture page) |
 | Services d'accès (`PageAccessService`, `SpaceAccessService`, `ChatAccessService`) | Blocs, formulaires, chats (lecture page) et espaces, sujets, messages, pièces jointes (droits de l'espace) ; même règle `RightsService` que le guard |
 | Propriété | Notes, ses soumissions, ses messages (sujets et chat ; l'admin aussi, tracé), renommer ou clore son sujet (l'admin aussi) |

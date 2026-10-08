@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import type { InstantiateResult, TemplateSummary } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import {
   CreateTemplateDto,
@@ -22,6 +22,7 @@ import {
 import { TemplatesService } from './templates.service.js';
 
 /** Modèles, côté admin (13 — Modèles). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/templates')
 export class AdminTemplatesController {
   constructor(private readonly templates: TemplatesService) {}

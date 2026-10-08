@@ -19,6 +19,7 @@ import { AppException } from '../common/app-exception.js';
 import { ConfirmDto } from '../common/confirm.dto.js';
 import { ListMediaQueryDto, UploadMediaDto } from './media.dto.js';
 import { MediaService } from './media.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Ce que l'intercepteur fournit d'un fichier envoyé. */
 interface UploadedImage {
@@ -27,6 +28,7 @@ interface UploadedImage {
 }
 
 /** Médiathèque, côté admin. */
+@AdminOnly()
 @Controller('admin/media')
 export class AdminMediaController {
   constructor(private readonly media: MediaService) {}

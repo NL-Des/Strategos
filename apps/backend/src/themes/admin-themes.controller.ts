@@ -14,8 +14,10 @@ import type { Theme } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { CreateThemeDto, UpdateThemeDto } from './themes.dto.js';
 import { ThemesService } from './themes.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Thèmes, côté admin (13 — Page builder). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/themes')
 export class AdminThemesController {
   constructor(private readonly themes: ThemesService) {}

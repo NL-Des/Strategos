@@ -1,6 +1,6 @@
 import { Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { ChatMessagesService } from './chat-messages.service.js';
 
@@ -9,6 +9,7 @@ import { ChatMessagesService } from './chat-messages.service.js';
  * `admin/`). Masquer ou rétablir un message : archivé, tracé au journal et
  * diffusé en temps réel.
  */
+@AdminOnly()
 @Controller('admin')
 export class AdminChatController {
   constructor(private readonly messages: ChatMessagesService) {}

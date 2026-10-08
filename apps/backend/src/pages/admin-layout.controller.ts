@@ -17,7 +17,7 @@ import {
   type SaveLayoutDraftResult,
 } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { LayoutService } from './layout.service.js';
 import { PreviewQueryDto, SaveLayoutDraftDto } from './pages.dto.js';
@@ -25,6 +25,7 @@ import { PreviewQueryDto, SaveLayoutDraftDto } from './pages.dto.js';
 const kindPipe = new ParseEnumPipe(LayoutKind);
 
 /** Header et footer partagés, côté admin. */
+@AdminOnly()
 @Controller('admin/layout/:kind')
 export class AdminLayoutController {
   constructor(private readonly layout: LayoutService) {}

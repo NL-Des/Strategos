@@ -18,8 +18,10 @@ import { ReplaceUserGroupsDto } from '../groups/groups.dto.js';
 import { GroupsService } from '../groups/groups.service.js';
 import { CreateUserDto, ListUsersQueryDto, ResetPasswordDto, UpdateUserDto } from './users.dto.js';
 import { UsersService } from './users.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Comptes, côté admin (13 — routes Comptes). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/users')
 export class AdminUsersController {
   constructor(

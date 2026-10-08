@@ -1,6 +1,6 @@
 # Bilan de cybersécurité
 
-Bilan réalisé le 8 octobre 2026 sur le commit `cb8b0f6` (V1). Il décrit l'état du code à cette date : aucun correctif n'a été appliqué.
+Bilan réalisé le 8 octobre 2026 sur le commit `cb8b0f6` (V1). Les sections 2 à 8 décrivent l'état du code à cette date. Les corrections apportées depuis sont notées dans la colonne « État » du tableau des constats.
 
 ## 1. Synthèse
 
@@ -20,7 +20,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 
 | Réf. | Gravité | Constat | État |
 |---|---|---|---|
-| C1 | Critique | Contournement de `AdminGuard` par la casse de l'URL | Confirmé |
+| C1 | Critique | Contournement de `AdminGuard` par la casse de l'URL | **Corrigé** (guard fondé sur `@AdminOnly()`, routage sensible à la casse, test `admin-guard.e2e-spec.ts`) |
 | E1 | Élevée | Compte `admin` / `admin` actif au déploiement | Théorique (conception) |
 | M1 | Moyenne | Aucun en-tête de sécurité HTTP | Confirmé |
 | M2 | Moyenne | Un tiers peut verrouiller n'importe quel compte | Confirmé |

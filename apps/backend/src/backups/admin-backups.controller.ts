@@ -1,8 +1,10 @@
 import { Controller, Get, Param, ParseUUIDPipe, StreamableFile } from '@nestjs/common';
 import type { BackupSummary } from '@strategos/shared';
 import { BackupService } from './backup.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Sauvegardes (11, 13 — Supervision). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/backups')
 export class AdminBackupsController {
   constructor(private readonly backups: BackupService) {}

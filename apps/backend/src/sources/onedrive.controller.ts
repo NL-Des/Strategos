@@ -1,14 +1,14 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import type { OneDriveItem, OneDriveStatus } from '@strategos/shared';
 import type { Response } from 'express';
-import { CurrentAuth, Public } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth, Public } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { OneDriveAuthService } from './connectors/onedrive-auth.service.js';
 import { OneDriveConnector } from './connectors/onedrive.connector.js';
 import { SourceUnavailableError, sourceException } from './source-errors.js';
 import { BrowseQueryDto } from './sources.dto.js';
 
-/** Connexion OneDrive de l'admin (13 — Sources). Les routes `admin/` sont protégées par `AdminGuard`. */
+/** Connexion OneDrive de l'admin (13 — Sources). Les routes `admin/` portent `@AdminOnly()`. */
 @Controller()
 export class OneDriveController {
   constructor(
@@ -16,12 +16,14 @@ export class OneDriveController {
     private readonly connector: OneDriveConnector,
   ) {}
 
+  @AdminOnly()
   @Get('admin/onedrive/status')
   status(): Promise<OneDriveStatus> {
     return this.auth.status();
   }
 
   /** Démarre la connexion Microsoft (redirection). */
+  @AdminOnly()
   @Get('admin/onedrive/connect')
   connect(@CurrentAuth() auth: AuthContext, @Res() res: Response): void {
     res.redirect(this.auth.connectUrl(auth.user.id));
@@ -47,6 +49,7 @@ export class OneDriveController {
     }
   }
 
+  @AdminOnly()
   @Get('admin/onedrive/browse')
   async browse(@Query() query: BrowseQueryDto): Promise<OneDriveItem[]> {
     try {

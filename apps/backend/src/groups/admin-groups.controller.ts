@@ -20,8 +20,10 @@ import {
   UpdateGroupDto,
 } from './groups.dto.js';
 import { GroupsService } from './groups.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Groupes, côté admin (13 — Groupes et droits). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/groups')
 export class AdminGroupsController {
   constructor(private readonly groups: GroupsService) {}

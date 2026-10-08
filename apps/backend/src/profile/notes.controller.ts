@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Note } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { NoteDto } from './notes.dto.js';
 import { NotesService } from './notes.service.js';
@@ -55,6 +55,7 @@ export class NotesController {
  * Notes d'un compte, côté admin (13 — Comptes) : lecture seule, chaque appel
  * écrit `notes.read` au journal. Aucune route d'écriture.
  */
+@AdminOnly()
 @Controller('admin/users')
 export class AdminUserNotesController {
   constructor(private readonly notes: NotesService) {}

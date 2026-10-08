@@ -20,7 +20,7 @@ import type {
   SavePageDraftResult,
 } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import { ConfirmDto } from '../common/confirm.dto.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { CreatePageDto, PreviewQueryDto, SavePageDraftDto } from './pages.dto.js';
@@ -28,6 +28,7 @@ import { LayoutService } from './layout.service.js';
 import { PagesService } from './pages.service.js';
 
 /** Page builder, côté admin (13 — Page builder). */
+@AdminOnly()
 @Controller('admin/pages')
 export class AdminPagesController {
   constructor(

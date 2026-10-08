@@ -32,8 +32,10 @@ import { ConfirmDto } from '../common/confirm.dto.js';
 import { SourceGridService } from './source-grid.service.js';
 import { AddSourceDto, CellEditDto, GridQueryDto } from './sources.dto.js';
 import { SourcesService } from './sources.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Sources de données, côté admin (13 — Sources). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/sources')
 export class AdminSourcesController {
   constructor(

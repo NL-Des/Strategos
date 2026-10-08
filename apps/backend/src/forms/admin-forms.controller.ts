@@ -14,13 +14,14 @@ import {
 } from '@nestjs/common';
 import type { AdminForm, FormPrefill, SaveFormDraftResult, UserForm } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { FormReaderService } from './form-reader.service.js';
 import { CreateFormDto, FormSettingsDto, PrefillQueryDto, SaveFormDraftDto } from './forms.dto.js';
 import { FormsService } from './forms.service.js';
 
 /** Formulaires, côté admin (13 — Formulaires et soumissions). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/forms')
 export class AdminFormsController {
   constructor(

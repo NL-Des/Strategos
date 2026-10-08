@@ -15,11 +15,13 @@ import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { AppException } from '../common/app-exception.js';
 import { ReimportConfirmDto } from './forms.dto.js';
 import { ReimportService } from './reimport.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /**
  * Réimport d'un Excel uploadé (13 — Sources). Rattaché aux formulaires : il
  * liste et réapplique des validations. Protégé globalement par `AdminGuard`.
  */
+@AdminOnly()
 @Controller('admin/sources/:id/reimport')
 export class AdminReimportController {
   constructor(private readonly reimport: ReimportService) {}

@@ -7,8 +7,10 @@ import {
 } from '@strategos/shared';
 import { RightsMatrixQueryDto } from './groups.dto.js';
 import { RightsService } from './rights.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Visualisation des droits (04), en lecture seule, calculée par `RightsService`. */
+@AdminOnly()
 @Controller('admin/rights')
 export class AdminRightsController {
   constructor(private readonly rights: RightsService) {}

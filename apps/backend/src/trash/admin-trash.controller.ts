@@ -12,8 +12,10 @@ import type { Paginated, TrashItem } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
 import { TrashQueryDto } from './trash.dto.js';
 import { TrashService } from './trash.service.js';
+import { AdminOnly } from '../auth/decorators.js';
 
 /** Corbeille (04, 13 — Supervision). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/trash')
 export class AdminTrashController {
   constructor(private readonly trash: TrashService) {}

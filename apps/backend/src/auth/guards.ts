@@ -7,7 +7,7 @@ import { config } from '../config.js';
 import { PRESESSION_COOKIE, SESSION_COOKIE } from './auth.constants.js';
 import { setSessionCookie } from './cookies.js';
 import { verifyCsrfToken } from './csrf.js';
-import { ALLOW_PENDING_CREDENTIALS, IS_PUBLIC } from './decorators.js';
+import { ALLOW_PENDING_CREDENTIALS, IS_ADMIN, IS_PUBLIC } from './decorators.js';
 import { SessionService } from './session.service.js';
 
 // Guards globaux, dans l'ordre d'exécution (13 — Qui protège quoi).
@@ -108,14 +108,23 @@ export class CredentialsChangeGuard implements CanActivate {
   }
 }
 
-/** Tout `/api/v1/admin/**` est réservé à l'admin ; pour les autres, l'espace n'existe pas (`404`). */
+/**
+ * Les routes marquées `@AdminOnly()` (tout `/api/v1/admin/**`) sont réservées à
+ * l'admin ; pour les autres, l'espace n'existe pas (`404`). La décision porte sur
+ * le contrôleur exécuté, jamais sur le texte de l'adresse : le routeur et le
+ * guard ne peuvent pas la lire différemment.
+ */
 @Injectable()
 export class AdminGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
     if (!isHttp(context)) return true;
-    const req = requestOf(context);
-    const isAdminRoute = req.path === '/api/v1/admin' || req.path.startsWith('/api/v1/admin/');
-    if (!isAdminRoute || req.auth?.user.isAdmin) return true;
+    const adminOnly = this.reflector.getAllAndOverride<boolean>(IS_ADMIN, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!adminOnly || requestOf(context).auth?.user.isAdmin) return true;
     throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND);
   }
 }

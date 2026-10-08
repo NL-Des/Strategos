@@ -16,7 +16,7 @@ import type {
   SubmissionQueueItem,
 } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import {
   BulkValidateSubmissionsDto,
@@ -29,6 +29,7 @@ import { SubmissionProcessor } from './submission-processor.service.js';
 import { SubmissionsService } from './submissions.service.js';
 
 /** Tableau de bord des soumissions (04, 13). Protégé globalement par `AdminGuard`. */
+@AdminOnly()
 @Controller('admin/submissions')
 export class AdminSubmissionsController {
   constructor(

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import type { TopicDetail } from '@strategos/shared';
 import { Actor, type AuditActor } from '../audit/audit-actor.js';
-import { CurrentAuth } from '../auth/decorators.js';
+import { AdminOnly, CurrentAuth } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/request-context.js';
 import { PinTopicDto } from './discussions.dto.js';
 import { MessagesService } from './messages.service.js';
@@ -22,6 +22,7 @@ import { TopicsService } from './topics.service.js';
  * sous `admin/`). Renommer et clore passent par la route utilisateur, ouverte à
  * l'admin ; l'épinglage, la suppression d'un sujet et le masquage sont ici.
  */
+@AdminOnly()
 @Controller('admin')
 export class AdminDiscussionsController {
   constructor(
