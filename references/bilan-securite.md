@@ -36,7 +36,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | F2 | Faible | Protections qui dépendent de `NODE_ENV=production` | **Corrigé** (protégé par défaut, ouvert si `development` ou `test`) |
 | F3 | Faible | Session sans durée de vie maximale | **Corrigé** (30 jours ; pas de liste des sessions dans le profil) |
 | F4 | Faible | Dépendances : cinq avis, non atteignables ; `exceljs` peu maintenu | Confirmé (`pnpm audit`) |
-| F5 | Faible | Image externe dans un catalogue : traçage des lecteurs | Théorique |
+| F5 | Faible | Image externe dans un catalogue : traçage des lecteurs | **Réglable** : l'admin choisit entre toutes les adresses (défaut, comportement d'origine), une liste de domaines, ou aucune. Le risque demeure tant que le réglage reste sur « toutes » |
 | F6 | Faible | Mot de passe de la base visible dans la liste des processus | **Corrigé** (`PGPASSWORD`) |
 | I1 | Information | En-tête `X-Powered-By: Express` | **Corrigé** |
 | I2 | Information | Poste de développement : fichiers et droits à ranger | **Corrigé** pour les droits (`600`) ; `.env` racine et `secrets/` à ranger à la main |

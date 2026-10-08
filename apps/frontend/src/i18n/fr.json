@@ -138,6 +138,7 @@
     }
   },
   "fields": {
+    "externalImageDomains": "Sites autorisés",
     "clientId": "ID client",
     "clientSecret": "Code secret du client",
     "apiKey": "Clé d’API",
@@ -400,6 +401,14 @@
     "noDarkTheme": "Aucun",
     "darkThemeHint": "Un utilisateur qui active le mode sombre voit toutes les pages avec ce thème. Sans thème désigné, les pages gardent le leur.",
     "backupRetention": "Conservation des sauvegardes (jours)",
+    "externalImages": "Images externes dans les catalogues",
+    "externalImagesModes": {
+      "all": "Toutes les adresses web",
+      "allowlist": "Seulement les sites choisis",
+      "none": "Aucune : médiathèque seulement"
+    },
+    "externalImagesHint": "Un catalogue peut afficher une image désignée par une adresse web. Le site qui l’héberge voit alors l’adresse IP et l’heure de visite de chaque lecteur. Une image refusée est remplacée par l’image par défaut.",
+    "externalImageDomainsHint": "Un nom de domaine par ligne, sans « https:// » ; ses sous-domaines sont acceptés aussi.",
     "saved": "Réglages enregistrés."
   },
   "builder": {

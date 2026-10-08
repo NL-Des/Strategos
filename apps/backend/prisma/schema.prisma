@@ -103,6 +103,14 @@ enum TemplateType {
   @@map("template_type")
 }
 
+enum ExternalImages {
+  all
+  allowlist
+  none
+
+  @@map("external_images")
+}
+
 enum ActorKind {
   user
   system
@@ -128,18 +136,18 @@ model User {
   deletedAt             DateTime? @map("deleted_at") @db.Timestamptz
   version               Int       @default(1)
 
-  sessions       Session[]
-  auditLogs      AuditLog[]
-  personalPage   Page?             @relation("PersonalPage", fields: [personalPageId], references: [id], onDelete: SetNull)
-  publishedPages Page[]            @relation("PublishedBy")
-  media          Media[]
-  groups         UserGroup[]
-  sources        Source[]
-  reimports      ReimportPreview[]
-  cellEdits      SourceCellEdit[]
-  formVersions   FormVersion[]
-  submissions    Submission[]      @relation("SubmissionAuthor")
-  decisions      Submission[]      @relation("SubmissionDecider")
+  sessions           Session[]
+  auditLogs          AuditLog[]
+  personalPage       Page?             @relation("PersonalPage", fields: [personalPageId], references: [id], onDelete: SetNull)
+  publishedPages     Page[]            @relation("PublishedBy")
+  media              Media[]
+  groups             UserGroup[]
+  sources            Source[]
+  reimports          ReimportPreview[]
+  cellEdits          SourceCellEdit[]
+  formVersions       FormVersion[]
+  submissions        Submission[]      @relation("SubmissionAuthor")
+  decisions          Submission[]      @relation("SubmissionDecider")
   topics             Topic[]
   messages           TopicMessage[]    @relation("MessageAuthor")
   hiddenMessages     TopicMessage[]    @relation("MessageHider")
@@ -244,13 +252,15 @@ model GroupPermission {
 // CHECK settings, index unique partiel media(filename), données initiales.
 
 model Setting {
-  id                  Int      @id @default(1) @db.SmallInt
-  landingPageId       String?  @map("landing_page_id") @db.Uuid
-  defaultThemeId      String?  @map("default_theme_id") @db.Uuid
-  darkThemeId         String?  @map("dark_theme_id") @db.Uuid
-  backupRetentionDays Int      @default(7) @map("backup_retention_days")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-  version             Int      @default(1)
+  id                   Int            @id @default(1) @db.SmallInt
+  landingPageId        String?        @map("landing_page_id") @db.Uuid
+  defaultThemeId       String?        @map("default_theme_id") @db.Uuid
+  darkThemeId          String?        @map("dark_theme_id") @db.Uuid
+  backupRetentionDays  Int            @default(7) @map("backup_retention_days")
+  externalImages       ExternalImages @default(all) @map("external_images")
+  externalImageDomains String[]       @default([]) @map("external_image_domains")
+  updatedAt            DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  version              Int            @default(1)
 
   landingPage  Page?  @relation(fields: [landingPageId], references: [id], onDelete: SetNull)
   defaultTheme Theme? @relation("DefaultTheme", fields: [defaultThemeId], references: [id], onDelete: Restrict)

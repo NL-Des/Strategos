@@ -1,4 +1,4 @@
-import type { BackupSummary, InstanceSettings } from '@strategos/shared';
+import { type BackupSummary, ExternalImages, type InstanceSettings } from '@strategos/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -91,14 +91,24 @@ function SettingsForm({ initial }: { initial: InstanceSettings }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initial);
+  // Un domaine par ligne ; la liste n'est lue qu'à l'enregistrement.
+  const [domains, setDomains] = useState(initial.externalImageDomains.join('\n'));
   const toast = useToast();
   const pages = useQuery({ queryKey: ['admin', 'pages'], queryFn: listPages });
   const themes = useQuery({ queryKey: ['admin', 'themes'], queryFn: listThemes });
   const save = useMutation({
-    mutationFn: () => updateSettings(form),
+    mutationFn: () =>
+      updateSettings({
+        ...form,
+        externalImageDomains: domains
+          .split(/[\s,;]+/)
+          .map((domain) => domain.trim())
+          .filter(Boolean),
+      }),
     onSuccess: (next) => {
       queryClient.setQueryData(['admin', 'settings'], next);
       setForm(next);
+      setDomains(next.externalImageDomains.join('\n'));
       void queryClient.invalidateQueries({ queryKey: ME_KEY });
       toast(t('settings.saved'));
     },
@@ -168,6 +178,32 @@ function SettingsForm({ initial }: { initial: InstanceSettings }) {
           onChange={(e) => setForm({ ...form, backupRetentionDays: Number(e.target.value) })}
         />
       </label>
+      <label>
+        {t('settings.externalImages')}
+        <select
+          value={form.externalImages}
+          onChange={(e) => setForm({ ...form, externalImages: e.target.value as ExternalImages })}
+        >
+          {Object.values(ExternalImages).map((mode) => (
+            <option key={mode} value={mode}>
+              {t(`settings.externalImagesModes.${mode}`)}
+            </option>
+          ))}
+        </select>
+        <small>{t('settings.externalImagesHint')}</small>
+      </label>
+      {form.externalImages === ExternalImages.allowlist && (
+        <label>
+          {t('fields.externalImageDomains')}
+          <textarea
+            rows={4}
+            value={domains}
+            placeholder="images.exemple.fr"
+            onChange={(e) => setDomains(e.target.value)}
+          />
+          <small>{t('settings.externalImageDomainsHint')}</small>
+        </label>
+      )}
       <ErrorMessage error={save.error} />
       <button type="submit" disabled={save.isPending}>
         {t('common.save')}

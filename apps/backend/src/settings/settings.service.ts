@@ -13,6 +13,8 @@ function toSettings(row: Setting): InstanceSettings {
     defaultThemeId: row.defaultThemeId!,
     darkThemeId: row.darkThemeId,
     backupRetentionDays: row.backupRetentionDays,
+    externalImages: row.externalImages,
+    externalImageDomains: row.externalImageDomains,
     version: row.version,
   };
 }
@@ -68,6 +70,14 @@ export class SettingsService {
           defaultThemeId: dto.defaultThemeId,
           darkThemeId,
           backupRetentionDays: dto.backupRetentionDays,
+          ...(dto.externalImages !== undefined ? { externalImages: dto.externalImages } : {}),
+          ...(dto.externalImageDomains !== undefined
+            ? {
+                externalImageDomains: [
+                  ...new Set(dto.externalImageDomains.map((d) => d.trim().toLowerCase())),
+                ].sort(),
+              }
+            : {}),
           version: { increment: 1 },
         },
       });

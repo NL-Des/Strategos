@@ -1,5 +1,12 @@
 import { CellType } from '@strategos/shared';
-import { formatRowCell, formatText, imageResolver, type StoredCell } from './cell-format.js';
+import {
+  type ExternalImagePolicy,
+  externalImageAllowed,
+  formatRowCell,
+  formatText,
+  imageResolver,
+  type StoredCell,
+} from './cell-format.js';
 import { headerRow, rangeRect } from './data-range.js';
 
 const num = (n: number, needsRecalc = false): StoredCell => ({
@@ -28,7 +35,10 @@ describe('formatage des cellules', () => {
   });
 
   it('liens web et images : médiathèque, lien, ou image par défaut', () => {
-    const resolve = imageResolver(new Map([['epee.png', '/api/v1/media/1']]));
+    const resolve = imageResolver(new Map([['epee.png', '/api/v1/media/1']]), {
+      mode: 'all',
+      domains: [],
+    });
     expect(formatRowCell(text('https://ex.org'), 'link', resolve)).toMatchObject({
       href: 'https://ex.org',
     });
@@ -38,6 +48,24 @@ describe('formatage des cellules', () => {
       'https://ex.org/a.png',
     );
     expect(formatRowCell(text('inconnue.png'), 'image', resolve).image).toBeNull();
+  });
+
+  it('image externe : selon la règle de l’admin', () => {
+    const media = new Map([['epee.png', '/api/v1/media/1']]);
+    const url = 'https://cdn.exemple.org/a.png';
+    const none = imageResolver(media, { mode: 'none', domains: [] });
+    expect(formatRowCell(text(url), 'image', none).image).toBeNull();
+    expect(formatRowCell(text('epee.png'), 'image', none).image).toBe('/api/v1/media/1');
+    // Un lien reste un lien : la règle ne porte que sur les images.
+    expect(formatRowCell(text(url), 'link', none).href).toBe(url);
+
+    const listed: ExternalImagePolicy = { mode: 'allowlist', domains: ['exemple.org'] };
+    expect(formatRowCell(text(url), 'image', imageResolver(media, listed)).image).toBe(url);
+    expect(externalImageAllowed('https://EXEMPLE.org/a.png', listed)).toBe(true);
+    expect(externalImageAllowed('https://exemple.org.pirate.net/a.png', listed)).toBe(false);
+    expect(externalImageAllowed('https://pasexemple.org/a.png', listed)).toBe(false);
+    expect(externalImageAllowed('https://pirate.net/exemple.org/a.png', listed)).toBe(false);
+    expect(externalImageAllowed('https://exemple.org@pirate.net/a.png', listed)).toBe(false);
   });
 
   it('garde l’indicateur « à recalculer »', () => {

@@ -36,7 +36,9 @@ Un écran liste les sources de données et permet de les gérer (voir [Sources d
 - pour chaque source : type, état (joignable ou non), date de dernière lecture ou d'import, et pages qui l'utilisent, par un module ou par un formulaire (le header, le footer et la sidebar commune compris). Retirer une source encore utilisée déclenche un avertissement.
 
 ### Réglages de l'instance
-Un écran regroupe les réglages globaux : **page d'arrivée**, **thème par défaut**, **thème du mode sombre** (facultatif, voir [Thèmes](06-page-builder.md#thèmes)), **durée de conservation des sauvegardes**, et téléchargement d'une sauvegarde.
+Un écran regroupe les réglages globaux : **page d'arrivée**, **thème par défaut**, **thème du mode sombre** (facultatif, voir [Thèmes](06-page-builder.md#thèmes)), **durée de conservation des sauvegardes**, **images externes des catalogues**, et téléchargement d'une sauvegarde.
+
+**Images externes des catalogues.** Un catalogue peut afficher une image désignée par une adresse web ([06](06-page-builder.md#modules)). Le site qui héberge cette image voit alors l'adresse IP et l'heure de visite de chaque lecteur, et quiconque remplit la colonne (par un formulaire validé) choisit ce site. L'admin règle donc le niveau qu'il accepte : **toutes les adresses web** (par défaut), **seulement les sites choisis** (une liste de noms de domaine, sous-domaines compris), ou **aucune** (médiathèque seulement). Une image refusée est remplacée par l'image par défaut. La règle ne porte que sur les images : un lien web reste un lien.
 
 ### Visualisation des droits
 Lecture seule, calculée selon la règle d'union des groupes :

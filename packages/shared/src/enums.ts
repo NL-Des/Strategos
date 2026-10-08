@@ -99,3 +99,14 @@ export const ActorKind = {
   cli: 'cli',
 } as const;
 export type ActorKind = (typeof ActorKind)[keyof typeof ActorKind];
+
+/** `external_images` : images des catalogues désignées par un lien web (04 — Réglages). */
+export const ExternalImages = {
+  /** Tout lien web est affiché. */
+  all: 'all',
+  /** Seuls les liens vers les domaines choisis par l'admin. */
+  allowlist: 'allowlist',
+  /** Aucun : médiathèque seulement. */
+  none: 'none',
+} as const;
+export type ExternalImages = (typeof ExternalImages)[keyof typeof ExternalImages];

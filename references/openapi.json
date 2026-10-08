@@ -4463,6 +4463,23 @@
             "minimum": 1,
             "maximum": 3650
           },
+          "externalImages": {
+            "type": "string",
+            "description": "Absent : réglage inchangé.",
+            "enum": [
+              "all",
+              "allowlist",
+              "none"
+            ]
+          },
+          "externalImageDomains": {
+            "description": "Domaines dont les images sont affichées en mode `allowlist` ; absent : inchangé.",
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "version": {
             "type": "number",
             "minimum": 1

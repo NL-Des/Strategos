@@ -108,7 +108,7 @@ Chaque module suit la même fiche : **rôle**, **réglages de l'admin**, **rendu
   - le nombre de cartes par rangée (1 à 4) ;
   - la pagination et la recherche ;
   - un formulaire de ligne relié, facultatif (bouton « Proposer une modification » sur chaque carte).
-- **Images** : la colonne image contient soit le **nom d'un fichier de la médiathèque** (« epee.png »), soit un **lien web** (https://…). Si l'image est introuvable, une image par défaut est affichée.
+- **Images** : la colonne image contient soit le **nom d'un fichier de la médiathèque** (« epee.png »), soit un **lien web** (https://…). Si l'image est introuvable, une image par défaut est affichée ; de même si le lien web n'est pas permis par le réglage « images externes » de l'instance ([04](04-administration.md#réglages-de-linstance)).
 - **Rendu** : une grille de cartes, une carte par ligne du document. Sur mobile, les cartes passent à une par rangée.
 
 ### Contenu libre

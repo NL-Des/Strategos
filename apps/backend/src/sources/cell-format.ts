@@ -1,4 +1,4 @@
-import { type CellFormat, CellType, type RowCell } from '@strategos/shared';
+import { type CellFormat, CellType, ExternalImages, type RowCell } from '@strategos/shared';
 
 /** Valeur d'une cellule telle que lue dans une source (staging ou cache). */
 export interface StoredCell {
@@ -76,8 +76,34 @@ export function formatRowCell(
   return base;
 }
 
-/** Adresse d'image d'un catalogue : lien web tel quel, sinon nom de fichier de la médiathèque. */
-export function imageResolver(mediaByName: Map<string, string>) {
-  return (text: string): string | null =>
-    isWebUrl(text) ? text : (mediaByName.get(text.trim().toLowerCase()) ?? null);
+/** Règle de l'admin pour les images désignées par un lien web (04 — Réglages). */
+export interface ExternalImagePolicy {
+  mode: ExternalImages;
+  /** Domaines autorisés en mode `allowlist` ; leurs sous-domaines le sont aussi. */
+  domains: string[];
+}
+
+/** Le lien web est-il affichable comme image, selon la règle de l'admin ? */
+export function externalImageAllowed(url: string, policy: ExternalImagePolicy): boolean {
+  if (policy.mode === ExternalImages.all) return true;
+  if (policy.mode === ExternalImages.none) return false;
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return policy.domains.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
+/**
+ * Adresse d'image d'un catalogue : lien web s'il est permis par `policy`, sinon
+ * nom de fichier de la médiathèque. Un lien refusé donne `null` (image par
+ * défaut), comme un nom inconnu.
+ */
+export function imageResolver(mediaByName: Map<string, string>, policy: ExternalImagePolicy) {
+  return (text: string): string | null => {
+    if (isWebUrl(text)) return externalImageAllowed(text, policy) ? text : null;
+    return mediaByName.get(text.trim().toLowerCase()) ?? null;
+  };
 }

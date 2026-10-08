@@ -4,6 +4,7 @@ import type {
   AssembledPage,
   Block,
   CatalogCard,
+  InstanceSettings,
   Paginated,
   ReimportPreview,
   Row,
@@ -506,6 +507,56 @@ describe('Sources et modules de données (e2e)', () => {
         null,
       ]);
       expect(items[0]).toMatchObject({ title: { value: 'Épée' }, details: [{ value: '10' }] });
+    });
+
+    it('images externes : réglage de l’admin (toutes, domaines choisis, aucune)', async () => {
+      const block = catalog();
+      await publishPage([block]);
+      const external = async () =>
+        (await rows<CatalogCard>(kira, block.id)).items.map((c) => c.image)[1];
+      const set = async (body: object) => {
+        const { version: _version, ...settings } = (await admin.get('/admin/settings'))
+          .body as InstanceSettings;
+        return admin.send('put', '/admin/settings', { ...settings, ...body, version: _version });
+      };
+
+      // Par défaut : comme avant, tout lien web est affiché.
+      expect(((await admin.get('/admin/settings')).body as InstanceSettings).externalImages).toBe(
+        'all',
+      );
+      expect(await external()).toBe('https://ex.org/bouclier.png');
+
+      expectStatus(await set({ externalImages: 'none' }), 200);
+      expect(await external()).toBeNull();
+
+      const listed = await set({
+        externalImages: 'allowlist',
+        externalImageDomains: ['Images.Exemple.fr', 'ex.org', 'ex.org'],
+      });
+      expectStatus(listed, 200);
+      expect((listed.body as InstanceSettings).externalImageDomains).toEqual([
+        'ex.org',
+        'images.exemple.fr',
+      ]);
+      expect(await external()).toBe('https://ex.org/bouclier.png');
+      expectStatus(await set({ externalImageDomains: ['autre.org'] }), 200);
+      expect(await external()).toBeNull();
+
+      // Un domaine, pas une adresse.
+      for (const bad of ['https://ex.org', 'ex.org/images', 'localhost', '*.ex.org', '']) {
+        const res = await set({ externalImageDomains: [bad] });
+        expect([bad, res.status]).toEqual([bad, 400]);
+      }
+      expect((await set({ externalImages: 'partout' })).status).toBe(400);
+
+      const entry = await prisma.auditLog.findFirstOrThrow({
+        where: { action: 'settings.update' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(entry.after).toMatchObject({
+        externalImages: 'allowlist',
+        externalImageDomains: ['autre.org'],
+      });
     });
   });
 

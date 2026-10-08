@@ -195,6 +195,29 @@ test('4. header partagé, page d’accueil publiée et désignée page d’arriv
   await page.getByLabel(t('settings.landingPage')).selectOption({ label: 'Accueil' });
   await page.getByRole('button', { name: t('common.save') }).click();
   await expect(page.getByText(t('settings.saved'))).toBeVisible();
+
+  // Images externes des catalogues : seulement les sites choisis, puis retour au réglage d'origine.
+  const externalImages = page.getByLabel(t('settings.externalImages'));
+  await expect(externalImages).toHaveValue('all');
+  await externalImages.selectOption({ label: t('settings.externalImagesModes.allowlist') });
+  await page
+    .getByLabel(t('fields.externalImageDomains'))
+    .fill('Images.Exemple.fr\nhttps://pas-un-domaine');
+  await page.getByRole('button', { name: t('common.save') }).click();
+  await expect(page.getByText(t('validation.matches'))).toBeVisible();
+  await page
+    .getByLabel(t('fields.externalImageDomains'))
+    .fill('Images.Exemple.fr\ncdn.exemple.org');
+  await clickAndWait(page, page.getByRole('button', { name: t('common.save') }), '/settings');
+  await page.reload();
+  await expect(page.getByLabel(t('fields.externalImageDomains'))).toHaveValue(
+    'cdn.exemple.org\nimages.exemple.fr',
+  );
+  await page
+    .getByLabel(t('settings.externalImages'))
+    .selectOption({ label: t('settings.externalImagesModes.all') });
+  await expect(page.getByLabel(t('fields.externalImageDomains'))).toBeHidden();
+  await clickAndWait(page, page.getByRole('button', { name: t('common.save') }), '/settings');
 });
 
 test('5. Kira arrive sur l’accueil, avec le menu de compte', async ({ page }) => {

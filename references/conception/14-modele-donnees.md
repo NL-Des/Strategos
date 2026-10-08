@@ -119,6 +119,8 @@ Table à **une seule ligne**.
 | `default_theme_id` | uuid | N | — | FK `themes` ; seul endroit qui désigne le thème par défaut |
 | `dark_theme_id` | uuid | N | — | FK `themes`, `on delete set null` ; thème de toutes les pages en mode sombre, `null` = les pages gardent leur thème |
 | `backup_retention_days` | int | | `7` | `check (> 0)` |
+| `external_images` | enum `external_images` (`all`, `allowlist`, `none`) | | `all` | Images des catalogues désignées par un lien web |
+| `external_image_domains` | text[] | | `{}` | Domaines permis quand `external_images = allowlist`, en minuscules |
 | `updated_at` | timestamptz | | `now()` | |
 | `version` | int | | `1` | |
 
@@ -509,6 +511,7 @@ Chaque étape du [plan de réalisation](../plan-realisation.md) crée les tables
 19. `layout_sidebar_kind` puis `layout_sidebar` : valeur `sidebar` ajoutée à `layout_kind`, puis sidebar commune vide dans `layout_parts` (deux migrations : une valeur d'enum ne peut pas servir dans la transaction qui l'ajoute).
 20. `theme_presets` : thèmes fournis (Océan, Forêt, Sable, Prune, Sombre, Bleu nuit), copie de `THEME_PRESETS` ; un thème du même nom déjà présent est laissé tel quel.
 21. `dark_theme` : `settings.dark_theme_id`, qui désigne le thème « Sombre ».
+22. `external_images` : type `external_images`, `settings.external_images` et `settings.external_image_domains`.
 
 ## Dépendances
 Toutes les parties ; [architecture.md](../architecture.md#3-modèle-de-données) en donne le résumé.

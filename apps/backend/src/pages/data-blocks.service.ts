@@ -261,11 +261,16 @@ export class DataBlocksService {
     }
 
     const slice = lines.slice((query.page - 1) * pageSize, query.page * pageSize);
+    const settings = await this.prisma.setting.findUniqueOrThrow({
+      where: { id: 1 },
+      select: { externalImages: true, externalImageDomains: true },
+    });
     const imageUrl = imageResolver(
       await this.mediaByName(
         slice.map((line) => line.slice(0, columns.length)),
         columns,
       ),
+      { mode: settings.externalImages, domains: settings.externalImageDomains },
     );
     const cells = (line: StoredCell[]) =>
       line

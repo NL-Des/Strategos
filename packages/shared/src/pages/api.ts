@@ -1,4 +1,4 @@
-import type { LayoutKind } from '../enums.js';
+import type { ExternalImages, LayoutKind } from '../enums.js';
 import type { Warning } from '../errors.js';
 import type { LayoutConfig, PageConfig } from './structure.js';
 
@@ -62,5 +62,12 @@ export interface InstanceSettings {
   /** Thème de toutes les pages en mode sombre ; `null` : les pages gardent leur thème. */
   darkThemeId: string | null;
   backupRetentionDays: number;
+  /**
+   * Images des catalogues désignées par un lien web : un lien externe révèle à son
+   * hébergeur l'adresse de chaque lecteur. `allowlist` : seulement vers
+   * `externalImageDomains` (et leurs sous-domaines) ; `none` : médiathèque seule.
+   */
+  externalImages: ExternalImages;
+  externalImageDomains: string[];
   version: number;
 }

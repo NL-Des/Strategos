@@ -163,7 +163,7 @@ Toutes ces routes exigent le **rôle admin**. Chaque action qui modifie des donn
 | GET | `/audit` | Journal paginé, du plus récent au plus ancien. Filtres : `actorKind` (`user`, `system`, `cli`), `actorId`, `action`, `targetType`, `targetId`, période `from` (inclus) – `to` (exclu) en ISO 8601 |
 | GET | `/trash` | Corbeille paginée, du plus récent au plus ancien, filtre `type` (`page`, `form`, `topic`, `topic_message`, `chat_message`, `group`, `user`) → [éléments](#élément-de-la-corbeille) |
 | POST | `/trash/:type/:id/restore` | Restaurer → `204`, tracé `trash.restore`. `404` si le type est inconnu ou l'élément absent ou non supprimé ; `409 USERNAME_TAKEN` / `409 GROUP_NAME_TAKEN` si le nom a été repris ; `422 RESTORE_PARENT_DELETED` pour un formulaire dont la page, ou un message dont le sujet, est supprimé |
-| GET / PUT | `/settings` | Réglages de l'instance : page d'arrivée, thème par défaut, thème du mode sombre (`darkThemeId`, `null` possible), durée de conservation des sauvegardes |
+| GET / PUT | `/settings` | Réglages de l'instance : page d'arrivée, thème par défaut, thème du mode sombre (`darkThemeId`, `null` possible), durée de conservation des sauvegardes, images externes des catalogues (`externalImages` : `all`, `allowlist` ou `none` ; `externalImageDomains` : noms de domaine ; absents du `PUT`, ils restent inchangés) |
 | GET | `/backups` | Liste des sauvegardes, de la plus récente à la plus ancienne : `[{ id, status, sizeBytes, error, createdAt, finishedAt }]` |
 | GET | `/backups/:id/download` | Télécharger l'archive `.tar.gz` d'une sauvegarde réussie (flux) ; `404` sinon |
 
