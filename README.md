@@ -75,7 +75,7 @@ Le frontend (`apps/frontend/src`) sépare les pages utilisateur (`pages/`), les 
 Tout le site derrière un proxy Caddy en HTTPS.
 
 ```bash
-cp .env.example .env            # ajuster si besoin (valeurs par défaut adaptées au local)
+cp .env.example .env            # puis y définir POSTGRES_PASSWORD (en local : strategos)
 docker compose up --build
 ```
 
@@ -100,7 +100,7 @@ docker compose exec backend node dist/src/cli/reset-admin.js
 
 ```bash
 pnpm install                                 # compile shared + génère le client Prisma
-pnpm db:up                                   # Postgres sur 127.0.0.1:5432
+pnpm db:up                                   # Postgres sur 127.0.0.1:5432 (lit le .env de la racine)
 cp apps/backend/.env.example apps/backend/.env   # une seule fois
 pnpm dev
 ```

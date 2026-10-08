@@ -62,7 +62,7 @@ Monorepo pnpm : `apps/backend` (NestJS, Prisma 7, ESM), `apps/frontend` (React, 
 | Installer pnpm (une fois) | `corepack enable pnpm` (ou `corepack enable --install-directory ~/.local/bin pnpm`) |
 | Installer les dépendances | `pnpm install` (compile `shared` et génère le client Prisma) |
 | Tout lancer (production locale, HTTPS) | `docker compose up --build` → `https://localhost` (réglages dans `.env`, voir `.env.example`) |
-| Base seule pour le dev | `pnpm db:up` (Postgres sur `127.0.0.1:5432`). À relancer après un `docker compose up`, qui recrée la base sans exposer son port (`ECONNREFUSED 127.0.0.1:5432` dans les tests e2e) |
+| Base seule pour le dev | `pnpm db:up` (Postgres sur `127.0.0.1:5432` ; demande le `.env` de la racine, avec `POSTGRES_PASSWORD=strategos`). À relancer après un `docker compose up`, qui recrée la base sans exposer son port (`ECONNREFUSED 127.0.0.1:5432` dans les tests e2e) |
 | Dev avec rechargement | `cp apps/backend/.env.example apps/backend/.env` une fois, puis `pnpm dev` → `http://localhost:5173` |
 | **Tout vérifier (avant chaque commit ; pas de CI)** | `pnpm check` (base de test : `pnpm db:up`) |
 | Lint / format | `pnpm lint` · `pnpm format` · `pnpm format:check` |

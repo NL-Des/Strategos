@@ -28,7 +28,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | M4 | Moyenne | WebSocket : trames de 60 Mo acceptées, aucun débit maximal | Confirmé |
 | M5 | Moyenne | Aucune limite de débit ni de quota hors connexion ; classeur très compressé | Théorique |
 | M6 | Moyenne | Conteneurs en `root`, sans durcissement ; images non épinglées | Lecture de la configuration |
-| M7 | Moyenne | Mot de passe PostgreSQL par défaut `strategos` | Lecture de la configuration |
+| M7 | Moyenne | Mot de passe PostgreSQL par défaut `strategos` | **Corrigé** (`POSTGRES_PASSWORD` obligatoire) |
 | M8 | Moyenne | Sauvegardes en clair, téléchargeables depuis le site | Lecture du code |
 | M9 | Moyenne | RGPD : pas d'effacement, journal sans purge | Conception (point connu) |
 | M10 | Moyenne | Pas de second facteur pour l'admin | Conception |
@@ -39,7 +39,7 @@ Le reste des constats relève du durcissement : en-têtes HTTP absents, conteneu
 | F5 | Faible | Image externe dans un catalogue : traçage des lecteurs | Théorique |
 | F6 | Faible | Mot de passe de la base visible dans la liste des processus | Lecture du code |
 | I1 | Information | En-tête `X-Powered-By: Express` | **Corrigé** |
-| I2 | Information | Poste de développement : fichiers et droits à ranger | Confirmé |
+| I2 | Information | Poste de développement : fichiers et droits à ranger | **Corrigé** pour les droits (`600`) ; `.env` racine et `secrets/` à ranger à la main |
 | I3 | Information | Guide de déploiement : compléments | Lecture |
 
 ## 2. Méthode et limites

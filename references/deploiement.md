@@ -61,6 +61,7 @@ La base de données n'est **pas** exposée : seul Caddy écoute sur Internet.
 git clone <adresse-du-dépôt> strategos
 cd strategos
 cp .env.example .env
+chmod 600 .env
 ```
 
 Éditez `.env` (`nano .env`) :
@@ -69,7 +70,7 @@ cp .env.example .env
 |---|---|
 | `DOMAIN` | Votre domaine, sans `https://` : `strategos.mon-domaine.fr` |
 | `TZ` | `Europe/Paris` (fuseau de la sauvegarde de 3 h) |
-| `POSTGRES_PASSWORD` | Un mot de passe fort, généré par `openssl rand -base64 24` |
+| `POSTGRES_PASSWORD` | **Obligatoire** (sans lui, rien ne démarre). Un mot de passe fort, généré par `openssl rand -hex 24` : lettres et chiffres seulement, car il est repris dans l'adresse de la base |
 | `POSTGRES_USER`, `POSTGRES_DB` | Garder les valeurs proposées |
 | `AZURE_*` | Laisser vides (OneDrive désactivé) |
 | `TOKEN_ENCRYPTION_KEY` | Laisser vide : le site crée lui-même sa clé de chiffrement |

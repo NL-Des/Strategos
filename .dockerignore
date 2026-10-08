@@ -4,4 +4,6 @@
 **/*.tsbuildinfo
 .git
 references
-.env
+**/.env
+secrets
+**/.data
